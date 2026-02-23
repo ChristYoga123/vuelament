@@ -1,0 +1,66 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Vuelament\Core\BaseResource;
+use App\Vuelament\Core\PageSchema;
+use App\Vuelament\Facades\V;
+use App\Vuelament\Components\Table\Table;
+use App\Vuelament\Components\Table\Column;
+use App\Vuelament\Components\Table\Actions\EditAction;
+use App\Vuelament\Components\Table\Actions\DeleteAction;
+use App\Vuelament\Components\Actions\ActionGroup;
+use App\Vuelament\Components\Actions\CreateAction;
+use App\Vuelament\Components\Actions\DeleteBulkAction;
+
+class {{ name }}Resource extends BaseResource
+{
+    protected static string $model = '{{ modelFqn }}';
+    protected static string $slug = '{{ slug }}';
+    protected static string $label = '{{ label }}';
+    protected static string $icon = 'circle';
+
+    public static function tableSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->title(static::$label)
+            ->components([
+                Table::make()
+                    ->columns([
+                        Column::make('id')->label('ID')->sortable(),
+                        Column::make('name')->label('Nama')->sortable()->searchable(),
+                        Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),
+                    ])
+                    ->actions([
+                        EditAction::make(),
+                        DeleteAction::make(),
+                    ])
+                    ->bulkActions([
+                        ActionGroup::make('Aksi Massal')
+                            ->icon('list')
+                            ->actions([
+                                DeleteBulkAction::make(),
+                            ]),
+                    ])
+                    ->headerActions([
+                        CreateAction::make(),
+                    ])
+                    ->searchable()
+                    ->paginated()
+                    ->selectable(),
+            ]);
+    }
+
+    public static function formSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->title('Buat ' . static::$label)
+            ->components([
+                V::textInput('name')
+                    ->label('Nama')
+                    ->required()
+                    ->maxLength(255)
+                    ->rules(['string']),
+            ]);
+    }
+}

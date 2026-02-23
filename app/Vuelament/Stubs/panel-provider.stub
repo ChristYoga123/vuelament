@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Vuelament\Providers;
+
+use App\Vuelament\Core\Panel;
+use App\Vuelament\Core\NavigationGroup;
+use App\Vuelament\Core\NavigationItem;
+use App\Vuelament\VuelamentServiceProvider;
+
+class {{ name }}PanelProvider extends VuelamentServiceProvider
+{
+    public function panel(): Panel
+    {
+        return Panel::make()
+            ->id('{{ id }}')
+            ->path('{{ path }}')
+            ->brandName('{{ brandName }}')
+            ->login()
+            // ->register()
+            // ->passwordReset()
+            // ->authGuard('web')
+            // ->userModel(\App\Models\User::class)
+            ->middleware(['web'])
+            ->authMiddleware([\App\Vuelament\Http\Middleware\Authenticate::class])
+            // ->guestMiddleware([\App\Vuelament\Http\Middleware\RedirectIfAuthenticated::class])
+            ->colors([
+                'primary' => '#6366f1',
+            ])
+
+            // ── Resources ────────────────────────────────
+            // Opsi 1: Manual register
+            // ->resources([
+            //     \App\Vuelament\Resources\UserResource::class,
+            // ])
+            // Opsi 2: Auto-discover dari directory
+            ->discoverResources(app_path('Vuelament/Resources'), 'App\\Vuelament\\Resources')
+
+            // ── Custom Pages ─────────────────────────────
+            // Opsi 1: Manual register
+            // ->pages([
+            //     \App\Vuelament\Pages\Settings::class,
+            // ])
+            // Opsi 2: Auto-discover dari directory
+            // ->discoverPages(app_path('Vuelament/Pages'), 'App\\Vuelament\\Pages')
+
+            // ── Navigation (opsional, override auto-navigation) ──
+            // Kalau tidak di-set, navigation otomatis dari resources
+            // ->navigation([
+            //     NavigationGroup::make('Master Data')
+            //         ->icon('database')
+            //         ->items([
+            //             ...\App\Vuelament\Resources\UserResource::getNavigationItems(),
+            //         ]),
+            //     NavigationGroup::make('Pengaturan')
+            //         ->items([
+            //             NavigationItem::make('Settings')->url('/{{ path }}/settings'),
+            //         ]),
+            // ])
+
+            ->plugins([
+                //
+            ]);
+    }
+}

@@ -1,0 +1,525 @@
+# Vuelament
+
+**Admin panel builder untuk Laravel** — terinspirasi oleh [Filament](https://filamentphp.com), dibangun dengan **Vue.js 3**, **Inertia.js**, dan **shadcn-vue**.
+
+Vuelament menyediakan cara deklaratif untuk membangun admin panel lengkap: resources (CRUD), form builder, table builder, actions, widgets, filter, dan navigasi — semua didefinisikan dari PHP tanpa menulis frontend secara manual.
+
+---
+
+## ✨ Fitur Utama
+
+- 🏗️ **Resource Generator** — CRUD otomatis dari model Eloquent
+- 📊 **Table Builder** — sortable, searchable, paginated, selectable columns
+- 📝 **Form Builder** — TextInput, Select, DatePicker, Toggle, RichEditor, Repeater, dll
+- ⚡ **Bulk Actions** — Hapus massal, restore, force delete dengan dropdown grouped
+- 🎨 **Dark / Light Mode** — toggle tema di header
+- 🔐 **Auth & Middleware** — login page bawaan dengan role-based guard
+- 🧩 **Modular Panel** — multi panel support (admin, manager, dll)
+- 📦 **Auto-discover** — resources, pages, widgets otomatis ter-register
+
+---
+
+## 📋 Requirements
+
+- PHP >= 8.1
+- Laravel >= 10.x
+- Node.js >= 18.x
+- Composer
+
+---
+
+## 🚀 Installation
+
+### 1. Install Dependencies
+
+```bash
+composer install
+npm install
+```
+
+### 2. Setup Environment
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+### 3. Migrasi Database
+
+```bash
+php artisan migrate
+```
+
+### 4. Buat User Admin
+
+```bash
+php artisan vuelament:user
+```
+
+Atau dengan opsi langsung:
+
+```bash
+php artisan vuelament:user --name="Admin" --email="admin@gmail.com" --password="password" --role="super_admin"
+```
+
+### 5. Build Frontend
+
+```bash
+# Development
+npm run dev
+
+# Production
+npm run build
+```
+
+### 6. Jalankan Server
+
+```bash
+php artisan serve
+```
+
+Akses panel di: **http://127.0.0.1:8000/admin**
+
+---
+
+## 🛠️ Usage
+
+### Panel Provider
+
+Setiap panel didefinisikan di `app/Vuelament/Providers/`. Contoh `AdminPanelProvider.php`:
+
+```php
+namespace App\Vuelament\Providers;
+
+use App\Vuelament\Core\Panel;
+use App\Vuelament\Core\NavigationGroup;
+use App\Vuelament\VuelamentServiceProvider;
+
+class AdminPanelProvider extends VuelamentServiceProvider
+{
+    public function panel(): Panel
+    {
+        return Panel::make()
+            ->id('admin')
+            ->path('admin')
+            ->brandName('Admin Panel')
+            ->login()
+            ->middleware(['web'])
+            ->authMiddleware([\App\Vuelament\Http\Middleware\Authenticate::class])
+            ->colors(['primary' => '#6366f1'])
+            ->discoverResources(
+                app_path('Vuelament/Admin/Resources'),
+                'App\\Vuelament\\Admin\\Resources'
+            )
+            ->navigation([
+                NavigationGroup::make('Master')
+                    ->items([
+                        ...UserResource::getNavigationItems(),
+                    ])
+            ]);
+    }
+}
+```
+
+Panel provider harus didaftarkan di `config/app.php` pada array `providers`.
+
+---
+
+### Membuat Resource
+
+#### Artisan Command
+
+```bash
+# Basic
+php artisan vuelament:resource Post
+
+# Dengan auto-generate field dari database
+php artisan vuelament:resource Post --generate
+
+# Dengan panel tertentu
+php artisan vuelament:resource Post --panel=Admin
+
+# Dengan model custom
+php artisan vuelament:resource Post --model=BlogPost
+
+# Overwrite jika sudah ada
+php artisan vuelament:resource Post --force
+```
+
+Command ini akan menghasilkan:
+
+- `app/Vuelament/Admin/Resources/PostResource.php`
+- `app/Http/Controllers/Vuelament/Admin/PostController.php`
+
+---
+
+### Struktur Resource
+
+Setiap resource memiliki 2 method utama: `tableSchema()` dan `formSchema()`.
+
+```php
+namespace App\Vuelament\Admin\Resources;
+
+use App\Models\Post;
+use App\Vuelament\Facades\V;
+use App\Vuelament\Core\PageSchema;
+use App\Vuelament\Core\BaseResource;
+use App\Vuelament\Components\Table\Table;
+use App\Vuelament\Components\Table\Column;
+use App\Vuelament\Components\Actions\ActionGroup;
+use App\Vuelament\Components\Actions\CreateAction;
+use App\Vuelament\Components\Actions\DeleteBulkAction;
+use App\Vuelament\Components\Table\Actions\EditAction;
+use App\Vuelament\Components\Table\Actions\DeleteAction;
+
+class PostResource extends BaseResource
+{
+    protected static string $model = Post::class;
+    protected static string $slug = 'posts';
+    protected static string $label = 'Post';
+    protected static string $icon = 'file-text';
+
+    protected static int $navigationSort = 1;
+
+    public static function tableSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->title(static::$label)
+            ->components([
+                Table::make()
+                    ->columns([
+                        Column::make('id')->label('ID')->sortable(),
+                        Column::make('title')->label('Judul')->sortable()->searchable(),
+                        Column::make('status')->label('Status')->badge(),
+                        Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),
+                    ])
+                    ->actions([
+                        EditAction::make(),
+                        DeleteAction::make(),
+                    ])
+                    ->bulkActions([
+                        ActionGroup::make('Aksi Massal')
+                            ->icon('list')
+                            ->actions([
+                                DeleteBulkAction::make(),
+                            ]),
+                    ])
+                    ->headerActions([
+                        CreateAction::make(),
+                    ])
+                    ->searchable()
+                    ->paginated()
+                    ->selectable(),
+            ]);
+    }
+
+    public static function formSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->title('Buat ' . static::$label)
+            ->components([
+                V::grid(2)->schema([
+                    V::textInput('title')->label('Judul')->required(),
+                    V::select('category_id')
+                        ->label('Kategori')
+                        ->options(\App\Models\Category::pluck('name', 'id')->toArray()),
+                ]),
+                V::richEditor('content')->label('Konten')->required(),
+                V::toggle('is_published')->label('Published'),
+            ]);
+    }
+}
+```
+
+---
+
+### Table Builder
+
+#### Columns
+
+```php
+Column::make('name')->label('Nama')->sortable()->searchable(),
+Column::make('email')->label('Email')->sortable()->searchable(),
+Column::make('is_active')->label('Aktif')->badge(),
+Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),
+Column::make('notes')->label('Catatan')->toggleable(true, true), // toggleable, hidden by default
+```
+
+#### Row Actions
+
+```php
+->actions([
+    EditAction::make(),
+    DeleteAction::make(),
+    RestoreAction::make(),         // untuk SoftDeletes
+    ForceDeleteAction::make(),     // untuk SoftDeletes
+])
+```
+
+#### Bulk Actions (Grouped)
+
+Bulk actions ditampilkan sebagai dropdown saat ada item yang dipilih:
+
+```php
+use App\Vuelament\Components\Actions\ActionGroup;
+use App\Vuelament\Components\Actions\DeleteBulkAction;
+use App\Vuelament\Components\Actions\RestoreBulkAction;
+use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
+
+->bulkActions([
+    ActionGroup::make('Aksi Massal')
+        ->icon('list')
+        ->actions([
+            DeleteBulkAction::make(),
+            RestoreBulkAction::make(),         // untuk SoftDeletes
+            ForceDeleteBulkAction::make(),     // untuk SoftDeletes
+        ]),
+])
+```
+
+#### Header Actions
+
+```php
+->headerActions([
+    CreateAction::make(),
+])
+```
+
+#### Table Options
+
+```php
+Table::make()
+    ->searchable()          // enable search bar
+    ->paginated()           // enable pagination
+    ->perPage(25)           // default per page
+    ->perPageOptions([10, 25, 50, 100])
+    ->selectable()          // checkbox select
+    ->defaultSort('name', 'asc')
+    ->emptyStateHeading('Belum ada data')
+    ->emptyStateDescription('Klik tombol tambah untuk membuat data baru.')
+```
+
+---
+
+### Form Builder
+
+Gunakan facade `V` untuk shorthand:
+
+```php
+// Text Input
+V::textInput('name')->label('Nama')->required()->maxLength(255)
+V::textInput('email')->label('Email')->type('email')->required()
+V::textInput('price')->label('Harga')->type('number')
+V::textInput('password')->label('Password')->password()->revealable()
+
+// Textarea
+V::textarea('description')->label('Deskripsi')->rows(5)
+
+// Rich Editor
+V::richEditor('content')->label('Konten')
+
+// Select
+V::select('category_id')
+    ->label('Kategori')
+    ->options(['draft' => 'Draft', 'published' => 'Published'])
+    ->searchable()
+
+// Date & Time
+V::datePicker('birth_date')->label('Tanggal Lahir')
+V::timePicker('start_time')->label('Waktu Mulai')
+V::dateRangePicker('period')->label('Periode')
+
+// Toggle & Checkbox
+V::toggle('is_active')->label('Aktif')
+V::checkbox('agree')->label('Setuju dengan syarat')
+
+// Radio
+V::radio('gender')
+    ->label('Jenis Kelamin')
+    ->options(['male' => 'Laki-laki', 'female' => 'Perempuan'])
+
+// File Upload
+V::fileInput('avatar')->label('Foto')->image()->maxSize(2048)
+
+// Repeater
+V::repeater('items')->label('Item')->schema([
+    V::textInput('name')->label('Nama'),
+    V::textInput('qty')->label('Qty')->type('number'),
+])
+```
+
+#### Layout Components
+
+```php
+// Grid
+V::grid(2)->schema([
+    V::textInput('first_name'),
+    V::textInput('last_name'),
+])
+
+// Section
+V::section('Informasi Dasar')->schema([
+    V::textInput('name'),
+])
+
+// Card
+V::card('Detail')->schema([
+    V::textarea('notes'),
+])
+```
+
+#### Validation
+
+Validasi otomatis dibangun dari properti komponen (`required()`, `maxLength()`, `type()`, dll). Bisa juga override manual:
+
+```php
+public static function rules(string $action, mixed $id = null): array
+{
+    return [
+        'name'  => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email' . ($id ? ",{$id}" : ''),
+    ];
+}
+```
+
+---
+
+### Unique Validation
+
+```php
+V::textInput('email')
+    ->label('Email')
+    ->type('email')
+    ->required()
+    ->uniqueIgnoreRecord()  // auto skip current record on edit
+```
+
+---
+
+### SoftDeletes Support
+
+Jika model menggunakan `SoftDeletes`, tambahkan:
+
+```php
+// Di resource
+protected static bool $softDeletes = true;
+
+// Actions
+->actions([
+    EditAction::make(),
+    DeleteAction::make(),
+    RestoreAction::make(),
+    ForceDeleteAction::make(),
+])
+
+// Bulk Actions
+->bulkActions([
+    ActionGroup::make('Aksi Massal')
+        ->icon('list')
+        ->actions([
+            DeleteBulkAction::make(),
+            RestoreBulkAction::make(),
+            ForceDeleteBulkAction::make(),
+        ]),
+])
+
+// Filter
+->filters([
+    SelectFilter::make('trashed')
+        ->label('Status')
+        ->options([
+            ''     => 'Tanpa Trashed',
+            'with' => 'Dengan Trashed',
+            'only' => 'Hanya Trashed',
+        ]),
+])
+```
+
+---
+
+### Dark Mode
+
+Dark/Light mode toggle tersedia di header top bar. Preferensi disimpan di `localStorage` dan otomatis mendeteksi preferensi sistem.
+
+---
+
+### Icons
+
+Vuelament menggunakan [Lucide Icons](https://lucide.dev/icons/). Semua icon didefinisikan dengan format kebab-case:
+
+```php
+protected static string $icon = 'users';         // → Users
+protected static string $icon = 'file-text';      // → FileText
+protected static string $icon = 'layout-dashboard'; // → LayoutDashboard
+```
+
+---
+
+## 📁 Struktur Direktori
+
+```
+app/Vuelament/
+├── Admin/
+│   ├── Resources/          # Resource definitions (UserResource, dll)
+│   ├── Pages/              # Custom pages
+│   └── Widgets/            # Dashboard widgets
+├── Commands/
+│   ├── MakeResourceCommand.php
+│   ├── MakeUserCommand.php
+│   ├── MakePanelCommand.php
+│   └── MakePageCommand.php
+├── Components/
+│   ├── Actions/            # ActionGroup, BulkAction, CreateAction, dll
+│   ├── Filters/            # SelectFilter, ToggleFilter, dll
+│   ├── Form/               # TextInput, Select, DatePicker, dll
+│   ├── Infolists/          # TextEntry, ImageEntry
+│   ├── Layout/             # Grid, Section, Card
+│   ├── Table/              # Table, Column, row Actions
+│   └── Widgets/            # StatsOverview, Chart, TableWidget
+├── Core/
+│   ├── BaseResource.php
+│   ├── BaseComponent.php
+│   ├── PageSchema.php
+│   ├── Panel.php
+│   ├── NavigationGroup.php
+│   └── NavigationItem.php
+├── Facades/
+│   └── V.php               # Shorthand facade
+├── Http/
+│   ├── Traits/ResourceController.php
+│   └── Middleware/
+├── Providers/
+│   └── AdminPanelProvider.php
+├── Stubs/                   # Template untuk code generation
+└── VuelamentServiceProvider.php
+
+resources/js/
+├── Layouts/
+│   └── DashboardLayout.vue  # Sidebar + topbar + dark mode
+├── Pages/Vuelament/
+│   ├── Auth/Login.vue
+│   ├── Dashboard.vue
+│   └── Resource/
+│       ├── Index.vue         # Table + bulk actions
+│       ├── Create.vue        # Form create
+│       └── Edit.vue          # Form edit
+└── components/ui/            # shadcn-vue components
+```
+
+---
+
+## 🧪 Artisan Commands
+
+| Command                                | Deskripsi                          |
+| -------------------------------------- | ---------------------------------- |
+| `vuelament:resource {name}`            | Generate resource + controller     |
+| `vuelament:resource {name} --generate` | Auto-generate dari database schema |
+| `vuelament:user`                       | Buat user admin                    |
+| `vuelament:panel {name}`               | Generate panel provider baru       |
+| `vuelament:page {name}`                | Generate custom page               |
+
+---
+
+## 📄 License
+
+MIT License

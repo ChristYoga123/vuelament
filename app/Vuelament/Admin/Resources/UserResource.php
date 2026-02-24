@@ -101,12 +101,6 @@ class UserResource extends BaseResource
                             ->dehydrateStateUsing(fn (string $state): string => Hash::make($state))
                             ->saved(fn (?string $state): bool => filled($state))
                             ->required(fn (string $operation): bool => $operation === 'create'),
-                        V::fileInput('tes')
-                            ->label('Tes')
-                            ->required()
-                            ->image()
-                            ->multiple()
-                            ->reorderable(),
                     ])
             ]);
     }

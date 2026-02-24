@@ -7,6 +7,7 @@ abstract class BaseResource
     protected static string $model = '';
     protected static string $slug = '';
     protected static string $label = '';
+    protected static ?string $description = null;
     protected static string $icon = 'circle';
 
     // ── Navigation ───────────────────────────────────────
@@ -87,6 +88,7 @@ abstract class BaseResource
     public static function getModel(): string  { return static::$model; }
     public static function getSlug(): string   { return static::$slug; }
     public static function getLabel(): string  { return static::$label; }
+    public static function getDescription(): ?string { return static::$description; }
     public static function getIcon(): string   { return static::$icon; }
 
     public static function getNavigationSort(): int       { return static::$navigationSort; }

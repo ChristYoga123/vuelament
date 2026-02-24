@@ -304,8 +304,8 @@ const goToPage = (url) => {
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold tracking-tight">{{ tableSchema?.title || resource.label }}</h1>
-        <p v-if="data?.total" class="text-sm text-muted-foreground mt-1">
-          {{ data.total }} data ditemukan
+        <p v-if="resource.description" class="text-sm text-muted-foreground mt-1">
+          {{ resource.description }}
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -605,7 +605,11 @@ const goToPage = (url) => {
             </tr>
             <tr v-if="!data?.data?.length">
               <td :colspan="visibleColumns.length + 2" class="px-4 py-12 text-center text-muted-foreground">
-                Tidak ada data ditemukan.
+                <div class="flex flex-col items-center justify-center gap-1">
+                  <component v-if="tableConfig?.emptyStateIcon" :is="resolveIcon(tableConfig.emptyStateIcon)" class="w-8 h-8 text-muted-foreground opacity-50 mb-2" />
+                  <p v-if="tableConfig?.emptyStateHeading" class="text-base font-medium text-foreground">{{ tableConfig.emptyStateHeading }}</p>
+                  <p class="text-sm">{{ tableConfig?.emptyStateDescription || 'Tidak ada data ditemukan.' }}</p>
+                </div>
               </td>
             </tr>
           </tbody>

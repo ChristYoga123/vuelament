@@ -77,9 +77,10 @@ trait ResourceController
 
         return Inertia::render('Vuelament/Resource/Index', [
             'resource'    => [
-                'slug'  => $resource::getSlug(),
-                'label' => $resource::getLabel(),
-                'icon'  => $resource::getIcon(),
+                'slug'        => $resource::getSlug(),
+                'label'       => $resource::getLabel(),
+                'description' => $resource::getDescription(),
+                'icon'        => $resource::getIcon(),
             ],
             'tableSchema' => $tableSchema,
             'data'        => $data,

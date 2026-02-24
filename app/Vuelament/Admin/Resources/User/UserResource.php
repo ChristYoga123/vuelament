@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Vuelament\Admin\Resources;
+namespace App\Vuelament\Admin\Resources\User;
 
 use App\Models\User;
 use App\Vuelament\Facades\V;
@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Hash;
 use App\Vuelament\Components\Table\Table;
 use App\Vuelament\Components\Table\Column;
 use App\Vuelament\Components\Actions\ActionGroup;
+use App\Vuelament\Components\Table\FiltersLayout;
 use App\Vuelament\Components\Actions\CreateAction;
 use App\Vuelament\Components\Filters\SelectFilter;
+use App\Vuelament\Components\Table\Actions\Action;
 use App\Vuelament\Components\Actions\DeleteBulkAction;
 use App\Vuelament\Components\Table\Actions\EditAction;
 use App\Vuelament\Components\Actions\RestoreBulkAction;
@@ -19,7 +21,6 @@ use App\Vuelament\Components\Table\Actions\DeleteAction;
 use App\Vuelament\Components\Table\Actions\RestoreAction;
 use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
 use App\Vuelament\Components\Table\Actions\ForceDeleteAction;
-use App\Vuelament\Components\Table\FiltersLayout;
 
 class UserResource extends BaseResource
 {
@@ -63,6 +64,11 @@ class UserResource extends BaseResource
                             ->toggleable(true, true),
                     ])
                     ->actions([
+                        Action::make('report')
+                            ->icon('file')
+                            ->color('success')
+                            ->label('Laporan')
+                            ->url(fn(User $user) => ReportPage::getUrl(['record' => $user->id])),
                         EditAction::make(),
                         DeleteAction::make(),
                         RestoreAction::make(),
@@ -78,14 +84,9 @@ class UserResource extends BaseResource
                             ]),
                     ])
                     ->filters([
-                        SelectFilter::make('trashed')
-                            ->label('Status Terhapus')
-                            ->placeholder('Tidak Termasuk Dihapus')
-                            ->options([
-                                'with' => 'Termasuk Dihapus',
-                                'only' => 'Hanya yang Dihapus',
-                            ])
-            ])
+                        SelectFilter::make()
+                            ->withTrashed()
+                    ])
                     ->headerActions([
                         CreateAction::make(),
                     ])
@@ -123,16 +124,10 @@ class UserResource extends BaseResource
             ]);
     }
 
-    public static function applyFilters($query, array $filters): mixed
+    public static function getPages(): array
     {
-        if (isset($filters['trashed'])) {
-            if ($filters['trashed'] === 'with') {
-                $query->withTrashed();
-            } elseif ($filters['trashed'] === 'only') {
-                $query->onlyTrashed();
-            }
-        }
-
-        return $query;
+        return [
+            'report' => ReportPage::route('/{record}/report'),
+        ];
     }
 }

@@ -14,7 +14,8 @@ abstract class BaseTableAction
     protected string $label = '';
     protected ?string $icon = null;
     protected ?string $color = null;
-    protected ?string $url = null;
+    protected mixed $url = null;
+    protected bool $shouldOpenInNewTab = false;
     protected ?string $endpoint = null;
     protected ?string $method = 'POST';
     protected bool $requiresConfirmation = false;
@@ -37,11 +38,37 @@ abstract class BaseTableAction
     public function label(string $v): static { $this->label = $v; return $this; }
     public function icon(string $v): static { $this->icon = $v; return $this; }
     public function color(string $v): static { $this->color = $v; return $this; }
-    public function url(string $v): static { $this->url = $v; return $this; }
+    public function url(mixed $v = null, bool $shouldOpenInNewTab = false): static { 
+        $this->url = $v; 
+        $this->shouldOpenInNewTab = $shouldOpenInNewTab;
+        return $this; 
+    }
+    public function openUrlInNewTab(bool $v = true): static { $this->shouldOpenInNewTab = $v; return $this; }
     public function endpoint(string $v, string $method = 'POST'): static { $this->endpoint = $v; $this->method = $method; return $this; }
     public function hidden(bool $v = true): static { $this->hidden = $v; return $this; }
     public function disabled(bool $v = true): static { $this->disabled = $v; return $this; }
     public function tooltip(string $v): static { $this->tooltip = $v; return $this; }
+
+    public function getName(): string { return $this->name; }
+
+    public function evaluateUrl(mixed $record = null): ?string
+    {
+        if (is_callable($this->url)) {
+            try {
+                $reflection = new \ReflectionFunction(\Closure::fromCallable($this->url));
+                $params = $reflection->getParameters();
+                if (count($params) > 0 && $record !== null) {
+                    return call_user_func($this->url, $record);
+                } elseif (count($params) === 0) {
+                    return call_user_func($this->url);
+                }
+            } catch (\Exception $e) {
+                // Ignore evaluation error
+            }
+            return null;
+        }
+        return is_string($this->url) ? $this->url : null;
+    }
 
     public function requiresConfirmation(
         string $title = 'Konfirmasi',
@@ -61,7 +88,8 @@ abstract class BaseTableAction
             'label'                => $this->label,
             'icon'                 => $this->icon,
             'color'                => $this->color,
-            'url'                  => $this->url,
+            'url'                  => $this->evaluateUrl(null), // Evaluasi static/argument-less URL untuk config
+            'shouldOpenInNewTab'   => $this->shouldOpenInNewTab,
             'endpoint'             => $this->endpoint,
             'method'               => $this->method,
             'hidden'               => $this->hidden,

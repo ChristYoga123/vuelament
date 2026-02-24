@@ -4,7 +4,7 @@ namespace App\Vuelament\Providers;
 
 use App\Vuelament\Core\NavigationGroup;
 use App\Vuelament\Core\Panel;
-use App\Vuelament\Admin\Resources\UserResource;
+use App\Vuelament\Admin\Resources\User\UserResource;
 use App\Vuelament\VuelamentServiceProvider;
 
 class AdminPanelProvider extends VuelamentServiceProvider
@@ -22,6 +22,7 @@ class AdminPanelProvider extends VuelamentServiceProvider
                 'primary' => '#6366f1',
             ])
             ->discoverResources(app_path('Vuelament/Admin/Resources'), 'App\\Vuelament\\Admin\\Resources')
+            ->discoverPages(app_path('Vuelament/Admin/Resources'), 'App\\Vuelament\\Admin\\Resources')
             ->discoverPages(app_path('Vuelament/Admin/Pages'), 'App\\Vuelament\\Admin\\Pages')
             ->discoverWidgets(app_path('Vuelament/Admin/Widgets'), 'App\\Vuelament\\Admin\\Widgets')
             ->plugins([
@@ -32,6 +33,7 @@ class AdminPanelProvider extends VuelamentServiceProvider
                     ->items([
                         ...UserResource::getNavigationItems(),
                     ])
-            ]);
+            ])
+            ->databaseTransactions();
     }
 }

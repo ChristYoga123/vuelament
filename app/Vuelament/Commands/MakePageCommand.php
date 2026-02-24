@@ -9,44 +9,51 @@ class MakePageCommand extends Command
 {
     protected $signature = 'vuelament:page {name : Nama page (contoh: Settings)}
                             {--panel=Admin : Nama panel tujuan (default: Admin)}
+                            {--resource= : Nama Resource untuk melampirkan page (opsional, contoh: User)}
                             {--force : Overwrite jika sudah ada}';
 
     protected $description = 'Generate Vuelament custom page (PHP class + Vue component)';
 
     public function handle(): int
     {
-        $name = Str::studly($this->argument('name'));
-        $slug = Str::kebab($name);
+        $rawName = Str::studly($this->argument('name'));
+        $name = Str::endsWith($rawName, 'Page') ? $rawName : $rawName . 'Page';
+        $slug = Str::kebab(str_replace('Page', '', $name));
         $panel = $this->option('panel') ? Str::studly($this->option('panel')) : '';
+        $resourceFolder = $this->option('resource') ? Str::studly($this->option('resource')) : null;
 
-        $this->generatePageClass($name, $slug, $panel);
-        $this->generateVueComponent($name, $panel);
+        $this->generatePageClass($name, $slug, $panel, $resourceFolder);
+        $this->generateVueComponent($name, $panel, $resourceFolder);
 
         $pathPrefix = $panel ? "{$panel}/" : "";
         $namespacePrefix = $panel ? "\\{$panel}" : "";
+        
+        $pagePathDesc = $resourceFolder ? "Resources/{$resourceFolder}" : "Pages";
+        $pageNamespaceDesc = $resourceFolder ? "Resources\\{$resourceFolder}" : "Pages";
 
         $this->info("✅ Page [{$name}] berhasil dibuat!");
         $this->newLine();
         $this->line("Files created:");
-        $this->line("  - app/Vuelament/{$pathPrefix}Pages/{$name}.php");
-        $this->line("  - resources/js/Pages/Vuelament/Pages/{$pathPrefix}{$name}.vue");
+        $this->line("  - app/Vuelament/{$pathPrefix}{$pagePathDesc}/{$name}.php");
+        $this->line("  - resources/js/Pages/Vuelament/{$pathPrefix}{$pagePathDesc}/{$name}.vue");
         $this->newLine();
         $this->line("Langkah selanjutnya:");
-        $this->line("  1. Daftarkan di PanelProvider:");
-        $this->line("     ->pages([\\App\\Vuelament{$namespacePrefix}\\Pages\\{$name}::class])");
+        $this->line("  1. Daftarkan page di panel atau biarkan auto-discover:");
+        $this->line("     ->pages([\\App\\Vuelament{$namespacePrefix}\\{$pageNamespaceDesc}\\{$name}::class])");
         $this->newLine();
-        $this->line("  Atau discover otomatis:");
-        $this->line("     ->discoverPages(app_path('Vuelament/{$pathPrefix}Pages'), 'App\\Vuelament{$namespacePrefix}\\Pages')");
+        $this->line("  Atau discover otomatis path tersebut:");
+        $this->line("     ->discoverPages(app_path('Vuelament/{$pathPrefix}{$pagePathDesc}'), 'App\\Vuelament{$namespacePrefix}\\{$pageNamespaceDesc}')");
         $this->newLine();
         $this->line("  URL: /{panel-path}/{$slug}");
 
         return self::SUCCESS;
     }
 
-    protected function generatePageClass(string $name, string $slug, string $panel): void
+    protected function generatePageClass(string $name, string $slug, string $panel, ?string $resourceFolder = null): void
     {
         $pathPrefix = $panel ? "{$panel}/" : "";
-        $path = app_path("Vuelament/{$pathPrefix}Pages/{$name}.php");
+        $pagePath = $resourceFolder ? "Resources/{$resourceFolder}" : "Pages";
+        $path = app_path("Vuelament/{$pathPrefix}{$pagePath}/{$name}.php");
 
         if (file_exists($path) && !$this->option('force')) {
             $this->error("[{$name}] sudah ada! Gunakan --force untuk overwrite.");
@@ -54,12 +61,18 @@ class MakePageCommand extends Command
         }
 
         $namespacePrefix = $panel ? "\\{$panel}" : "";
+        $pageNamespace = $resourceFolder ? "Resources\\{$resourceFolder}" : "Pages";
+        $viewPathBase = $resourceFolder ? "Resources/{$resourceFolder}" : "Pages";
         $viewPath = $panel ? "{$panel}/{$name}" : $name;
+        
+        $finalViewPath = $resourceFolder 
+            ? "Vuelament/{$pathPrefix}{$viewPathBase}/{$name}"
+            : "Vuelament/Pages/{$viewPath}";
 
         $stub = $this->getPageStub();
         $stub = str_replace(
             ['{{ namespace }}', '{{ name }}', '{{ slug }}', '{{ title }}', '{{ view }}'],
-            ["App\\Vuelament{$namespacePrefix}\\Pages", $name, $slug, Str::headline($name), "Vuelament/Pages/{$viewPath}"],
+            ["App\\Vuelament{$namespacePrefix}\\{$pageNamespace}", $name, $slug, Str::headline($name), $finalViewPath],
             $stub
         );
 
@@ -69,19 +82,24 @@ class MakePageCommand extends Command
         }
 
         file_put_contents($path, $stub);
-        $this->info("  Created: app/Vuelament/{$pathPrefix}Pages/{$name}.php");
+        $this->info("  Created: app/Vuelament/{$pathPrefix}{$pagePath}/{$name}.php");
     }
 
-    protected function generateVueComponent(string $name, string $panel): void
+    protected function generateVueComponent(string $name, string $panel, ?string $resourceFolder = null): void
     {
         $pathPrefix = $panel ? "{$panel}/" : "";
-        $path = resource_path("js/Pages/Vuelament/Pages/{$pathPrefix}{$name}.vue");
+        $pagePath = $resourceFolder ? "Resources/{$resourceFolder}" : "Pages";
+        
+        $filePath = $resourceFolder 
+            ? resource_path("js/Pages/Vuelament/{$pathPrefix}{$pagePath}/{$name}.vue")
+            : resource_path("js/Pages/Vuelament/Pages/{$pathPrefix}{$name}.vue");
 
-        if (file_exists($path) && !$this->option('force')) {
+        if (file_exists($filePath) && !$this->option('force')) {
             $this->error("[{$name}.vue] sudah ada! Gunakan --force untuk overwrite.");
             return;
         }
 
+        $viewPathBase = $resourceFolder ? "Resources/{$resourceFolder}" : "Pages";
         $viewPath = $panel ? "{$panel}/{$name}" : $name;
 
         $stub = $this->getVueStub();
@@ -91,13 +109,18 @@ class MakePageCommand extends Command
             $stub
         );
 
-        $dir = dirname($path);
+        $dir = dirname($filePath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        file_put_contents($path, $stub);
-        $this->info("  Created: resources/js/Pages/Vuelament/Pages/{$pathPrefix}{$name}.vue");
+        file_put_contents($filePath, $stub);
+        
+        $outputFileDesc = $resourceFolder 
+            ? "resources/js/Pages/Vuelament/{$pathPrefix}{$pagePath}/{$name}.vue"
+            : "resources/js/Pages/Vuelament/Pages/{$pathPrefix}{$name}.vue";
+            
+        $this->info("  Created: {$outputFileDesc}");
     }
 
     protected function getPageStub(): string
@@ -126,7 +149,7 @@ class {{ name }} extends BasePage
     /**
      * Data yang di-pass ke Vue component via Inertia
      */
-    public static function getData(): array
+    public static function getData(?\Illuminate\Database\Eloquent\Model $record = null): array
     {
         return [
             //

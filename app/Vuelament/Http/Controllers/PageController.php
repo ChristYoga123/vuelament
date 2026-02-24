@@ -11,11 +11,19 @@ class PageController
 {
     /**
      * Handle custom page rendering
-     * Route-nya auto-registered dari panel->pages
+     * Route-nya auto-registered dari panel->pages atau panel->resources sub-pages
      */
-    public function __invoke(Request $request, string $pageClass)
+    public function __invoke(Request $request, string $pageClass, ?string $resourceClass = null, mixed $recordId = null)
     {
         $panel = app('vuelament.panel');
+
+        $record = null;
+        if ($resourceClass && $recordId) {
+            $modelClass = $resourceClass::getModel();
+            if (class_exists($modelClass)) {
+                $record = $modelClass::findOrFail($recordId);
+            }
+        }
 
         // Resolve table schema dan data (dengan search, sort, pagination, filter)
         $tableSchemaRaw = null;
@@ -50,8 +58,31 @@ class PageController
                         if ($tableArray['paginated'] ?? true) {
                             $perPage   = $request->input('per_page', $tableArray['perPage'] ?? 10);
                             $tableData = $query->paginate($perPage)->withQueryString();
+                            
+                            $tableData->getCollection()->transform(function ($r) use ($comp) {
+                                $vActions = [];
+                                foreach ($comp->getActions() as $action) {
+                                    $vActions[$action->getName()] = [
+                                        'url' => $action->evaluateUrl($r),
+                                        'shouldOpenInNewTab' => $action->toArray()['shouldOpenInNewTab'] ?? false,
+                                    ];
+                                }
+                                $r->setAttribute('_v_actions', $vActions);
+                                return $r;
+                            });
                         } else {
                             $tableData = $query->get();
+                            $tableData->transform(function ($r) use ($comp) {
+                                $vActions = [];
+                                foreach ($comp->getActions() as $action) {
+                                    $vActions[$action->getName()] = [
+                                        'url' => $action->evaluateUrl($r),
+                                        'shouldOpenInNewTab' => $action->toArray()['shouldOpenInNewTab'] ?? false,
+                                    ];
+                                }
+                                $r->setAttribute('_v_actions', $vActions);
+                                return $r;
+                            });
                         }
                     } elseif ($query instanceof \Illuminate\Support\Collection || is_array($query)) {
                         $tableData = $query;
@@ -65,7 +96,7 @@ class PageController
         $formSchemaRaw = $pageClass::form()?->toArray('create');
 
         $data = array_merge(
-            $pageClass::getData(),
+            $pageClass::getData($record),
             [
                 'panel' => $panel->toArray(),
                 'auth'  => ['user' => $request->user()],
@@ -79,12 +110,35 @@ class PageController
                 'data'        => $tableData,
                 'filters'     => $request->only(['search', 'sort', 'direction', 'per_page']),
                 'formSchema'  => $formSchemaRaw,
+                'record'      => $record,
                 'resource'    => [
-                    'slug'  => $pageClass::getSlug(),
-                    'label' => $pageClass::getTitle(),
+                    'slug'  => $resourceClass ? $resourceClass::getSlug() : $pageClass::getSlug(),
+                    'label' => $resourceClass ? $resourceClass::getLabel() : $pageClass::getTitle(),
                 ],
+                'breadcrumbs' => [],
             ]
         );
+
+        $customBreadcrumbs = $pageClass::getBreadcrumbs();
+        if (!empty($customBreadcrumbs)) {
+            // Evaluasi [url => label]
+            $bcArray = [];
+            foreach ($customBreadcrumbs as $url => $label) {
+                $bcArray[] = [
+                    'url' => is_numeric($url) ? null : $url,
+                    'label' => $label,
+                ];
+            }
+            $data['breadcrumbs'] = $bcArray;
+        } else {
+            // Default Vuelament
+            $data['breadcrumbs'] = [
+                ['label' => 'Dashboard', 'url' => '/' . $panel->getPath()],
+                $resourceClass ? ['label' => $resourceClass::getLabel(), 'url' => $resourceClass::getUrl('index')] : null,
+                ['label' => $pageClass::getTitle(), 'url' => null],
+            ];
+            $data['breadcrumbs'] = array_values(array_filter($data['breadcrumbs']));
+        }
 
         return Inertia::render($pageClass::getView(), $data);
     }

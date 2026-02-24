@@ -12,6 +12,7 @@ use App\Vuelament\Components\Table\Actions\DeleteAction;
 use App\Vuelament\Components\Actions\ActionGroup;
 use App\Vuelament\Components\Actions\CreateAction;
 use App\Vuelament\Components\Actions\DeleteBulkAction;
+use App\Vuelament\Components\Filters\SelectFilter;
 
 class {{ name }}Resource extends BaseResource
 {
@@ -42,7 +43,9 @@ class {{ name }}Resource extends BaseResource
                                 DeleteBulkAction::make(),
                             ]),
                     ])
-                    ->filters([])
+                    ->filters([
+                        // SelectFilter::make()->withTrashed(),
+                    ])
                     ->headerActions([
                         CreateAction::make(),
                     ])

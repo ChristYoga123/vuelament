@@ -16,6 +16,9 @@ use Inertia\Inertia;
  *   class UserController extends Controller {
  *       use ResourceController;
  *       protected static string $resource = UserResource::class;
+ *       
+ *       // (Opsional) override breadcrumb default jika dibutuhkan:
+ *       // public function getBreadcrumbs(string $operation, mixed $record = null): array { ... }
  *   }
  */
 trait ResourceController
@@ -60,6 +63,20 @@ trait ResourceController
 
         // Apply filters
         if ($filters = $request->input('filters', [])) {
+            if ($tableComponent) {
+                foreach ($tableComponent->getFilters() as $filterComp) {
+                    $fArray = $filterComp->toArray();
+                    if (!empty($fArray['isTrashed']) && isset($filters[$fArray['name']])) {
+                        $val = $filters[$fArray['name']];
+                        if ($val === 'with') {
+                            $query->withTrashed();
+                        } elseif ($val === 'only') {
+                            $query->onlyTrashed();
+                        }
+                    }
+                }
+            }
+
             $query = $resource::applyFilters($query, $filters);
         }
 
@@ -71,6 +88,20 @@ trait ResourceController
         // Paginate
         $perPage = $request->input('per_page', 10);
         $data    = $query->paginate($perPage)->withQueryString();
+
+        // Evaluate Table Actions per record
+        if ($tableComponent) {
+            $data->getCollection()->transform(function ($record) use ($tableComponent) {
+                $vActions = [];
+                foreach ($tableComponent->getActions() as $action) {
+                    $vActions[$action->getName()] = [
+                        'url' => $action->evaluateUrl($record),
+                    ];
+                }
+                $record->setAttribute('_v_actions', $vActions);
+                return $record;
+            });
+        }
 
         $tableSchema = $pageSchema->toArray('index');
         $panel = app('vuelament.panel');
@@ -87,6 +118,7 @@ trait ResourceController
             'filters'     => $request->only(['search', 'filters', 'sort', 'direction', 'per_page']),
             'panel'       => $panel->toArray(),
             'auth'        => ['user' => $request->user()],
+            'breadcrumbs' => $this->formatBreadcrumbs($this->getBreadcrumbs('index')),
         ]);
     }
 
@@ -106,7 +138,48 @@ trait ResourceController
             'formSchema' => $formSchema,
             'panel'      => $panel->toArray(),
             'auth'       => ['user' => request()->user()],
+            'breadcrumbs' => $this->formatBreadcrumbs($this->getBreadcrumbs('create')),
         ]);
+    }
+
+    // ── Getters / Configurations ─────────────────────────
+
+    /**
+     * Helper untuk menghasilkan susunan breadcrumb kustom layaknya Filament.
+     * Mengembalikan struktur array yang berisi URL sebagai key dan Label sebagai value.
+     */
+    public function getBreadcrumbs(string $operation, mixed $record = null): array
+    {
+        $resource = static::$resource;
+        $panel = app('vuelament.panel');
+        $base = [
+            '/' . $panel->getPath() => 'Dashboard',
+        ];
+
+        if ($operation === 'index') {
+            $base[null] = $resource::getLabel();
+        } else {
+            $base[$resource::getUrl('index')] = $resource::getLabel();
+            if ($operation === 'create') {
+                $base[null] = 'Buat';
+            } elseif ($operation === 'edit') {
+                $base[null] = 'Edit';
+            }
+        }
+
+        return $base;
+    }
+
+    protected function formatBreadcrumbs(array $breadcrumbs): array
+    {
+        $bcArray = [];
+        foreach ($breadcrumbs as $url => $label) {
+            $bcArray[] = [
+                'url' => is_numeric($url) || empty($url) ? null : $url,
+                'label' => $label,
+            ];
+        }
+        return array_values(array_filter($bcArray));
     }
 
     // ── Store ────────────────────────────────────────────
@@ -124,11 +197,15 @@ trait ResourceController
         // Check if there's any state dehydrator
         $data = $this->mutateFormDataBeforeSave($data, $resource::formSchema(), 'create');
 
-        // Hook: before save
-        $data = $resource::beforeSave($data, 'create');
+        // Hook: before create
+        $data = $resource::mutateFormDataBeforeCreate($data);
 
-        // Create
-        $record = $model::create($data);
+        $record = $this->executeWithTransaction(function () use ($model, $data) {
+            return $model::create($data);
+        });
+
+        // Hook: after create
+        $resource::afterCreate($record, $data);
 
         return redirect()
             ->route("{$panelId}.{$resource::getSlug()}.index")
@@ -154,6 +231,7 @@ trait ResourceController
             'record'     => $record,
             'panel'      => $panel->toArray(),
             'auth'       => ['user' => request()->user()],
+            'breadcrumbs' => $this->formatBreadcrumbs($this->getBreadcrumbs('edit', $record)),
         ]);
     }
 
@@ -174,10 +252,14 @@ trait ResourceController
         $data = $this->mutateFormDataBeforeSave($data, $resource::editSchema(), 'edit');
 
         // Hook: before save
-        $data = $resource::beforeSave($data, 'edit');
+        $data = $resource::mutateFormDataBeforeSave($data);
 
-        // Update
-        $record->update($data);
+        $this->executeWithTransaction(function () use ($record, $data) {
+            $record->update($data);
+        });
+
+        // Hook: after save
+        $resource::afterSave($record, $data);
 
         return redirect()
             ->route("{$panelId}.{$resource::getSlug()}.index")
@@ -191,7 +273,10 @@ trait ResourceController
         $resource = static::$resource;
         $model    = $resource::getModel();
         $record   = $model::findOrFail($id);
-        $record->delete();
+        
+        $this->executeWithTransaction(function () use ($record) {
+            $record->delete();
+        });
 
         return back()->with('success', $resource::getLabel() . ' berhasil dihapus.');
     }
@@ -203,8 +288,9 @@ trait ResourceController
         $resource = static::$resource;
         $model    = $resource::getModel();
         $ids      = $request->input('ids', []);
-
-        $model::whereIn('id', $ids)->delete();
+        $this->executeWithTransaction(function () use ($model, $ids) {
+            $model::whereIn('id', $ids)->delete();
+        });
 
         return back()->with('success', count($ids) . ' data berhasil dihapus.');
     }
@@ -216,8 +302,9 @@ trait ResourceController
         $resource = static::$resource;
         $model    = $resource::getModel();
         $ids      = $request->input('ids', []);
-
-        $model::withTrashed()->whereIn('id', $ids)->restore();
+        $this->executeWithTransaction(function () use ($model, $ids) {
+            $model::withTrashed()->whereIn('id', $ids)->restore();
+        });
 
         return back()->with('success', count($ids) . ' data berhasil direstore.');
     }
@@ -229,8 +316,9 @@ trait ResourceController
         $resource = static::$resource;
         $model    = $resource::getModel();
         $ids      = $request->input('ids', []);
-
-        $model::withTrashed()->whereIn('id', $ids)->forceDelete();
+        $this->executeWithTransaction(function () use ($model, $ids) {
+            $model::withTrashed()->whereIn('id', $ids)->forceDelete();
+        });
 
         return back()->with('success', count($ids) . ' data berhasil dihapus permanen.');
     }
@@ -242,7 +330,10 @@ trait ResourceController
         $resource = static::$resource;
         $model    = $resource::getModel();
         $record   = $model::withTrashed()->findOrFail($id);
-        $record->restore();
+        
+        $this->executeWithTransaction(function () use ($record) {
+            $record->restore();
+        });
 
         return back()->with('success', $resource::getLabel() . ' berhasil direstore.');
     }
@@ -254,12 +345,24 @@ trait ResourceController
         $resource = static::$resource;
         $model    = $resource::getModel();
         $record   = $model::withTrashed()->findOrFail($id);
-        $record->forceDelete();
+        
+        $this->executeWithTransaction(function () use ($record) {
+            $record->forceDelete();
+        });
 
         return back()->with('success', $resource::getLabel() . ' berhasil dihapus permanen.');
     }
 
     // ── Private helpers ──────────────────────────────────
+
+    protected function executeWithTransaction(\Closure $callback)
+    {
+        if (app('vuelament.panel')->hasDatabaseTransactions()) {
+            return \Illuminate\Support\Facades\DB::transaction($callback);
+        }
+
+        return $callback();
+    }
 
     protected function applySearch($query, string $search, string $resource)
     {

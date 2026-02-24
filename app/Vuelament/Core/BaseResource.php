@@ -54,9 +54,25 @@ abstract class BaseResource
         return $query;
     }
 
-    public static function beforeSave(array $data, string $action): array
+    // Form Data Hooks
+    public static function mutateFormDataBeforeCreate(array $data): array
     {
         return $data;
+    }
+
+    public static function afterCreate(\Illuminate\Database\Eloquent\Model $record, array $data): void
+    {
+        //
+    }
+
+    public static function mutateFormDataBeforeSave(array $data): array
+    {
+        return $data;
+    }
+
+    public static function afterSave(\Illuminate\Database\Eloquent\Model $record, array $data): void
+    {
+        //
     }
 
     // ── Navigation Items ─────────────────────────────────
@@ -95,4 +111,43 @@ abstract class BaseResource
     public static function getNavigationGroup(): ?string  { return static::$navigationGroup; }
     public static function getNavigationIcon(): string    { return static::$navigationIcon ?? static::$icon; }
     public static function getNavigationLabel(): string   { return static::$navigationLabel ?? static::$label; }
+
+    /**
+     * Dapatkan URL page resource ini.
+     * Contoh name: 'index', 'create', 'edit', atau custom seperti 'report'.
+     */
+    public static function getUrl(string $name = 'index', array $parameters = []): string
+    {
+        $panel = app('vuelament.panel')->getId();
+        $slug = static::getSlug();
+
+        // Standard Filament Resource routes:
+        if (in_array($name, ['index', 'create', 'store', 'update', 'destroy', 'edit'])) {
+            $routeName = "{$panel}.{$slug}.{$name}";
+            if (\Illuminate\Support\Facades\Route::has($routeName)) {
+                return route($routeName, $parameters);
+            }
+        }
+
+        // Custom Pages (dari getPages())
+        $routeName = "{$panel}.{$slug}.page.{$name}";
+        if (\Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName, $parameters);
+        }
+
+        return url('/' . $panel . '/' . $slug);
+    }
+
+    // ── Pages ────────────────────────────────────────────
+    /**
+     * Daftarkan custom pages yang berafiliasi dengan resource ini.
+     * Contoh:
+     * return [
+     *     'report' => Pages\ReportPage::class,
+     * ];
+     */
+    public static function getPages(): array
+    {
+        return [];
+    }
 }

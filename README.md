@@ -264,6 +264,41 @@ class PostResource extends BaseResource
 
 ---
 
+### Resource Data Hooks
+
+Sebelum atau sesudah proses Create / Update, Anda bisa mengintersepsi (tweak) `$data` atau `$record` _Eloquent_ layaknya Laravel murni lewat method-method hook berikut di dalam file Resource Anda `(misal UserResource.php)`:
+
+```php
+    // Memanipulasi $data sebelum disimpan ke DB (saat Create)
+    public static function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data['user_id'] = auth()->id();
+        return $data;
+    }
+
+    // Eksekusi logic setelah record baru terbentuk di DB
+    public static function afterCreate(\Illuminate\Database\Eloquent\Model $record, array $data): void
+    {
+        // Contoh: Kirim email notifikasi
+        // Mail::to($record->email)->send(new WelcomeMail($record));
+    }
+
+    // Memanipulasi $data sebelum disimpan ke DB (saat Edit/Update)
+    public static function mutateFormDataBeforeSave(array $data): array
+    {
+        // ...
+        return $data;
+    }
+
+    // Eksekusi logic setelah record di-update di DB
+    public static function afterSave(\Illuminate\Database\Eloquent\Model $record, array $data): void
+    {
+        // ...
+    }
+```
+
+---
+
 ### Custom Pages
 
 Selain Resource (CRUD), Anda juga bisa membuat halaman custom. Sangat berguna untuk merender halaman _Report_, _Settings_, atau form _Single Action_.
@@ -375,6 +410,16 @@ use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
 ->headerActions([
     CreateAction::make(),
 ])
+```
+
+#### Custom Table Query
+
+Secara default, Table akan memanggil `YourModel::query()`. Jika ingin memfilter atau mensortir base query:
+
+```php
+Table::make()
+    ->query(fn() => User::query()->where('is_active', true)->latest())
+    ->columns([...])
 ```
 
 #### Table Options
@@ -554,6 +599,25 @@ public static function rules(string $action, mixed $id = null): array
 
 ---
 
+### Data Lifecycle & Hooks (Form)
+
+Form inputs memiliki siklus hidup yang memungkinkan manipulasi state sebelum disimpan, serta konfigurasi validasi yang dinamis:
+
+```php
+V::textInput('password')
+    ->label('Password')
+    ->password()
+    ->revealable()
+    // 1. Dinamis berdasarkan 'create' atau 'edit'
+    ->required(fn (string $operation): bool => $operation === 'create')
+    // 2. Manipulasi data sebelum validator/penyimpanan ke DB (Hash string)
+    ->dehydrateStateUsing(fn (string $state): string => Hash::make($state))
+    // 3. Batalkan state dehydrate (jangan simpan) jika value kosong (misal saat edit tapi password kosong)
+    ->saved(fn (?string $state): bool => filled($state))
+```
+
+---
+
 ### Unique Validation
 
 ```php
@@ -595,13 +659,7 @@ protected static bool $softDeletes = true;
 
 // Filter
 ->filters([
-    SelectFilter::make('trashed')
-        ->label('Status')
-        ->options([
-            ''     => 'Tanpa Trashed',
-            'with' => 'Dengan Trashed',
-            'only' => 'Hanya Trashed',
-        ]),
+    SelectFilter::make()->withTrashed(),
 ])
 ```
 
@@ -686,12 +744,20 @@ protected static string $icon = 'layout-dashboard'; // → LayoutDashboard
 
 ## 📁 Struktur Direktori
 
+Kini semua komponen terkait sebuah resource (Resource config, Controller, Model Service, dan Pages spesifik) di-kelompokkan menjadi satu folder untuk memudahkan isolasi business logic (_Colocated Pattern_):
+
 ```
 app/Vuelament/
 ├── Admin/
-│   ├── Resources/          # Resource definitions (UserResource, dll)
-│   ├── Pages/              # Custom pages
-│   └── Widgets/            # Dashboard widgets
+│   ├── Resources/
+│   │   ├── User/
+│   │   │   ├── UserResource.php
+│   │   │   ├── UserController.php
+│   │   │   ├── UserService.php
+│   │   │   ├── Report.php             # Custom Page atau widget khusus resource
+│   │   │   └── ...                    # File lain yang berhubungan khusus dengan User
+│   ├── Pages/              # Custom pages global/standalone
+│   └── Widgets/            # Dashboard widgets global/standalone
 ├── Commands/
 │   ├── MakeResourceCommand.php
 │   ├── MakeUserCommand.php
@@ -739,13 +805,13 @@ resources/js/
 
 ## 🧪 Artisan Commands
 
-| Command                                | Deskripsi                          |
-| -------------------------------------- | ---------------------------------- |
-| `vuelament:resource {name}`            | Generate resource + controller     |
-| `vuelament:resource {name} --generate` | Auto-generate dari database schema |
-| `vuelament:user`                       | Buat user admin                    |
-| `vuelament:panel {name}`               | Generate panel provider baru       |
-| `vuelament:page {name}`                | Generate custom page               |
+| Command                                 | Deskripsi                          |
+| --------------------------------------- | ---------------------------------- |
+| `vuelament:resource {name}`             | Generate resource + controller     |
+| `vuelament:resource {name} --generate`  | Auto-generate dari database schema |
+| `vuelament:user`                        | Buat user admin                    |
+| `vuelament:panel {name}`                | Generate panel provider baru       |
+| `vuelament:page {name} --resource=User` | Generate custom page               |
 
 ---
 

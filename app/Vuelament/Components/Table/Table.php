@@ -78,6 +78,16 @@ class Table
         return $this->queryClosure;
     }
 
+    public function getFilters(): array
+    {
+        return $this->filters;
+    }
+
+    public function getActions(): array
+    {
+        return $this->actions;
+    }
+
     public function toArray(string $operation = 'create'): array
     {
         return [

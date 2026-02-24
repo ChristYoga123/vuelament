@@ -10,12 +10,12 @@ abstract class BaseFilter
     protected mixed $default = null;
     protected ?string $placeholder = null;
 
-    public function __construct(string $name)
+    public function __construct(string $name = 'default')
     {
         $this->name = $name;
     }
 
-    public static function make(string $name): static
+    public static function make(string $name = 'default'): static
     {
         return new static($name);
     }

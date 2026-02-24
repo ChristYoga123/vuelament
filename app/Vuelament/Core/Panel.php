@@ -42,6 +42,7 @@ class Panel
     protected array $widgets = [];
     protected array $navigation = [];
     protected array $plugins = [];
+    protected bool $databaseTransactions = false;
     protected array $middleware = ['web'];
     protected array $authMiddleware = [\App\Vuelament\Http\Middleware\Authenticate::class];
     protected array $guestMiddleware = [\App\Vuelament\Http\Middleware\RedirectIfAuthenticated::class];
@@ -74,6 +75,8 @@ class Panel
     public function passwordReset(bool $v = true): static { $this->hasPasswordReset = $v; return $this; }
     public function authGuard(string $v): static { $this->authGuard = $v; return $this; }
     public function userModel(string $v): static { $this->userModel = $v; return $this; }
+    public function databaseTransactions(bool $v = true): static { $this->databaseTransactions = $v; return $this; }
+    public function hasDatabaseTransactions(): bool { return $this->databaseTransactions; }
 
     // ── Resources & Pages ────────────────────────────────
 
@@ -92,9 +95,20 @@ class Panel
             return $this;
         }
 
-        $files = glob($directory . '/*Resource.php');
+        $files = \Illuminate\Support\Facades\File::allFiles($directory);
         foreach ($files as $file) {
-            $className = $namespace . '\\' . pathinfo($file, PATHINFO_FILENAME);
+            if (!str_ends_with($file->getFilename(), 'Resource.php')) {
+                continue;
+            }
+
+            // Normalisasi pemisah path untuk OS Windows vs Unix
+            $normalizedDir = str_replace('\\', '/', $directory);
+            $normalizedPath = str_replace('\\', '/', $file->getPathname());
+            $relativePath = str_replace($normalizedDir . '/', '', $normalizedPath);
+            
+            $classPath = str_replace(['/', '.php'], ['\\', ''], $relativePath);
+            $className = $namespace . '\\' . $classPath;
+
             if (class_exists($className) && is_subclass_of($className, BaseResource::class)) {
                 $this->resources[] = $className;
             }
@@ -117,10 +131,25 @@ class Panel
             return $this;
         }
 
-        $files = glob($directory . '/*.php');
+        $files = \Illuminate\Support\Facades\File::allFiles($directory);
         foreach ($files as $file) {
-            $className = $namespace . '\\' . pathinfo($file, PATHINFO_FILENAME);
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            // Normalisasi pemisah path untuk OS Windows vs Unix
+            $normalizedDir = str_replace('\\', '/', $directory);
+            $normalizedPath = str_replace('\\', '/', $file->getPathname());
+            $relativePath = str_replace($normalizedDir . '/', '', $normalizedPath);
+            $classPath = str_replace(['/', '.php'], ['\\', ''], $relativePath);
+            $className = $namespace . '\\' . $classPath;
+
             if (class_exists($className) && is_subclass_of($className, BasePage::class)) {
+                // Jangan jadikan global page jika melekat ke resource tertentu
+                if ($className::getResource()) {
+                    continue;
+                }
+                
                 $this->pages[] = $className;
             }
         }

@@ -41,6 +41,7 @@ class MakeResourceCommand extends Command
 
         $this->generateResource($name, $model, $slug, $panel, $columns, $hasSoftDeletes);
         $this->generateController($name, $panel);
+        $this->generateService($name, $panel);
 
         $this->info("✅ Resource [{$name}Resource] dan [{$name}Controller] berhasil dibuat!");
         $this->newLine();
@@ -186,7 +187,7 @@ class MakeResourceCommand extends Command
     protected function generateResource(string $name, string $model, string $slug, string $panel, array $columns = [], bool $hasSoftDeletes = false): void
     {
         $pathPrefix = $panel ? "{$panel}/" : "";
-        $path = app_path("Vuelament/{$pathPrefix}Resources/{$name}Resource.php");
+        $path = app_path("Vuelament/{$pathPrefix}Resources/{$name}/{$name}Resource.php");
 
         if (file_exists($path) && !$this->option('force')) {
             $this->error("Resource [{$name}Resource] sudah ada! Gunakan --force untuk overwrite.");
@@ -199,9 +200,10 @@ class MakeResourceCommand extends Command
             $content = $this->buildGeneratedResource($name, $model, $slug, $namespacePrefix, $columns, $hasSoftDeletes);
         } else {
             $stub = $this->getResourceStub();
+            $namespace = "App\\Vuelament{$namespacePrefix}\\Resources\\{$name}";
             $content = str_replace(
                 ['{{ namespace }}', '{{ name }}', '{{ model }}', '{{ modelFqn }}', '{{ slug }}', '{{ label }}'],
-                ["App\\Vuelament{$namespacePrefix}\\Resources", $name, $model, "App\\Models\\{$model}", $slug, Str::headline($name)],
+                [$namespace, $name, $model, "App\\Models\\{$model}", $slug, Str::headline($name)],
                 $stub
             );
         }
@@ -212,12 +214,12 @@ class MakeResourceCommand extends Command
         }
 
         file_put_contents($path, $content);
-        $this->info("  Created: app/Vuelament/{$pathPrefix}Resources/{$name}Resource.php");
+        $this->info("  Created: app/Vuelament/{$pathPrefix}Resources/{$name}/{$name}Resource.php");
     }
 
     protected function buildGeneratedResource(string $name, string $model, string $slug, string $namespacePrefix, array $columns, bool $hasSoftDeletes = false): string
     {
-        $namespace = "App\\Vuelament{$namespacePrefix}\\Resources";
+        $namespace = "App\\Vuelament{$namespacePrefix}\\Resources\\{$name}";
         $modelFqn  = "App\\Models\\{$model}";
         $label     = Str::headline($name);
 
@@ -363,7 +365,7 @@ PHP;
     protected function generateController(string $name, string $panel): void
     {
         $pathPrefix = $panel ? "{$panel}/" : "";
-        $path = app_path("Http/Controllers/Vuelament/{$pathPrefix}{$name}Controller.php");
+        $path = app_path("Vuelament/{$pathPrefix}Resources/{$name}/{$name}Controller.php");
 
         if (file_exists($path) && !$this->option('force')) {
             $this->error("Controller [{$name}Controller] sudah ada! Gunakan --force untuk overwrite.");
@@ -371,11 +373,12 @@ PHP;
         }
 
         $namespacePrefix = $panel ? "\\{$panel}" : "";
+        $namespace = "App\\Vuelament{$namespacePrefix}\\Resources\\{$name}";
 
         $stub = $this->getControllerStub();
         $stub = str_replace(
             ['{{ namespace }}', '{{ resourceNamespace }}', '{{ name }}'],
-            ["App\\Http\\Controllers\\Vuelament{$namespacePrefix}", "App\\Vuelament{$namespacePrefix}\\Resources", $name],
+            [$namespace, $namespace, $name],
             $stub
         );
 
@@ -385,7 +388,35 @@ PHP;
         }
 
         file_put_contents($path, $stub);
-        $this->info("  Created: app/Http/Controllers/Vuelament/{$pathPrefix}{$name}Controller.php");
+        $this->info("  Created: app/Vuelament/{$pathPrefix}Resources/{$name}/{$name}Controller.php");
+    }
+
+    protected function generateService(string $name, string $panel): void
+    {
+        $pathPrefix = $panel ? "{$panel}/" : "";
+        $path = app_path("Vuelament/{$pathPrefix}Resources/{$name}/{$name}Service.php");
+
+        if (file_exists($path) && !$this->option('force')) {
+            return;
+        }
+
+        $namespacePrefix = $panel ? "\\{$panel}" : "";
+        $namespace = "App\\Vuelament{$namespacePrefix}\\Resources\\{$name}";
+
+        $content = <<<PHP
+<?php
+
+namespace {$namespace};
+
+class {$name}Service
+{
+    // Letakkan kustomisasi business logic {$name} Anda di sini.
+    // Class ini bisa di-*inject* (dependency injection) pada {$name}Controller atau dipanggil di hook {$name}Resource.
+}
+PHP;
+
+        file_put_contents($path, $content);
+        $this->info("  Created: app/Vuelament/{$pathPrefix}Resources/{$name}/{$name}Service.php");
     }
 
     protected function getResourceStub(): string

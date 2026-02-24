@@ -355,11 +355,24 @@ const changePerPage = (val) => {
               <DropdownMenuContent align="end" class="w-48">
                 <template v-for="(action, ai) in group.actions" :key="ai">
                   <DropdownMenuSeparator v-if="ai > 0" />
+                  <DropdownMenuItem v-if="action.url && action.shouldOpenInNewTab" class="p-0 m-0">
+                    <a :href="action.url" target="_blank" class="flex outline-none items-center gap-2 px-2 py-1.5 w-full cursor-pointer text-sm focus:bg-accent focus:text-accent-foreground rounded-sm" :class="{ 'text-destructive focus:text-destructive': action.color === 'danger', 'text-yellow-400 focus:text-yellow-400': action.color === 'warning', 'text-green-600 focus:text-green-600': action.color === 'success' }">
+                      <component :is="resolveIcon(action.icon)" class="w-4 h-4" />
+                      {{ action.label }}
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem v-else-if="action.url" class="p-0 m-0">
+                    <Link :href="action.url" class="flex outline-none items-center gap-2 px-2 py-1.5 w-full cursor-pointer text-sm focus:bg-accent focus:text-accent-foreground rounded-sm" :class="{ 'text-destructive focus:text-destructive': action.color === 'danger', 'text-yellow-400 focus:text-yellow-400': action.color === 'warning', 'text-green-600 focus:text-green-600': action.color === 'success' }">
+                      <component :is="resolveIcon(action.icon)" class="w-4 h-4" />
+                      {{ action.label }}
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem
+                    v-else
                     @click="executeBulkAction(action)"
                     :class="{
                       'text-destructive focus:text-destructive': action.color === 'danger',
-                      'text-orange-600 focus:text-orange-600': action.color === 'warning',
+                      'text-yellow-400 focus:text-yellow-400': action.color === 'warning',
                       'text-green-600 focus:text-green-600': action.color === 'success',
                     }"
                     class="gap-2 cursor-pointer"
@@ -591,11 +604,16 @@ const changePerPage = (val) => {
               <td v-if="actions.length" class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
                   <template v-for="action in actions" :key="action.name">
+                    <!-- Standard Actions -->
                     <Link
                       v-if="!row.deleted_at && (action.type === 'EditAction' || action.type === 'edit')"
                       :href="`/${panelPath}/${pageSlug}/${row.id}/edit`"
                     >
-                      <Button variant="ghost" size="icon" class="h-8 w-8">
+                      <Button variant="ghost" size="icon" class="h-8 w-8" :class="{
+                          'text-destructive hover:text-destructive': action.color === 'danger',
+                          'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+                          'text-green-600 hover:text-green-600': action.color === 'success',
+                      }">
                         <Pencil class="w-3.5 h-3.5" />
                         <span class="sr-only">Edit</span>
                       </Button>
@@ -604,7 +622,11 @@ const changePerPage = (val) => {
                       v-if="!row.deleted_at && (action.type === 'DeleteAction' || action.type === 'delete')"
                       variant="ghost"
                       size="icon"
-                      class="h-8 w-8 text-destructive hover:text-destructive"
+                      class="h-8 w-8"
+                      :class="!action.color || action.color === 'danger' ? 'text-destructive hover:text-destructive' : {
+                          'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+                          'text-green-600 hover:text-green-600': action.color === 'success',
+                      }"
                       @click="deleteRecord(row.id)"
                     >
                       <Trash2 class="w-3.5 h-3.5" />
@@ -614,7 +636,11 @@ const changePerPage = (val) => {
                       v-if="row.deleted_at && (action.type === 'RestoreAction' || action.type === 'restore')"
                       variant="ghost"
                       size="icon"
-                      class="h-8 w-8 text-green-600 hover:text-green-600"
+                      class="h-8 w-8"
+                      :class="!action.color || action.color === 'success' ? 'text-green-600 hover:text-green-600' : {
+                          'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+                          'text-destructive hover:text-destructive': action.color === 'danger',
+                      }"
                       @click="restoreRecord(row.id)"
                     >
                       <ArchiveRestore class="w-3.5 h-3.5" />
@@ -624,12 +650,60 @@ const changePerPage = (val) => {
                       v-if="row.deleted_at && (action.type === 'ForceDeleteAction' || action.type === 'force-delete')"
                       variant="ghost"
                       size="icon"
-                      class="h-8 w-8 text-red-600 hover:text-red-600"
+                      class="h-8 w-8"
+                      :class="!action.color || action.color === 'danger' ? 'text-red-600 hover:text-red-600' : {
+                          'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+                          'text-green-600 hover:text-green-600': action.color === 'success',
+                      }"
                       @click="forceDeleteRecord(row.id)"
                     >
                       <Trash2 class="w-3.5 h-3.5" />
                       <span class="sr-only">Hapus Permanen</span>
                     </Button>
+
+                    <!-- Custom Action -->
+                    <template v-if="action.type === 'Action' && !action.hidden">
+                      <component 
+                        v-if="row._v_actions?.[action.name]?.url && !row._v_actions?.[action.name]?.shouldOpenInNewTab"
+                        :is="Link"
+                        :href="row._v_actions?.[action.name]?.url"
+                        class="h-8 w-8 inline-flex items-center justify-center p-0 rounded-md hover:bg-muted"
+                      >
+                        <Button variant="ghost" size="icon" class="h-8 w-8" :class="{
+                          'text-destructive hover:text-destructive': action.color === 'danger',
+                          'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+                          'text-green-600 hover:text-green-600': action.color === 'success',
+                        }">
+                          <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" />
+                        </Button>
+                      </component>
+                      <a 
+                        v-else-if="row._v_actions?.[action.name]?.url && row._v_actions?.[action.name]?.shouldOpenInNewTab"
+                        :href="row._v_actions?.[action.name]?.url"
+                        target="_blank"
+                        class="h-8 w-8 inline-flex items-center justify-center p-0 rounded-md hover:bg-muted"
+                      >
+                        <Button variant="ghost" size="icon" class="h-8 w-8" :class="{
+                          'text-destructive hover:text-destructive': action.color === 'danger',
+                          'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+                          'text-green-600 hover:text-green-600': action.color === 'success',
+                        }">
+                          <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" />
+                        </Button>
+                      </a>
+                      <Button
+                        v-else
+                        variant="ghost" size="icon" class="h-8 w-8"
+                        :class="{
+                          'text-destructive hover:text-destructive': action.color === 'danger',
+                          'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+                          'text-green-600 hover:text-green-600': action.color === 'success',
+                        }"
+                        @click="executeCustomAction(action, row)"
+                      >
+                        <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" />
+                      </Button>
+                    </template>
                   </template>
                 </div>
               </td>

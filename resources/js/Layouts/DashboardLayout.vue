@@ -14,6 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 
 const props = defineProps({
   title: { type: String, default: 'Dashboard' },
@@ -27,6 +35,8 @@ const user = computed(() => page.props.auth?.user || {})
 const navigation = computed(() => panel.value.navigation || [])
 const brandName = computed(() => panel.value.brandName || 'Vuelament')
 const currentPath = computed(() => page.url)
+
+const breadcrumbs = computed(() => page.props.breadcrumbs || [])
 
 const collapsedGroups = ref({})
 
@@ -300,6 +310,27 @@ onMounted(() => {
 
             <!-- Page Content -->
             <main class="p-4 lg:p-6">
+                <!-- Breadcrumbs -->
+                <div v-if="breadcrumbs.length > 0" class="mb-4">
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <template v-for="(bc, i) in breadcrumbs" :key="i">
+                                <BreadcrumbItem>
+                                    <template v-if="bc.url && i < breadcrumbs.length - 1">
+                                        <BreadcrumbLink :as="Link" :href="bc.url">
+                                            {{ bc.label }}
+                                        </BreadcrumbLink>
+                                    </template>
+                                    <template v-else>
+                                        <BreadcrumbPage>{{ bc.label }}</BreadcrumbPage>
+                                    </template>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator v-if="i < breadcrumbs.length - 1" />
+                            </template>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </div>
+
                 <!-- Global Page Header -->
                 <div v-if="!hideHeader && ($slots.header || title || description)" class="mb-6">
                     <slot name="header">

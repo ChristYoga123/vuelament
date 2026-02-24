@@ -32,7 +32,10 @@ abstract class BaseAction
     public function label(string $v): static { $this->label = $v; return $this; }
     public function icon(string $v): static { $this->icon = $v; return $this; }
     public function color(string $v): static { $this->color = $v; return $this; }
-    public function url(string $v): static { $this->url = $v; return $this; }
+    public function url(mixed $v = null, bool $shouldOpenInNewTab = false): static { 
+        $this->url = $v; 
+        return $this; 
+    }
     public function endpoint(string $v, string $method = 'POST'): static { $this->endpoint = $v; $this->method = $method; return $this; }
     public function hidden(bool $v = true): static { $this->hidden = $v; return $this; }
     public function disabled(bool $v = true): static { $this->disabled = $v; return $this; }

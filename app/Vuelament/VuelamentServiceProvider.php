@@ -113,13 +113,17 @@ class VuelamentServiceProvider extends ServiceProvider
     {
         $slug = $resourceClass::getSlug();
 
-        // Convention: App\Vuelament\{Panel}\Resources\{Name}Resource 
-        // -> App\Http\Controllers\Vuelament\{Panel}\{Name}Controller
-        $controllerClass = str_replace(
+        // New Convention: Colocated controller (App\Vuelament\{Panel}\Resources\{Name}\{Name}Controller)
+        $colocatedController = substr_replace($resourceClass, 'Controller', strrpos($resourceClass, 'Resource'));
+        
+        // Old Convention: App\Vuelament\{Panel}\Resources\{Name}Resource -> App\Http\Controllers\Vuelament\{Panel}\{Name}Controller
+        $oldControllerClass = str_replace(
             ['App\\Vuelament', '\\Resources', 'Resource'],
             ['App\\Http\\Controllers\\Vuelament', '', 'Controller'],
             $resourceClass
         );
+
+        $controllerClass = class_exists($colocatedController) ? $colocatedController : $oldControllerClass;
 
         if (!class_exists($controllerClass)) {
             return;
@@ -150,6 +154,31 @@ class VuelamentServiceProvider extends ServiceProvider
         if ($hasSoftDeletes) {
             Route::post("{$slug}/{id}/restore",   [$controllerClass, 'restore'])->name("{$panelId}.{$slug}.restore");
             Route::delete("{$slug}/{id}/force",   [$controllerClass, 'forceDelete'])->name("{$panelId}.{$slug}.force-delete");
+        }
+
+        // Custom Resource Sub-pages
+        foreach ($resourceClass::getPages() as $pageName => $pageRegistration) {
+            // Support backward compat: if value is class string
+            if (is_string($pageRegistration) && class_exists($pageRegistration)) {
+                $pageClass = $pageRegistration;
+                $routePath = method_exists($pageClass, 'getRoutePath') ? $pageClass::getRoutePath() : $pageName;
+            } elseif ($pageRegistration instanceof \App\Vuelament\Core\PageRegistration) {
+                $pageClass = $pageRegistration->class;
+                $routePath = $pageRegistration->route;
+            } else {
+                continue;
+            }
+
+            // Clean up Route Name using $pageName or fallback
+            // Full Path allows `{record}/report` syntax
+            $fullPath = ltrim($routePath, '/');
+            $fullPath = $fullPath ? "{$slug}/{$fullPath}" : "{$slug}/{$pageName}";
+
+            Route::get($fullPath, function (\Illuminate\Http\Request $request, ...$params) use ($pageClass, $resourceClass) {
+                // If route contains a {record} parameter
+                $recordId = $request->route('record');
+                return app(\App\Vuelament\Http\Controllers\PageController::class)->__invoke($request, $pageClass, $resourceClass, $recordId);
+            })->name("{$panelId}.{$slug}.page.{$pageName}");
         }
     }
 

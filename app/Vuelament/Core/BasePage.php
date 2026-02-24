@@ -28,6 +28,7 @@ abstract class BasePage
     protected static ?string $navigationGroup = null;
     protected static ?string $navigationLabel = null;
     protected static ?string $navigationBadge = null;
+    protected static ?string $description = null;
 
     // ── Getters ──────────────────────────────────────────
 
@@ -38,6 +39,7 @@ abstract class BasePage
     public static function getNavigationSort(): int    { return static::$navigationSort; }
     public static function getNavigationGroup(): ?string { return static::$navigationGroup; }
     public static function getNavigationLabel(): string { return static::$navigationLabel ?? static::$title; }
+    public static function getDescription(): ?string   { return static::$description; }
 
     /**
      * Data yang di-pass ke Inertia render
@@ -46,6 +48,22 @@ abstract class BasePage
     public static function getData(): array
     {
         return [];
+    }
+
+    /**
+     * Mengembalikan schema Table, mirp seperti Filament's table()
+     */
+    public static function table(): ?PageSchema
+    {
+        return null;
+    }
+
+    /**
+     * Mengembalikan schema Form, mirip seperti Filament's form()
+     */
+    public static function form(): ?PageSchema
+    {
+        return null;
     }
 
     /**
@@ -60,12 +78,11 @@ abstract class BasePage
      */
     public static function getNavigationItems(): array
     {
-        $panel = app('vuelament.panel');
-
+        // Simpan slug relatif saja — Panel akan prepend path di buildCustomNavigation()
         return [
             NavigationItem::make(static::getNavigationLabel())
                 ->icon(static::getIcon())
-                ->url('/' . $panel->getPath() . '/' . static::getSlug())
+                ->url(static::getSlug())
                 ->sort(static::getNavigationSort()),
         ];
     }

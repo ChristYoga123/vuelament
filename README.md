@@ -1,5 +1,7 @@
 # Vuelament
 
+**NOTE: Akan menjadi package Laravel**
+
 **Admin panel builder untuk Laravel** — terinspirasi oleh [Filament](https://filamentphp.com), dibangun dengan **Vue.js 3**, **Inertia.js**, dan **shadcn-vue**.
 
 Vuelament menyediakan cara deklaratif untuk membangun admin panel lengkap: resources (CRUD), form builder, table builder, actions, widgets, filter, dan navigasi — semua didefinisikan dari PHP tanpa menulis frontend secara manual.
@@ -258,6 +260,67 @@ class PostResource extends BaseResource
             ]);
     }
 }
+```
+
+---
+
+### Custom Pages
+
+Selain Resource (CRUD), Anda juga bisa membuat halaman custom. Sangat berguna untuk merender halaman _Report_, _Settings_, atau form _Single Action_.
+
+#### Artisan Command
+
+```bash
+php artisan vuelament:page SettingsPage
+```
+
+#### Struktur Custom Page
+
+Berkat arsitektur _Headless/Server-Driven UI_ (_Zero Vue Files_), secara default Custom Page akan meminjam template generik bawaan. Anda **tidak wajib** membuat `<template> Vue` secara manual jika Anda hanya butuh merender form/tabel sederhana.
+
+```php
+namespace App\Vuelament\Admin\Pages;
+
+use App\Vuelament\Core\BasePage;
+use App\Vuelament\Core\PageSchema;
+use App\Vuelament\Components\Table\Table;
+use App\Vuelament\Components\Table\Column;
+use App\Models\User;
+
+class SettingsPage extends BasePage
+{
+    protected static string $slug = 'settings';
+    protected static string $title = 'Pengaturan Aplikasi';
+    protected static ?string $description = 'Ubah parameter core dari aplikasi Anda.';
+    protected static string $icon = 'settings';
+
+    // (Opsional) Mengarahkan menu ini ke grup sidebar tertentu
+    // protected static ?string $navigationGroup = 'Master';
+
+    /**
+     * Otomatis merender Vuelament Table pada halaman
+     */
+    public static function table(): ?PageSchema
+    {
+        return PageSchema::make()
+            ->components([
+                Table::make()
+                    ->query(fn() => User::where('role', 'admin'))
+                    ->columns([
+                        Column::make('name')->label('Nama'),
+                        Column::make('email')->label('Email'),
+                    ])
+                    ->paginated()
+            ]);
+    }
+}
+```
+
+Jika Anda memerlukan halaman dashboard dengan chart/kanban kompleks yang tidak bisa dibungkus dengan komponen PHP, Anda dapat menimpa (override) view standar ke file Vue buatan Anda sendiri:
+
+```php
+    // Ubah pointer ini ke path file Vue komponen Anda (resources/js/Pages/...)
+    protected static string $view = 'Vuelament/Pages/Admin/SettingsPage';
 ```
 
 ---

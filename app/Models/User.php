@@ -57,6 +57,6 @@ class User extends Authenticatable
             return $this->hasRole('super_admin');
         }
 
-        return false;
+        return true;
     }
 }

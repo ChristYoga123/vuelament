@@ -55,7 +55,7 @@ const getInputType = (comp) => {
 
 <template>
   <DashboardLayout :title="`Tambah ${resource.label}`">
-    <div class="mb-6">
+    <template #header>
       <div class="flex items-center gap-3">
         <Link :href="`/${panelPath}/${resource.slug}`">
           <Button variant="ghost" size="icon" class="h-8 w-8">
@@ -66,7 +66,7 @@ const getInputType = (comp) => {
           <h1 class="text-2xl font-bold tracking-tight">{{ formSchema?.title || `Tambah ${resource.label}` }}</h1>
         </div>
       </div>
-    </div>
+    </template>
 
     <Card class="w-full py-4 gap-0">
       <CardContent>

@@ -160,8 +160,8 @@ class VuelamentServiceProvider extends ServiceProvider
     {
         $slug = $pageClass::getSlug();
 
-        Route::get($slug, function () use ($pageClass) {
-            return app(PageController::class)->__invoke(request(), $pageClass);
+        Route::get($slug, function (\Illuminate\Http\Request $request) use ($pageClass) {
+            return app(PageController::class)->__invoke($request, $pageClass);
         })->name("{$panelId}.page.{$slug}");
     }
 }

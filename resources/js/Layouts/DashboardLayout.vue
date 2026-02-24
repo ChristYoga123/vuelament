@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { Sparkles, LayoutDashboard, Circle, ChevronsUpDown, LogOut, Menu, PanelLeftOpen, PanelLeftClose, Sun, Moon, icons } from 'lucide-vue-next'
+import { ref, computed, onMounted, watch } from 'vue'
+import { Sparkles, LayoutDashboard, Circle, ChevronsUpDown, LogOut, Menu, PanelLeftOpen, PanelLeftClose, Sun, Moon, ChevronDown, icons } from 'lucide-vue-next'
 import { Head, Link, usePage, router } from '@inertiajs/vue3'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -17,6 +17,8 @@ import {
 
 const props = defineProps({
   title: { type: String, default: 'Dashboard' },
+  description: { type: String, default: null },
+  hideHeader: { type: Boolean, default: false },
 })
 
 const page = usePage()
@@ -25,6 +27,21 @@ const user = computed(() => page.props.auth?.user || {})
 const navigation = computed(() => panel.value.navigation || [])
 const brandName = computed(() => panel.value.brandName || 'Vuelament')
 const currentPath = computed(() => page.url)
+
+const collapsedGroups = ref({})
+
+// Initialize collapsed state from group properties
+watch(navigation, (groups) => {
+  groups.forEach((g, i) => {
+    if (collapsedGroups.value[i] === undefined) {
+      collapsedGroups.value[i] = g.collapsed || false
+    }
+  })
+}, { immediate: true })
+
+const toggleGroup = (index) => {
+  collapsedGroups.value[index] = !collapsedGroups.value[index]
+}
 
 const sidebarOpen = ref(true)
 const mobileSidebarOpen = ref(false)
@@ -132,35 +149,47 @@ onMounted(() => {
 
                 <!-- Resource Navigation (Groups) -->
                 <template v-for="(group, gi) in navigation" :key="gi">
-                    <!-- Group label -->
-                    <div
+                    <!-- Group label (Collapsible Button) -->
+                    <button
                         v-if="group.label && sidebarOpen"
-                        class="px-3 pt-3 pb-1"
+                        @click="group.collapsible !== false ? toggleGroup(gi) : null"
+                        class="flex w-full items-center justify-between px-3 pt-3 pb-1"
+                        :class="group.collapsible !== false ? 'cursor-pointer hover:opacity-75 transition-opacity' : 'cursor-default'"
                     >
-                        <span
-                            class="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40"
-                        >
-                            {{ group.label }}
-                        </span>
-                    </div>
+                        <div class="flex items-center gap-2">
+                            <component v-if="group.icon" :is="resolveIcon(group.icon)" class="w-3.5 h-3.5 text-sidebar-foreground/40" />
+                            <span
+                                class="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40"
+                            >
+                                {{ group.label }}
+                            </span>
+                        </div>
+                        <ChevronDown 
+                            v-if="group.collapsible !== false" 
+                            class="w-3.5 h-3.5 text-sidebar-foreground/40 transition-transform duration-200"
+                            :class="{ '-rotate-90': collapsedGroups[gi] }"
+                        />
+                    </button>
 
                     <!-- Group items -->
-                    <template v-for="item in group.items" :key="item.url">
-                        <Link
-                            :href="item.url"
-                            :class="[
-                                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                                isActive(item.url)
-                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                            ]"
-                        >
-                            <component :is="resolveIcon(item.icon)" class="w-4 h-4 shrink-0" />
-                            <span v-if="sidebarOpen" class="truncate">{{
-                                item.label
-                            }}</span>
-                        </Link>
-                    </template>
+                    <div v-show="!collapsedGroups[gi] || !sidebarOpen" class="space-y-1">
+                        <template v-for="item in group.items" :key="item.url">
+                            <Link
+                                :href="item.url"
+                                :class="[
+                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                                    isActive(item.url)
+                                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                ]"
+                            >
+                                <component :is="resolveIcon(item.icon)" class="w-4 h-4 shrink-0" />
+                                <span v-if="sidebarOpen" class="truncate">{{
+                                    item.label
+                                }}</span>
+                            </Link>
+                        </template>
+                    </div>
                 </template>
             </nav>
 
@@ -271,6 +300,13 @@ onMounted(() => {
 
             <!-- Page Content -->
             <main class="p-4 lg:p-6">
+                <!-- Global Page Header -->
+                <div v-if="!hideHeader && ($slots.header || title || description)" class="mb-6">
+                    <slot name="header">
+                        <h1 class="text-2xl font-bold tracking-tight">{{ title }}</h1>
+                        <p v-if="description" class="text-sm text-muted-foreground mt-1">{{ description }}</p>
+                    </slot>
+                </div>
                 <slot />
             </main>
         </div>

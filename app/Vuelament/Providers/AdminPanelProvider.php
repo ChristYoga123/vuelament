@@ -14,7 +14,7 @@ class AdminPanelProvider extends VuelamentServiceProvider
         return Panel::make()
             ->id('admin')
             ->path('admin')
-            ->brandName('Admin Panel')
+            ->brandName('Admin')
             ->login()
             ->middleware(['web'])
             ->authMiddleware([\App\Vuelament\Http\Middleware\Authenticate::class])

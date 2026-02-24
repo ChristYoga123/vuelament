@@ -358,6 +358,34 @@ Jika Anda memerlukan halaman dashboard dengan chart/kanban kompleks yang tidak b
     protected static string $view = 'Vuelament/Pages/Admin/SettingsPage';
 ```
 
+#### Resource Sub-Pages & Breadcrumbs
+
+Jika halaman _Custom Page_ dimaksudkan sebagai halaman "anak" dari sebuah resource (bukan halaman global standalone), Anda dapat mendaftarkan property `$resource` pada Page tersebut. Ini akan membuat:
+
+1. URL secara otomatis mengikuti format Resource (misal `/admin/users/{record}/report`).
+2. Page dilompati dari auto-discovery global.
+3. Otomatis menerima pelemparan data `$record` dari database jika dipanggil.
+
+```php
+class ReportPage extends BasePage
+{
+    // Meletakkan page ini di bawah UserResource
+    protected static ?string $resource = UserResource::class;
+
+    // (Opsional) Mengustomisasi breadcrumb
+    public static function getBreadcrumbs(): array
+    {
+        return [
+            url('/admin') => 'Dashboard',
+            UserResource::getUrl('index') => 'Pengguna',
+            null => 'Laporan Custom',
+        ];
+    }
+}
+```
+
+_Note:_ Anda juga bisa meng- override metode `getBreadcrumbs(string $operation, mixed $record = null): array` pada `ResourceController` Anda.
+
 ---
 
 ### Table Builder
@@ -376,6 +404,12 @@ Column::make('notes')->label('Catatan')->toggleable(true, true), // toggleable, 
 
 ```php
 ->actions([
+    Action::make('report')
+        ->icon('file')
+        ->color('success')  // 'danger', 'warning', 'success', 'primary'
+        ->label('Laporan')
+        ->url(fn(User $user) => ReportPage::getUrl(['record' => $user->id]))
+        ->openUrlInNewTab(), // Buka tab baru jika diklik
     EditAction::make(),
     DeleteAction::make(),
     RestoreAction::make(),         // untuk SoftDeletes

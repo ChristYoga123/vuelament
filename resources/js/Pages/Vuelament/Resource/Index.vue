@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Plus, Search, ChevronDown, Pencil, Trash2, ArchiveRestore, Columns3, Loader2, Circle, icons } from 'lucide-vue-next'
+import { Plus, Search, ChevronDown, ChevronUp, Pencil, Trash2, ArchiveRestore, Columns3, Loader2, SlidersHorizontal, ListFilter, Circle, icons } from 'lucide-vue-next'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import DashboardLayout from '@/Layouts/DashboardLayout.vue'
 import { Button } from '@/components/ui/button'
@@ -124,22 +124,59 @@ const toggleColumn = (name) => {
   }
 }
 
-const actions = computed(() => {
-  if (!props.tableSchema?.components) return []
-  const table = props.tableSchema.components.find(c => c.type === 'table')
-  return table?.actions || []
+const tableConfig = computed(() => {
+  if (!props.tableSchema?.components) return null
+  return props.tableSchema.components.find(c => c.type === 'table')
 })
 
-const headerActions = computed(() => {
-  if (!props.tableSchema?.components) return []
-  const table = props.tableSchema.components.find(c => c.type === 'table')
-  return table?.headerActions || []
+const actions = computed(() => tableConfig.value?.actions || [])
+const headerActions = computed(() => tableConfig.value?.headerActions || [])
+const bulkActions = computed(() => tableConfig.value?.bulkActions || [])
+const tableFilters = computed(() => tableConfig.value?.filters || [])
+const filtersLayout = computed(() => tableConfig.value?.filtersLayout || 'dropdown')
+
+// Filter values
+const filterValues = ref({})
+const filtersOpen = ref(false)
+
+onMounted(() => {
+  // init filter defaults
+  tableFilters.value.forEach(f => {
+    filterValues.value[f.name] = props.filters?.[f.name] ?? f.default ?? ''
+  })
 })
 
-const bulkActions = computed(() => {
-  if (!props.tableSchema?.components) return []
-  const table = props.tableSchema.components.find(c => c.type === 'table')
-  return table?.bulkActions || []
+const applyFilters = () => {
+  const params = {
+    search: search.value || undefined,
+    sort: props.filters?.sort,
+    direction: props.filters?.direction,
+    per_page: props.filters?.per_page,
+  }
+  tableFilters.value.forEach(f => {
+    const val = filterValues.value[f.name]
+    if (val !== '' && val !== null && val !== undefined) {
+      params[f.name] = val
+    }
+  })
+  router.get(`/${panelPath.value}/${props.resource.slug}`, params, {
+    preserveState: true,
+    preserveScroll: true,
+  })
+}
+
+const resetFilters = () => {
+  tableFilters.value.forEach(f => {
+    filterValues.value[f.name] = f.default ?? ''
+  })
+  applyFilters()
+}
+
+const hasActiveFilters = computed(() => {
+  return tableFilters.value.some(f => {
+    const val = filterValues.value[f.name]
+    return val !== '' && val !== null && val !== undefined && val !== (f.default ?? '')
+  })
 })
 
 // Resolve Lucide icon component dari string name
@@ -346,7 +383,42 @@ const goToPage = (url) => {
           />
         </div>
         
-        <div>
+        <div class="flex items-center gap-2">
+          <!-- Filters dropdown (layout=dropdown) -->
+          <DropdownMenu v-if="tableFilters.length > 0 && filtersLayout === 'dropdown'">
+            <DropdownMenuTrigger as-child>
+              <Button variant="outline" size="sm" class="gap-2" :class="{ 'border-primary': hasActiveFilters }">
+                <ListFilter class="w-4 h-4" />
+                <span class="hidden sm:inline">Filter</span>
+                <span v-if="hasActiveFilters" class="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  {{ tableFilters.filter(f => { const v = filterValues[f.name]; return v !== '' && v !== null && v !== undefined && v !== (f.default ?? '') }).length }}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="w-64 p-3 space-y-3">
+              <template v-for="filter in tableFilters" :key="filter.name">
+                <div>
+                  <label class="text-xs font-medium text-muted-foreground mb-1.5 block">{{ filter.label }}</label>
+                  <select
+                    v-if="filter.type === 'SelectFilter'"
+                    v-model="filterValues[filter.name]"
+                    @change="applyFilters()"
+                    class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-xs focus:border-ring focus:ring-ring/50 focus:ring-[3px] outline-none"
+                  >
+                    <option value="">{{ filter.placeholder || 'Semua' }}</option>
+                    <option v-for="opt in filter.options" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                </div>
+              </template>
+              <Button v-if="hasActiveFilters" variant="ghost" size="sm" class="w-full" @click="resetFilters()">
+                Reset Filter
+              </Button>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <!-- Column toggle -->
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
               <Button variant="outline" size="sm" class="gap-2">
@@ -354,18 +426,69 @@ const goToPage = (url) => {
                 <span class="hidden sm:inline">Kolom</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-48">
+            <DropdownMenuContent align="end" class="w-48 p-2 space-y-1">
               <template v-for="col in _allColumns.filter(c => c.toggleable)" :key="col.name">
-                <DropdownMenuCheckboxItem
-                  :checked="!hiddenColumnNames.includes(col.name)"
-                  @update:checked="toggleColumn(col.name)"
-                  @select.prevent
-                >
-                  {{ col.label }}
-                </DropdownMenuCheckboxItem>
+                <label class="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer">
+                  <input
+                    type="checkbox"
+                    :checked="!hiddenColumnNames.includes(col.name)"
+                    @change="toggleColumn(col.name)"
+                    class="size-4 rounded border-input accent-primary cursor-pointer"
+                  />
+                  <span class="text-sm select-none">{{ col.label }}</span>
+                </label>
               </template>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+      </div>
+
+      <!-- Filters above content -->
+      <div v-if="tableFilters.length > 0 && (filtersLayout === 'aboveContent' || filtersLayout === 'aboveContentCollapsible')" class="border-b">
+        <!-- Collapsible toggle -->
+        <button
+          v-if="filtersLayout === 'aboveContentCollapsible'"
+          @click="filtersOpen = !filtersOpen"
+          class="flex items-center justify-between w-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+        >
+          <span class="flex items-center gap-2">
+            <SlidersHorizontal class="w-4 h-4" />
+            Filter
+            <span v-if="hasActiveFilters" class="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              {{ tableFilters.filter(f => { const v = filterValues[f.name]; return v !== '' && v !== null && v !== undefined && v !== (f.default ?? '') }).length }}
+            </span>
+          </span>
+          <ChevronUp class="w-4 h-4 transition-transform" :class="{ 'rotate-180': !filtersOpen }" />
+        </button>
+
+        <!-- Filter fields -->
+        <div v-if="filtersLayout === 'aboveContent' || filtersOpen" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 px-4 py-3">
+          <div v-for="filter in tableFilters" :key="filter.name">
+            <label class="text-xs font-medium text-muted-foreground mb-1.5 block">{{ filter.label }}</label>
+            <select
+              v-if="filter.type === 'SelectFilter'"
+              v-model="filterValues[filter.name]"
+              @change="applyFilters()"
+              class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-xs focus:border-ring focus:ring-ring/50 focus:ring-[3px] outline-none"
+            >
+              <option value="">{{ filter.placeholder || 'Semua' }}</option>
+              <option v-for="opt in filter.options" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+            <Input
+              v-else-if="filter.type === 'TextFilter'"
+              v-model="filterValues[filter.name]"
+              @change="applyFilters()"
+              :placeholder="filter.placeholder || filter.label"
+              class="h-8"
+            />
+          </div>
+          <div v-if="hasActiveFilters" class="flex items-end">
+            <Button variant="ghost" size="sm" @click="resetFilters()" class="text-muted-foreground">
+              Reset
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -379,7 +502,7 @@ const goToPage = (url) => {
                   type="checkbox"
                   :checked="allSelected"
                   @change="allSelected = $event.target.checked"
-                  class="rounded border-border"
+                  class="size-4 rounded border-input accent-primary cursor-pointer"
                 />
               </th>
               <th
@@ -418,7 +541,7 @@ const goToPage = (url) => {
                   type="checkbox"
                   :checked="selectedIds.includes(row.id)"
                   @change="toggleSelect(row.id)"
-                  class="rounded border-border"
+                  class="size-4 rounded border-input accent-primary cursor-pointer"
                 />
               </td>
               <td

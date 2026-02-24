@@ -275,7 +275,6 @@ use App\\Vuelament\\Components\\Table\\Filters\\SelectFilter;";
         }
 
         // Build filters
-        $filters = '';
         if ($hasSoftDeletes) {
             $filters = "
                     ->filters([
@@ -287,6 +286,9 @@ use App\\Vuelament\\Components\\Table\\Filters\\SelectFilter;";
                                 'only'      => 'Hanya Trashed',
                             ]),
                     ])";
+        } else {
+            $filters = "
+                    ->filters([])";
         }
 
         // Build softDeletes property

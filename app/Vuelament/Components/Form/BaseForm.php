@@ -104,7 +104,7 @@ abstract class BaseForm extends BaseComponent
         // String-based fields (default)
         if (isset($schema['inputType'])) {
             match ($schema['inputType']) {
-                'email'    => $rules[] = 'email',
+                'email'    => $rules[] = 'email:rfc,dns',
                 'number'   => $rules[] = 'numeric',
                 'url'      => $rules[] = 'url',
                 default    => $rules[] = 'string',

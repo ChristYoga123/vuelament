@@ -67,6 +67,7 @@ class UserResource extends BaseResource
                                 DeleteBulkAction::make(),
                             ]),
                     ])
+                    ->filters([])
                     ->headerActions([
                         CreateAction::make(),
                     ])
@@ -90,6 +91,7 @@ class UserResource extends BaseResource
                         V::textInput('email')
                             ->label('Email')
                             ->type('email')
+                            ->email()
                             ->required()
                             ->uniqueIgnoreRecord(),
                         V::textInput('password')

@@ -42,6 +42,7 @@ class {{ name }}Resource extends BaseResource
                                 DeleteBulkAction::make(),
                             ]),
                     ])
+                    ->filters([])
                     ->headerActions([
                         CreateAction::make(),
                     ])

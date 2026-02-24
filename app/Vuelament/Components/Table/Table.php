@@ -19,6 +19,7 @@ class Table
 {
     protected array $columns = [];
     protected array $filters = [];
+    protected FiltersLayout $filtersLayout = FiltersLayout::Dropdown;
     protected array $actions = [];         // row-level actions
     protected array $bulkActions = [];     // bulk actions (header)
     protected array $headerActions = [];   // page-level actions (Create, Import, Export)
@@ -40,7 +41,13 @@ class Table
     }
 
     public function columns(array $v): static { $this->columns = $v; return $this; }
-    public function filters(array $v): static { $this->filters = $v; return $this; }
+    public function filters(array $v, FiltersLayout $layout = FiltersLayout::Dropdown): static
+    {
+        $this->filters = $v;
+        $this->filtersLayout = $layout;
+        return $this;
+    }
+    public function filtersLayout(FiltersLayout $v): static { $this->filtersLayout = $v; return $this; }
     public function actions(array $v): static { $this->actions = $v; return $this; }
     public function bulkActions(array $v): static { $this->bulkActions = $v; return $this; }
     public function headerActions(array $v): static { $this->headerActions = $v; return $this; }
@@ -77,6 +84,7 @@ class Table
             'type'                  => 'table',
             'columns'               => array_map(fn($c) => $c->toArray(), $this->columns),
             'filters'               => array_map(fn($f) => $f->toArray(), $this->filters),
+            'filtersLayout'         => $this->filtersLayout->value,
             'actions'               => array_map(fn($a) => $a->toArray(), $this->actions),
             'bulkActions'           => array_map(fn($a) => $a->toArray(), $this->bulkActions),
             'headerActions'         => array_map(fn($a) => $a->toArray(), $this->headerActions),

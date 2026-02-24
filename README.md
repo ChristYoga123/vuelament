@@ -204,6 +204,7 @@ class PostResource extends BaseResource
                                 DeleteBulkAction::make(),
                             ]),
                     ])
+                    ->filters([])
                     ->headerActions([
                         CreateAction::make(),
                     ])
@@ -298,6 +299,84 @@ Table::make()
     ->emptyStateHeading('Belum ada data')
     ->emptyStateDescription('Klik tombol tambah untuk membuat data baru.')
 ```
+
+---
+
+### Filters
+
+Filter mendukung 3 layout yang bisa dikonfigurasi:
+
+```php
+use App\Vuelament\Components\Table\FiltersLayout;
+use App\Vuelament\Components\Filters\SelectFilter;
+```
+
+#### 1. Dropdown (Default)
+
+Filter tersembunyi di balik icon filter button:
+
+```php
+->filters([
+    SelectFilter::make('status')
+        ->label('Status')
+        ->options([
+            'active'   => 'Aktif',
+            'inactive' => 'Nonaktif',
+        ]),
+])
+// atau secara eksplisit:
+->filters([
+    SelectFilter::make('status')->label('Status')->options([...]),
+], layout: FiltersLayout::Dropdown)
+```
+
+#### 2. Above Content
+
+Filter selalu visible di atas tabel:
+
+```php
+->filters([
+    SelectFilter::make('category_id')
+        ->label('Kategori')
+        ->options(Category::pluck('name', 'id')->toArray()),
+    SelectFilter::make('status')
+        ->label('Status')
+        ->options(['draft' => 'Draft', 'published' => 'Published']),
+], layout: FiltersLayout::AboveContent)
+```
+
+#### 3. Above Content Collapsible
+
+Filter di atas tabel dengan toggle show/hide:
+
+```php
+->filters([
+    SelectFilter::make('trashed')
+        ->label('Status')
+        ->options([
+            ''     => 'Tanpa Trashed',
+            'with' => 'Dengan Trashed',
+            'only' => 'Hanya Trashed',
+        ]),
+], layout: FiltersLayout::AboveContentCollapsible)
+```
+
+#### Menggunakan `filtersLayout()` terpisah
+
+```php
+->filters([...])
+->filtersLayout(FiltersLayout::AboveContent)
+```
+
+#### Filter yang tersedia
+
+| Filter           | Deskripsi                    |
+| ---------------- | ---------------------------- |
+| `SelectFilter`   | Dropdown select dengan opsi  |
+| `ToggleFilter`   | Toggle on/off                |
+| `RadioFilter`    | Radio button group           |
+| `CheckboxFilter` | Checkbox group               |
+| `CustomFilter`   | Filter custom dengan closure |
 
 ---
 
@@ -433,6 +512,65 @@ protected static bool $softDeletes = true;
             'only' => 'Hanya Trashed',
         ]),
 ])
+```
+
+---
+
+### Widgets
+
+Widget ditampilkan di halaman dashboard atau sebagai komponen tambahan:
+
+#### Stats Overview
+
+```php
+use App\Vuelament\Components\Widgets\StatsOverviewWidget;
+use App\Vuelament\Components\Widgets\Stat;
+
+StatsOverviewWidget::make()
+    ->stats([
+        Stat::make('Total User', User::count())
+            ->description('User terdaftar')
+            ->icon('users')
+            ->color('primary'),
+        Stat::make('Pendapatan', 'Rp 15.000.000')
+            ->description('+12% dari bulan lalu')
+            ->icon('trending-up')
+            ->color('success'),
+        Stat::make('Order Pending', Order::where('status', 'pending')->count())
+            ->description('Menunggu proses')
+            ->icon('clock')
+            ->color('warning'),
+    ])
+```
+
+#### Chart Widget
+
+```php
+use App\Vuelament\Components\Widgets\ChartWidget;
+
+ChartWidget::make()
+    ->heading('Penjualan Bulanan')
+    ->type('bar')  // bar, line, pie, doughnut
+    ->data([
+        'labels' => ['Jan', 'Feb', 'Mar', 'Apr'],
+        'datasets' => [
+            [
+                'label' => 'Penjualan',
+                'data' => [120, 190, 300, 250],
+            ]
+        ]
+    ])
+```
+
+#### Table Widget
+
+```php
+use App\Vuelament\Components\Widgets\TableWidget;
+
+TableWidget::make()
+    ->heading('Order Terbaru')
+    ->columns([...])
+    ->query(fn() => Order::latest()->limit(5)->get())
 ```
 
 ---

@@ -36,7 +36,7 @@ trait HasPanelAccess
             return $this->hasRole($panel->getId());
         }
 
-        // Kalau tidak pakai spatie/permission, default allow
-        return true;
+        // Kalau tidak pakai spatie/permission, default allow HANYA jika di environment local
+        return app()->environment('local');
     }
 }

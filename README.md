@@ -125,6 +125,34 @@ Panel provider harus didaftarkan di `config/app.php` pada array `providers`.
 
 ---
 
+### Panel Access (Authorization)
+
+Secara default, Vuelament mencoba mengecek _role_ menggunakan package Spatie Permission. Jika Anda tidak menggunakannya, **akses panel hanya diizinkan otomatis ketika aplikasi berada di environment `local`**. Untuk environment `production`, Anda **wajib** mendefinisikan logika otorisasi secara eksplisit agar panel Anda aman.
+
+Tambahkan trait `HasPanelAccess` pada model `User` dan _override_ method `canAccessPanel`:
+
+```php
+use App\Vuelament\Traits\HasPanelAccess;
+use App\Vuelament\Core\Panel;
+
+class User extends Authenticatable
+{
+    use HasPanelAccess; // Wajib
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Contoh: Hanya user di bawah domain perusahaan yang boleh akses panel admin
+        if ($panel->getId() === 'admin') {
+            return str_ends_with($this->email, '@perusahaan.com') && $this->is_active;
+        }
+
+        return false;
+    }
+}
+```
+
+---
+
 ### Membuat Resource
 
 #### Artisan Command

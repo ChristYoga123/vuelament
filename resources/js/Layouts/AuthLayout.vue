@@ -1,8 +1,20 @@
 <script setup>
+import { onMounted } from 'vue'
 import { Head } from '@inertiajs/vue3'
 
 const props = defineProps({
   title: { type: String, default: 'Vuelament' },
+})
+
+onMounted(() => {
+  const saved = localStorage.getItem('vuelament-theme')
+  if (saved === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else if (saved === 'light') {
+    document.documentElement.classList.remove('dark')
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.documentElement.classList.add('dark')
+  }
 })
 </script>
 

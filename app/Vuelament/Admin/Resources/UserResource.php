@@ -11,9 +11,15 @@ use App\Vuelament\Components\Table\Table;
 use App\Vuelament\Components\Table\Column;
 use App\Vuelament\Components\Actions\ActionGroup;
 use App\Vuelament\Components\Actions\CreateAction;
+use App\Vuelament\Components\Filters\SelectFilter;
 use App\Vuelament\Components\Actions\DeleteBulkAction;
 use App\Vuelament\Components\Table\Actions\EditAction;
+use App\Vuelament\Components\Actions\RestoreBulkAction;
 use App\Vuelament\Components\Table\Actions\DeleteAction;
+use App\Vuelament\Components\Table\Actions\RestoreAction;
+use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
+use App\Vuelament\Components\Table\Actions\ForceDeleteAction;
+use App\Vuelament\Components\Table\FiltersLayout;
 
 class UserResource extends BaseResource
 {
@@ -59,15 +65,27 @@ class UserResource extends BaseResource
                     ->actions([
                         EditAction::make(),
                         DeleteAction::make(),
+                        RestoreAction::make(),
+                        ForceDeleteAction::make(),
                     ])
                     ->bulkActions([
                         ActionGroup::make('Aksi Massal')
                             ->icon('list')
                             ->actions([
                                 DeleteBulkAction::make(),
+                                RestoreBulkAction::make(),
+                                ForceDeleteBulkAction::make(),
                             ]),
                     ])
-                    ->filters([])
+                    ->filters([
+                        SelectFilter::make('trashed')
+                            ->label('Status Terhapus')
+                            ->placeholder('Tidak Termasuk Dihapus')
+                            ->options([
+                                'with' => 'Termasuk Dihapus',
+                                'only' => 'Hanya yang Dihapus',
+                            ])
+            ])
                     ->headerActions([
                         CreateAction::make(),
                     ])
@@ -103,5 +121,18 @@ class UserResource extends BaseResource
                             ->required(fn (string $operation): bool => $operation === 'create'),
                     ])
             ]);
+    }
+
+    public static function applyFilters($query, array $filters): mixed
+    {
+        if (isset($filters['trashed'])) {
+            if ($filters['trashed'] === 'with') {
+                $query->withTrashed();
+            } elseif ($filters['trashed'] === 'only') {
+                $query->onlyTrashed();
+            }
+        }
+
+        return $query;
     }
 }

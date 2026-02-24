@@ -10,11 +10,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Vuelament\Traits\HasPanelAccess;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, HasPanelAccess;
+    use HasFactory, Notifiable, HasRoles, HasPanelAccess, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

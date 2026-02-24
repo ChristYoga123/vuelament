@@ -6,7 +6,7 @@ class ForceDeleteBulkAction extends BaseAction
 {
     protected string $type = 'ForceDeleteBulkAction';
     protected string $label = 'Hapus Permanen';
-    protected ?string $icon = 'trash-2';
+    protected ?string $icon = 'trash';
     protected ?string $color = 'danger';
     protected bool $requiresConfirmation = true;
     protected ?string $confirmationTitle = 'Hapus Permanen';

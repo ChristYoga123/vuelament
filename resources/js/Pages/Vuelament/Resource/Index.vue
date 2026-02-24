@@ -142,7 +142,7 @@ const filtersOpen = ref(false)
 onMounted(() => {
   // init filter defaults
   tableFilters.value.forEach(f => {
-    filterValues.value[f.name] = props.filters?.[f.name] ?? f.default ?? ''
+    filterValues.value[f.name] = props.filters?.filters?.[f.name] ?? f.default ?? ''
   })
 })
 
@@ -152,13 +152,17 @@ const applyFilters = () => {
     sort: props.filters?.sort,
     direction: props.filters?.direction,
     per_page: props.filters?.per_page,
+    filters: {},
   }
   tableFilters.value.forEach(f => {
     const val = filterValues.value[f.name]
     if (val !== '' && val !== null && val !== undefined) {
-      params[f.name] = val
+      params.filters[f.name] = val
     }
   })
+  if (Object.keys(params.filters).length === 0) {
+    delete params.filters
+  }
   router.get(`/${panelPath.value}/${props.resource.slug}`, params, {
     preserveState: true,
     preserveScroll: true,
@@ -561,7 +565,7 @@ const goToPage = (url) => {
                 <div class="flex items-center justify-end gap-1">
                   <template v-for="action in actions" :key="action.name">
                     <Link
-                      v-if="action.type === 'EditAction' || action.type === 'edit'"
+                      v-if="!row.deleted_at && (action.type === 'EditAction' || action.type === 'edit')"
                       :href="`/${panelPath}/${resource.slug}/${row.id}/edit`"
                     >
                       <Button variant="ghost" size="icon" class="h-8 w-8">
@@ -570,7 +574,7 @@ const goToPage = (url) => {
                       </Button>
                     </Link>
                     <Button
-                      v-if="action.type === 'DeleteAction' || action.type === 'delete'"
+                      v-if="!row.deleted_at && (action.type === 'DeleteAction' || action.type === 'delete')"
                       variant="ghost"
                       size="icon"
                       class="h-8 w-8 text-destructive hover:text-destructive"
@@ -580,7 +584,7 @@ const goToPage = (url) => {
                       <span class="sr-only">Hapus</span>
                     </Button>
                     <Button
-                      v-if="action.type === 'RestoreAction' || action.type === 'restore'"
+                      v-if="row.deleted_at && (action.type === 'RestoreAction' || action.type === 'restore')"
                       variant="ghost"
                       size="icon"
                       class="h-8 w-8 text-green-600 hover:text-green-600"
@@ -590,7 +594,7 @@ const goToPage = (url) => {
                       <span class="sr-only">Restore</span>
                     </Button>
                     <Button
-                      v-if="action.type === 'ForceDeleteAction' || action.type === 'force-delete'"
+                      v-if="row.deleted_at && (action.type === 'ForceDeleteAction' || action.type === 'force-delete')"
                       variant="ghost"
                       size="icon"
                       class="h-8 w-8 text-red-600 hover:text-red-600"

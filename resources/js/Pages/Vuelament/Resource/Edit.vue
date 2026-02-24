@@ -27,13 +27,31 @@ const errors = computed(() => page.props.errors || {})
 
 const components = computed(() => props.formSchema?.components || [])
 
+// Check if form has files
+const hasFiles = () => {
+  return Object.values(formData.value).some(v =>
+    v instanceof File || (Array.isArray(v) && v.some(f => f instanceof File))
+  )
+}
+
 // Submit
 const submitting = ref(false)
 const submit = () => {
   submitting.value = true
-  router.put(`/${panelPath.value}/${props.resource.slug}/${props.record.id}`, formData.value, {
-    onFinish: () => { submitting.value = false },
-  })
+  // Use POST with _method spoofing for file uploads
+  if (hasFiles()) {
+    router.post(`/${panelPath.value}/${props.resource.slug}/${props.record.id}`, {
+      _method: 'PUT',
+      ...formData.value,
+    }, {
+      forceFormData: true,
+      onFinish: () => { submitting.value = false },
+    })
+  } else {
+    router.put(`/${panelPath.value}/${props.resource.slug}/${props.record.id}`, formData.value, {
+      onFinish: () => { submitting.value = false },
+    })
+  }
 }
 
 const getInputType = (comp) => {

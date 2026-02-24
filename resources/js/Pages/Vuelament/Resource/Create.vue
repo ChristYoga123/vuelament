@@ -29,11 +29,19 @@ const errors = computed(() => page.props.errors || {})
 
 const components = computed(() => props.formSchema?.components || [])
 
+// Check if form has files
+const hasFiles = () => {
+  return Object.values(formData.value).some(v =>
+    v instanceof File || (Array.isArray(v) && v.some(f => f instanceof File))
+  )
+}
+
 // Submit
 const submitting = ref(false)
 const submit = () => {
   submitting.value = true
   router.post(`/${panelPath.value}/${props.resource.slug}`, formData.value, {
+    forceFormData: hasFiles(),
     onFinish: () => { submitting.value = false },
   })
 }

@@ -10,20 +10,14 @@ class TimePicker extends BaseForm
     protected int $step = 60;
     protected ?string $minTime = null;
     protected ?string $maxTime = null;
-    protected ?string $placeholder = null;
-    protected bool $required = false;
-    protected bool $disabled = false;
 
     public function format(string $v): static { $this->format = $v; return $this; }
     public function displayFormat(string $v): static { $this->displayFormat = $v; return $this; }
     public function step(int $v): static { $this->step = $v; return $this; }
     public function minTime(string $v): static { $this->minTime = $v; return $this; }
     public function maxTime(string $v): static { $this->maxTime = $v; return $this; }
-    public function placeholder(string $v): static { $this->placeholder = $v; return $this; }
-    public function required(bool $v = true): static { $this->required = $v; return $this; }
-    public function disabled(bool $v = true): static { $this->disabled = $v; return $this; }
 
-    protected function schema(): array
+    protected function schema(string $operation = 'create'): array
     {
         return [
             'format'        => $this->format,
@@ -31,9 +25,6 @@ class TimePicker extends BaseForm
             'step'          => $this->step,
             'minTime'       => $this->minTime,
             'maxTime'       => $this->maxTime,
-            'placeholder'   => $this->placeholder,
-            'required'      => $this->required,
-            'disabled'      => $this->disabled,
         ];
     }
 }

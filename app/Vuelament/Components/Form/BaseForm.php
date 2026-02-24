@@ -11,9 +11,18 @@ abstract class BaseForm extends BaseComponent
     protected ?\Closure $afterStateHydrated = null;
     protected ?\Closure $beforeStateDehydrated = null;
     protected ?\Closure $dehydrateStateUsing = null;
-    protected bool $isLive = false;
+    protected bool|\Closure $isLive = false;
     protected mixed $default = null;
     protected array $customRules = [];
+
+    // ── Common form attributes ──────────────────────────
+    protected bool|\Closure $required = false;
+    protected bool|\Closure $disabled = false;
+    protected bool|\Closure $readonly = false;
+    protected ?string $placeholder = null;
+    protected ?string $hint = null;
+    protected ?int $maxLength = null;
+    protected ?int $minLength = null;
 
     // Unique validation
     protected bool $isUnique = false;
@@ -21,8 +30,18 @@ abstract class BaseForm extends BaseComponent
     protected ?string $uniqueColumn = null;
     protected bool $uniqueIgnoreRecord = false;
 
+    // ── Common setters ──────────────────────────────────
+    public function required(bool|\Closure $v = true): static { $this->required = $v; return $this; }
+    public function disabled(bool|\Closure $v = true): static { $this->disabled = $v; return $this; }
+    public function readonly(bool|\Closure $v = true): static { $this->readonly = $v; return $this; }
+    public function placeholder(string $v): static { $this->placeholder = $v; return $this; }
+    public function hint(string $v): static { $this->hint = $v; return $this; }
+    public function maxLength(int $v): static { $this->maxLength = $v; return $this; }
+    public function minLength(int $v): static { $this->minLength = $v; return $this; }
+
+    // ── State lifecycle ─────────────────────────────────
     public function dehydrated(bool|\Closure $v = true): static { $this->isDehydrated = $v; return $this; }
-    public function live(bool $v = true): static { $this->isLive = $v; return $this; }
+    public function live(bool|\Closure $v = true): static { $this->isLive = $v; return $this; }
     public function default(mixed $v): static { $this->default = $v; return $this; }
     public function afterStateUpdated(\Closure $v): static { $this->afterStateUpdated = $v; return $this; }
     public function afterStateHydrated(\Closure $v): static { $this->afterStateHydrated = $v; return $this; }
@@ -35,27 +54,15 @@ abstract class BaseForm extends BaseComponent
 
     /**
      * Tambahkan custom validation rules
-     *
-     * Contoh:
-     *   ->rules(['regex:/^[a-z]+$/'])
      */
     public function rules(array $rules): static { $this->customRules = $rules; return $this; }
 
     /**
-     * Unique validation — mirip Filament
-     *
-     * Contoh:
-     *   ->unique('users', 'email')                 // unique:users,email
-     *   ->unique('users', 'email', ignoreRecord: true)  // unique:users,email,{id} — skip record yang sedang di-edit
-     *   ->unique()                                  // otomatis pakai nama field sebagai column
-     *
-     * Saat ignoreRecord: true, ResourceController akan inject ID record ke rule:
-     *   'unique:users,email,{id}'
+     * Unique validation
      */
     public function unique(?string $table = null, ?string $column = null, bool $ignoreRecord = false): static
     {
         $this->isUnique = true;
-        // if user explicitly passed table, use it
         if ($table !== null) {
             $this->uniqueTable = $table;
         }
@@ -71,30 +78,46 @@ abstract class BaseForm extends BaseComponent
         return $this;
     }
 
-    public function getRequiredProp(): bool|\Closure { return false; }
+    public function getRequiredProp(): bool|\Closure { return $this->required; }
+
+    /**
+     * Resolve a bool|Closure value, injecting operation context.
+     */
+    protected function evaluate(mixed $value, string $operation = 'create'): mixed
+    {
+        if (is_callable($value)) {
+            return app()->call($value, ['operation' => $operation]);
+        }
+        return $value;
+    }
+
+    /**
+     * Common schema fields — merged automatically with child schema
+     */
+    protected function baseSchema(string $operation = 'create'): array
+    {
+        return [
+            'required'    => $this->evaluate($this->required, $operation),
+            'disabled'    => $this->evaluate($this->disabled, $operation),
+            'readonly'    => $this->evaluate($this->readonly, $operation),
+            'placeholder' => $this->placeholder,
+            'hint'        => $this->hint,
+            'maxLength'   => $this->maxLength,
+            'minLength'   => $this->minLength,
+        ];
+    }
 
     /**
      * Build validation rules otomatis dari properti komponen
-     *
-     * @param mixed $recordId ID record saat edit (untuk unique ignore)
      */
     public function getValidationRules(mixed $recordId = null, string $operation = 'create', ?string $tableFallback = null): array
     {
         $rules = [];
-        $schema = $this->schema();
+        $schema = $this->schema($operation);
+        $base = $this->baseSchema($operation);
 
-        // Evaluate required locally rather than strictly relying on array if the component property exists
-        $isRequired = !empty($schema['required']);
-        if (method_exists($this, 'getRequiredProp')) {
-            $reqProp = $this->getRequiredProp();
-            if (is_callable($reqProp)) {
-                $isRequired = app()->call($reqProp, ['operation' => $operation]);
-            } else {
-                $isRequired = $reqProp;
-            }
-        }
+        $isRequired = $base['required'];
 
-        // Required
         if ($isRequired) {
             $rules[] = 'required';
         } else {
@@ -112,13 +135,13 @@ abstract class BaseForm extends BaseComponent
         }
 
         // Min length
-        if (!empty($schema['minLength'])) {
-            $rules[] = 'min:' . $schema['minLength'];
+        if (!empty($base['minLength'])) {
+            $rules[] = 'min:' . $base['minLength'];
         }
 
         // Max length
-        if (!empty($schema['maxLength'])) {
-            $rules[] = 'max:' . $schema['maxLength'];
+        if (!empty($base['maxLength'])) {
+            $rules[] = 'max:' . $base['maxLength'];
         }
 
         // File
@@ -151,25 +174,15 @@ abstract class BaseForm extends BaseComponent
         return $rules;
     }
 
-    /**
-     * Apakah unique validation perlu ignore record saat edit
-     */
     public function shouldIgnoreRecord(): bool { return $this->uniqueIgnoreRecord; }
-
-    /**
-     * Get nama field
-     */
-    public function getName(): string
-    {
-        return $this->name;
-    }
+    public function getName(): string { return $this->name; }
 
     public function toArray(string $operation = 'create'): array
     {
-        return array_merge(parent::toArray($operation), [
+        return array_merge(parent::toArray($operation), $this->baseSchema($operation), [
             'default'              => $this->default,
             'isDehydrated'         => is_callable($this->isDehydrated) ? true : $this->isDehydrated,
-            'isLive'               => $this->isLive,
+            'isLive'               => $this->evaluate($this->isLive, $operation),
             'hasAfterStateUpdated' => $this->afterStateUpdated !== null,
         ]);
     }

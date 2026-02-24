@@ -384,6 +384,35 @@ class ReportPage extends BasePage
 }
 ```
 
+#### Custom Parameter Name pada Sub-Pages
+
+Secara default, Vuelament merekomendasikan penamaan `{record}` pada parameter rute _Custom Page_ (contoh: `/admin/users/{record}/report`). Meski begitu, Anda bebas menggunakan penamaan apa saja seperti `{user_id}` atau `{invoice}`.
+
+Vuelament Router akan secara otomatis mengekstrak _parameter pertama_ apapun yang ia temukan dan tetap mengirimkannya ke model Eloquent pada metode `getData()`.
+
+Untuk menggunakan parameter kustom, cukup daftarkan secara eksplisit di fungsi `getPages()` pada Resource Anda menggunakan `PageRegistration`:
+
+```php
+use App\Vuelament\Core\PageRegistration;
+
+    public static function getPages(): array
+    {
+        return [
+            'index'  => static::class,
+            'create' => static::class,
+            'edit'   => static::class,
+            // Bebas ganti param {record} menjadi {user_id} sesuai kehendak
+            'report' => PageRegistration::make(ReportPage::class)->route('{user_id}/report'),
+        ];
+    }
+```
+
+Dan jangan lupa sesuaikan nama kunci _array_-nya saat memanggil pelemparan rute di dalam Action url Anda:
+
+```php
+->url(fn(User $user) => ReportPage::getUrl(['user_id' => $user->id]))
+```
+
 _Note:_ Anda juga bisa meng- override metode `getBreadcrumbs(string $operation, mixed $record = null): array` pada `ResourceController` Anda.
 
 ---

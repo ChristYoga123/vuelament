@@ -174,9 +174,12 @@ class VuelamentServiceProvider extends ServiceProvider
             $fullPath = ltrim($routePath, '/');
             $fullPath = $fullPath ? "{$slug}/{$fullPath}" : "{$slug}/{$pageName}";
 
-            Route::get($fullPath, function (\Illuminate\Http\Request $request, ...$params) use ($pageClass, $resourceClass) {
-                // If route contains a {record} parameter
-                $recordId = $request->route('record');
+            Route::get($fullPath, function (\Illuminate\Http\Request $request) use ($pageClass, $resourceClass) {
+                // Ambil semua parameter URL
+                $routeParams = $request->route()->parameters();
+                // Utamakan param bernama {record}, jika tidak ada ambil parameter apa saja yang pertama muncul
+                $recordId = $routeParams['record'] ?? (count($routeParams) > 0 ? reset($routeParams) : null);
+
                 return app(\App\Vuelament\Http\Controllers\PageController::class)->__invoke($request, $pageClass, $resourceClass, $recordId);
             })->name("{$panelId}.{$slug}.page.{$pageName}");
         }

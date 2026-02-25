@@ -1,177 +1,282 @@
-# Vuelament
-
-Vuelament is a powerful, elegant, and developer-friendly administration panel builder for Laravel, powered by Vue 3, Inertia.js, and Tailwind CSS. It is heavily inspired by the philosophy of [Filament PHP](https://filamentphp.com), bringing the joy of rapid backend development to the modern Vue ecosystem.
-
-Say goodbye to writing boilerplate frontend code for your CRUD operations. With Vuelament, you can build beautifully designed, highly interactive, and fully responsive admin panels by writing simple, declarative PHP classes.
-
----
-
-## 🌟 Key Features
-
-- **Filament-Inspired Syntax:** Construct tables, forms, and actions using a familiar fluent PHP API.
-- **Modern Tech Stack:** Built on top of Laravel, Vue 3 (Composition API), Inertia.js, Tailwind CSS, and `shadcn-vue`.
-- **Resource Management:** Scaffold entire CRUD operations (Create, Read, Update, Delete) with a single `Resource` class.
-- **Advanced Table Builder:** Full-featured data tables including sorting, searching, pagination, custom column formatting, filters, and row/bulk actions.
-- **Advanced Form Builder:** Create complex forms effortlessly. Features include Grids, Sections, dependent fields (show/hide), dynamic validation rules, inline dehydration, and various input types (Text, Password, Toggles, Selects, File Uploads, etc.).
-- **Automatic Labels & State Formatting:** Out-of-the-box smart labeling and closure-based state evaluation (`getStateUsing`, `formatStateUsing`, `color`) for ultimate flexibility.
-- **Custom Pages:** Easily create dedicated Vue pages within your panel using Artisan commands.
-- **Seamless SPA Experience:** Enjoy lightning-fast page transitions and optimistic UI updates without full page reloads.
+<div align="center">
+    <h1>🚀 Vuelament</h1>
+    <p>A lightning-fast, lightweight, and modern Admin Dashboard & CRUD Generator for Laravel.<br> Built on the VILT stack (Vue 3, Inertia.js, Laravel, Tailwind CSS) and powered by Shadcn Vue for a gorgeous UI.</p>
+</div>
 
 ---
 
-## 🚀 Quick Start
+## ✨ Features
 
-### 1. Installation
+- **Ultra Lightweight**: Minimal dependencies, split code-chunking, and no bloat.
+- **Beautiful UI**: Uses Tailwind CSS v4 and Shadcn-Vue for a premium, accessible, and easily customizable design.
+- **VILT Stack**: Seamless SPA experience powered by Laravel, Inertia, Vue 3, and Tailwind.
+- **Complete Form Builder**: Supports Rich Editor (Vue Quill), Date/Time Pickers (VueDatePicker), File Uploads, Selects, Toggles, Checkboxes, Radios, and responsive Grid Layouts.
+- **Robust Table Builder**: Supports filtering, search, pagination, bulk actions, and custom column rendering.
+- **Dynamic Modals**: Conditional Action dialogs, flexible modal widths, click-away handling, and dangerous action confirmations.
 
-Require the package via Composer _(Make sure you have an existing Laravel + Inertia Vue project setup)_:
+## 📦 Requirements
+
+- **PHP** 8.2+
+- **Laravel** 11.x
+- **Node.js** 18+ & NPM
+
+## 🛠️ Installation
+
+1. Install via composer (Local path/symlink assuming you are developing the package):
 
 ```bash
-composer require vuelament/vuelament
+composer require your-vendor/vuelament
 ```
 
-Install the required NPM dependencies:
+2. Publish the assets and configuration:
 
 ```bash
-npm install lucide-vue-next @inertiajs/vue3 class-variance-authority clsx tailwind-merge
+php artisan vuelament:install
 ```
 
-### 2. Creating a Panel
+3. Run migrations for base Vuelament tables (if any):
 
-First, set up a Service Provider for your panel to define the path, branding, and discoverable directories for your resources and pages.
-
-### 3. Creating a Resource
-
-To manage an Eloquent model (e.g., `User`), create a Resource class:
-
-```php
-php artisan vuelament:resource User
+```bash
+php artisan migrate
 ```
 
-This will generate a `UserResource.php` file. You can then define your Table and Form schemas using the fluent API:
+4. Install NPM dependencies & Build assets:
 
-#### Defining the Table
-
-```php
-use App\Vuelament\Components\Table\Table;
-use App\Vuelament\Components\Table\Columns\TextColumn;
-use App\Vuelament\Components\Table\Columns\ToggleColumn;
-
-public static function tableSchema(): Table
-{
-    return Table::make()
-        ->columns([
-            TextColumn::make('name')
-                ->label('Full Name')
-                ->sortable()
-                ->searchable(),
-
-            TextColumn::make('email')
-                ->label('Email Address')
-                ->searchable(),
-
-            ToggleColumn::make('is_active')
-                ->label('Status'),
-
-            TextColumn::make('roles')
-                ->label('Role')
-                ->badge()
-                ->color(fn ($record) => $record->role === 'admin' ? 'success' : 'info')
-                ->getStateUsing(fn ($record) => strtoupper($record->role)),
-        ]);
-}
+```bash
+npm install
+npm run build
 ```
 
-#### Defining the Form
+---
+
+## 🚀 Usage Guide
+
+### Creating a Resource
+
+Vuelament centers around **Resources**—classes that describe how your Eloquent Models can be created, read, updated, and deleted.
+
+Run the Artisan command to create a new Resource:
+
+```bash
+php artisan make:vuelament-resource User
+```
+
+This will create a `UserResource.php` inside `app/Vuelament/Admin/Resources/User`.
+
+### Defining Forms
+
+Define the form layout inside your Resource's `formSchema` method:
 
 ```php
-use App\Vuelament\Core\PageSchema;
 use App\Vuelament\Components\Layout\Grid;
+use App\Vuelament\Components\Layout\Section;
 use App\Vuelament\Components\Form\TextInput;
-use App\Vuelament\Components\Form\Toggle;
+use App\Vuelament\Components\Form\DatePicker;
+use App\Vuelament\Components\Form\RichEditor;
 
 public static function formSchema(): PageSchema
 {
     return PageSchema::make()
         ->components([
-            Grid::make(2)->schema([
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-
-                TextInput::make('email')
-                    ->email()
-                    ->required(),
-
-                TextInput::make('password')
-                    ->password()
-                    ->required(fn (string $operation) => $operation === 'create')
-                    ->dehydrateStateUsing(fn ($state) => Hash::make($state)),
-
-                Toggle::make('is_active')
-                    ->default(true),
-            ])
+            Section::make('General Information')
+                ->components([
+                    Grid::make(2)->components([
+                        TextInput::make('name')->required(),
+                        TextInput::make('email')->email()->required(),
+                    ]),
+                    RichEditor::make('content')->minHeight(300),
+                    DatePicker::make('published_at'),
+                ])
         ]);
 }
 ```
 
-That's it! Vuelament will automatically render the List, Create, and Edit pages with all the configured features.
+#### Available Form Controls:
 
----
+- `TextInput`
+- `Textarea`
+- `RichEditor` (Powered by VueQuill)
+- `DatePicker`, `TimePicker`, `DateRangePicker` (Powered by VuePic)
+- `Select`
+- `Checkbox`
+- `Radio`
+- `Toggle`
+- `FileInput`
 
-## 📖 Component Reference
+### Defining Tables
 
-### Table Columns
-
-- `TextColumn::make('field')`
-- `ToggleColumn::make('field')`
-- _More to come..._
-
-_Available Modifiers:_ `->label()`, `->sortable()`, `->searchable()`, `->badge()`, `->color()`, `->getStateUsing()`, `->formatStateUsing()`, `->prefix()`, `->suffix()`.
-
-### Form Inputs
-
-- `TextInput::make('field')`
-- `Toggle::make('field')`
-- `FileInput::make('field')`
-- `Select::make('field')`
-- `Repeater::make('field')`
-
-_Available Modifiers:_ `->required()`, `->disabled()`, `->unique()`, `->dehydrateStateUsing()`, `->visible()`.
-
-### Form Layouts
-
-- `Grid::make(columns)`
-- `Section::make('Heading')`
-- `Card::make()`
-
----
-
-## 🛠 Advanced Usage
-
-### Dependency Injection in Closures
-
-Vuelament evaluates closures using Laravel's robust service container. You can type-hint the current `$record` or the raw `$state` to execute conditional logic exactly like Filament:
+Define the list view columns, actions, and filters inside `tableSchema()`:
 
 ```php
-TextColumn::make('balance')
-    ->color(function (User $user) {
-        if ($user->balance < 0) return 'danger';
-        if ($user->balance > 1000) return 'success';
-        return 'warning';
-    })
-    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 0, ',', '.'));
+use App\Vuelament\Components\Table\Table;
+use App\Vuelament\Components\Table\Columns\TextColumn;
+use App\Vuelament\Components\Table\Columns\ToggleColumn;
+use App\Vuelament\Components\Table\Actions\EditAction;
+use App\Vuelament\Components\Table\Actions\DeleteAction;
+use App\Vuelament\Components\Filters\SelectFilter;
+
+public static function tableSchema(): PageSchema
+{
+    return PageSchema::make()
+        ->components([
+            Table::make()
+                ->query(fn() => User::query())
+                ->columns([
+                    TextColumn::make('name')->searchable()->sortable(),
+                    TextColumn::make('email'),
+                    ToggleColumn::make('is_active'),
+                ])
+                ->actions([
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ])
+                ->filters([
+                    SelectFilter::make('role')->options([...]),
+                ])
+        ]);
+}
 ```
-
-### Flash Message Suppression
-
-Toggles and inline column adjustments process silently via Vue's optimistic UI updates, skipping full round-trip page flashes and ensuring your application behaves like a true, seamless SPA.
 
 ---
 
-## 🤝 Contributing
+## ⚡ Custom Actions & Modals
 
-Contributions are welcome! Please feel free to submit a Pull Request if you'd like to add new input types, column formats, or improve the engine.
+You can create standalone or table-row actions that pop up modals containing forms or confirmations. Vuelament handles these interactions beautifully.
 
-## 📄 License
+```php
+use App\Vuelament\Components\Table\Actions\Action;
 
-Vuelament is open-sourced software licensed under the [MIT license](LICENSE).
+Action::make('form')
+    ->icon('form')
+    ->color('success')
+    ->label('Fill Form')
+    ->modalHeading('Detailed User Form')
+    ->modalWidth('4xl') // Using Tailwind JIT sizes: sm, md, lg, xl, 2xl, 3xl, etc.
+    ->modalCloseByClickingAway(false) // Force user to click cancel/submit
+    ->modalCancelActionLabel('Tutup')
+    ->form([
+        TextInput::make('reference_id')->required(),
+        Radio::make('type')->options([
+            'a' => 'Type A',
+            'b' => 'Type B',
+        ])
+    ])
+    ->action(function (array $data) {
+        // Execute server logic here.
+    })
+```
+
+### Action Configuration Methods:
+
+- `->requiresConfirmation()`: Auto-converts the form into a danger Action/Alert Dialog.
+- `->modalWidth('2xl')`: Defines the modal width dynamically.
+- `->modalCancelAction(false)` / `->modalSubmitAction(false)`: Hide specific modal buttons.
+- `->modalCloseByClickingAway(false)`: Prevents accidental closure from outside clicks.
+
+---
+
+## 🏢 Multi-Panel Support (Admin, Panel B, etc.)
+
+Vuelament is built with multi-tenancy/multi-panel setups in mind by default. You can spin up as many isolated panels as you want.
+
+**Creating a new panel:**
+
+```bash
+php artisan vuelament:panel Sales --id=sales
+```
+
+This will create `App\Vuelament\Providers\SalesPanelProvider`. You can register this in your `bootstrap/providers.php`.
+
+**Creating Resources for a Specific Panel:**
+When generating resources or pages, simply append `--panel=Sales`.
+
+```bash
+php artisan vuelament:resource Invoice --panel=Sales
+```
+
+This forces Vuelament to automatically isolate the back-end and front-end files into entirely separate silos:
+
+1. **Controller & Resource**: `app/Vuelament/Sales/Resources/InvoiceResource.php`
+2. **Vue Frontend**: `resources/js/Pages/Vuelament/Sales/Resource/Invoice/...`
+
+This means your `AdminPanelProvider` and `SalesPanelProvider` will have zero conflict with each other!
+
+---
+
+## 🎨 Custom Pages & Widgets
+
+Sometimes an auto-generated CRUD isn't enough. You can create completely custom pages that act as blank canvases for charts, widgets, or customized dashboards.
+
+1. Generate a Custom Page:
+
+```bash
+php artisan vuelament:page Analytics
+```
+
+2. This will generate two files:
+    - `app/Vuelament/Admin/Pages/AnalyticsPage.php` - The backend class dictating navigation, routes, and props.
+    - `resources/js/Pages/Vuelament/Admin/Pages/AnalyticsPage.vue` - The frontend Vue Component.
+
+3. Defining the Backend Page:
+
+```php
+use App\Vuelament\Core\BasePage;
+
+class AnalyticsPage extends BasePage
+{
+    protected static ?string $navigationIcon = 'activity';
+    protected static ?string $navigationLabel = 'Live Analytics';
+    protected static string $slug = 'analytics';
+
+    // Send custom properties to the Vue component
+    protected function getViewData(): array
+    {
+        return [
+            'totalUsers' => User::count(),
+            'revenue' => 5000000,
+        ];
+    }
+}
+```
+
+4. Crafting the Frontend (`AnalyticsPage.vue`):
+
+```vue
+<script setup>
+import { usePage } from "@inertiajs/vue3";
+import DashboardLayout from "@/Layouts/DashboardLayout.vue";
+
+const props = defineProps({
+    totalUsers: Number,
+    revenue: Number,
+});
+</script>
+
+<template>
+    <DashboardLayout title="Live Analytics">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="p-6 bg-card rounded-xl border shadow">
+                <h3>Total Users</h3>
+                <p class="text-3xl font-bold">{{ totalUsers }}</p>
+            </div>
+            <div class="p-6 bg-card rounded-xl border shadow">
+                <h3>Revenue</h3>
+                <p class="text-3xl font-bold text-success">{{ revenue }}</p>
+            </div>
+        </div>
+    </DashboardLayout>
+</template>
+```
+
+---
+
+## 🛠️ Performance & Optimizations
+
+Vuelament is optimized to have minimal impact on your users' network:
+
+- **Automatic Code Splitting**: Through Vite, large libraries (`vue-quill`, `vue-datepicker`) are isolated into their own chunks. They only load when the specific form component is evaluated.
+- **Inertia.js Driven**: Lightning-fast SPA page transitions, no full browser reloads.
+
+---
+
+Happy Coding! 🎉

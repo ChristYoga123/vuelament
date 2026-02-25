@@ -43,6 +43,15 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { Switch } from '@/components/ui/switch'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import FormRenderer from '@/Pages/Vuelament/Resource/FormRenderer.vue'
 
 const props = defineProps({
   schema: { type: Object, default: null },
@@ -224,14 +233,16 @@ const confirmDialog = ref({
   isOpen: false,
   title: '',
   description: '',
+  action: null,
   onConfirm: () => {},
 })
 
-const deleteRecord = (id) => {
+const deleteRecord = (id, action = null) => {
   confirmDialog.value = {
     isOpen: true,
-    title: 'Hapus Data',
-    description: 'Yakin ingin menghapus data ini?',
+    title: action?.confirmationTitle || 'Hapus Data',
+    description: action?.confirmationMessage || 'Yakin ingin menghapus data ini?',
+    action: action,
     onConfirm: () => {
       router.delete(`/${panelPath.value}/${pageSlug.value}/${id}`, {
         preserveScroll: true,
@@ -240,11 +251,12 @@ const deleteRecord = (id) => {
   }
 }
 
-const restoreRecord = (id) => {
+const restoreRecord = (id, action = null) => {
   confirmDialog.value = {
     isOpen: true,
-    title: 'Restore Data',
-    description: 'Yakin ingin mengembalikan data ini?',
+    title: action?.confirmationTitle || 'Restore Data',
+    description: action?.confirmationMessage || 'Yakin ingin mengembalikan data ini?',
+    action: action,
     onConfirm: () => {
       router.post(`/${panelPath.value}/${pageSlug.value}/${id}/restore`, {}, {
         preserveScroll: true,
@@ -253,11 +265,12 @@ const restoreRecord = (id) => {
   }
 }
 
-const forceDeleteRecord = (id) => {
+const forceDeleteRecord = (id, action = null) => {
   confirmDialog.value = {
     isOpen: true,
-    title: 'Hapus Permanen',
-    description: 'Yakin ingin menghapus data ini secara permanen? Data tidak dapat dikembalikan.',
+    title: action?.confirmationTitle || 'Hapus Permanen',
+    description: action?.confirmationMessage || 'Yakin ingin menghapus data ini secara permanen? Data tidak dapat dikembalikan.',
+    action: action,
     onConfirm: () => {
       router.delete(`/${panelPath.value}/${pageSlug.value}/${id}/force`, {
         preserveScroll: true,
@@ -276,11 +289,95 @@ const executeBulkAction = (action) => {
       isOpen: true,
       title,
       description,
+      action: action,
       onConfirm: () => performBulkAction(action),
     }
   } else {
     performBulkAction(action)
   }
+}
+
+// ── Shared Config ──────────────────────────────────────
+const maxWidthClass = {
+  xs: 'sm:max-w-xs',
+  sm: 'sm:max-w-sm',
+  md: 'sm:max-w-md',
+  lg: 'sm:max-w-lg',
+  xl: 'sm:max-w-xl',
+  '2xl': 'sm:max-w-2xl',
+  '3xl': 'sm:max-w-3xl',
+  '4xl': 'sm:max-w-4xl',
+  '5xl': 'sm:max-w-5xl',
+  '6xl': 'sm:max-w-6xl',
+  '7xl': 'sm:max-w-7xl',
+  full: 'sm:max-w-full',
+}
+
+// ── Custom Actions ─────────────────────────────────────
+const actionFormDialog = ref({
+  isOpen: false,
+  action: null,
+  row: null,
+  formData: {},
+})
+
+const isSubmittingCustomAction = ref(false)
+
+const executeCustomAction = (action, row) => {
+  if ((action.formSchema && action.formSchema.length > 0) || (action.infolist && action.infolist.length > 0)) {
+    actionFormDialog.value = {
+      isOpen: true,
+      action: action,
+      row: row,
+      formData: {},
+    }
+  } else if (action.requiresConfirmation) {
+    confirmDialog.value = {
+      isOpen: true,
+      title: action.confirmationTitle || action.label,
+      description: action.confirmationMessage || 'Apakah Anda yakin?',
+      onConfirm: () => performCustomAction(action, row, {}),
+    }
+  } else {
+    performCustomAction(action, row, {})
+  }
+}
+
+const actionFormErrors = ref({})
+
+const submitActionForm = () => {
+  const { action, row, formData } = actionFormDialog.value
+  isSubmittingCustomAction.value = true
+  actionFormErrors.value = {}
+  router.post(`/${panelPath.value}/${pageSlug.value}/${row.id}/action`, {
+    action: action.name,
+    data: formData,
+  }, {
+    preserveScroll: true,
+    preserveState: true,
+    onError: (errors) => {
+      isSubmittingCustomAction.value = false
+      const mapped = {}
+      for (const key in errors) {
+        mapped[key.replace('data.', '')] = errors[key]
+      }
+      actionFormErrors.value = mapped
+    },
+    onSuccess: () => {
+      isSubmittingCustomAction.value = false
+      actionFormDialog.value.isOpen = false
+      actionFormErrors.value = {}
+    },
+  })
+}
+
+const performCustomAction = (action, row, data) => {
+  router.post(`/${panelPath.value}/${pageSlug.value}/${row.id}/action`, {
+    action: action.name,
+    data: data,
+  }, {
+    preserveScroll: true,
+  })
 }
 
 const performBulkAction = (action) => {
@@ -669,56 +766,57 @@ const changePerPage = (val) => {
                       v-if="!row.deleted_at && (action.type === 'EditAction' || action.type === 'edit')"
                       :href="`/${panelPath}/${pageSlug}/${row.id}/edit`"
                     >
-                      <Button variant="ghost" size="icon" class="h-8 w-8" :class="{
+                      <Button variant="ghost" :size="action.label ? 'sm' : 'icon'" class="h-8" :class="[action.label ? 'px-3' : 'w-8', {
                           'text-destructive hover:text-destructive': action.color === 'danger',
                           'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
                           'text-green-600 hover:text-green-600': action.color === 'success',
-                      }">
-                        <Pencil class="w-3.5 h-3.5" />
-                        <span class="sr-only">Edit</span>
+                      }]">
+                        <Pencil class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+                        <span v-if="action.label">{{ action.label }}</span>
+                        <span v-else class="sr-only">Edit</span>
                       </Button>
                     </Link>
                     <Button
                       v-if="!row.deleted_at && (action.type === 'DeleteAction' || action.type === 'delete')"
                       variant="ghost"
-                      size="icon"
-                      class="h-8 w-8"
-                      :class="!action.color || action.color === 'danger' ? 'text-destructive hover:text-destructive' : {
+                      :size="action.label ? 'sm' : 'icon'" class="h-8" :class="[action.label ? 'px-3' : 'w-8',
+                        !action.color || action.color === 'danger' ? 'text-destructive hover:text-destructive' : {
                           'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
                           'text-green-600 hover:text-green-600': action.color === 'success',
-                      }"
-                      @click="deleteRecord(row.id)"
+                      }]"
+                      @click="deleteRecord(row.id, action)"
                     >
-                      <Trash2 class="w-3.5 h-3.5" />
-                      <span class="sr-only">Hapus</span>
+                      <Trash2 class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+                      <span v-if="action.label">{{ action.label }}</span>
+                      <span v-else class="sr-only">Hapus</span>
                     </Button>
                     <Button
                       v-if="row.deleted_at && (action.type === 'RestoreAction' || action.type === 'restore')"
                       variant="ghost"
-                      size="icon"
-                      class="h-8 w-8"
-                      :class="!action.color || action.color === 'success' ? 'text-green-600 hover:text-green-600' : {
+                      :size="action.label ? 'sm' : 'icon'" class="h-8" :class="[action.label ? 'px-3' : 'w-8',
+                        !action.color || action.color === 'success' ? 'text-green-600 hover:text-green-600' : {
                           'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
                           'text-destructive hover:text-destructive': action.color === 'danger',
-                      }"
-                      @click="restoreRecord(row.id)"
+                      }]"
+                      @click="restoreRecord(row.id, action)"
                     >
-                      <ArchiveRestore class="w-3.5 h-3.5" />
-                      <span class="sr-only">Restore</span>
+                      <ArchiveRestore class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+                      <span v-if="action.label">{{ action.label }}</span>
+                      <span v-else class="sr-only">Restore</span>
                     </Button>
                     <Button
                       v-if="row.deleted_at && (action.type === 'ForceDeleteAction' || action.type === 'force-delete')"
                       variant="ghost"
-                      size="icon"
-                      class="h-8 w-8"
-                      :class="!action.color || action.color === 'danger' ? 'text-red-600 hover:text-red-600' : {
+                      :size="action.label ? 'sm' : 'icon'" class="h-8" :class="[action.label ? 'px-3' : 'w-8',
+                        !action.color || action.color === 'danger' ? 'text-red-600 hover:text-red-600' : {
                           'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
                           'text-green-600 hover:text-green-600': action.color === 'success',
-                      }"
-                      @click="forceDeleteRecord(row.id)"
+                      }]"
+                      @click="forceDeleteRecord(row.id, action)"
                     >
-                      <Trash2 class="w-3.5 h-3.5" />
-                      <span class="sr-only">Hapus Permanen</span>
+                      <Trash2 class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+                      <span v-if="action.label">{{ action.label }}</span>
+                      <span v-else class="sr-only">Hapus Permanen</span>
                     </Button>
 
                     <!-- Custom Action -->
@@ -727,41 +825,46 @@ const changePerPage = (val) => {
                         v-if="row._v_actions?.[action.name]?.url && !row._v_actions?.[action.name]?.shouldOpenInNewTab"
                         :is="Link"
                         :href="row._v_actions?.[action.name]?.url"
-                        class="h-8 w-8 inline-flex items-center justify-center p-0 rounded-md hover:bg-muted"
+                        class="h-8 inline-flex items-center justify-center p-0 rounded-md hover:bg-muted"
+                        :class="action.label ? 'px-3' : 'w-8'"
                       >
-                        <Button variant="ghost" size="icon" class="h-8 w-8" :class="{
+                        <Button variant="ghost" :size="action.label ? 'sm' : 'icon'" class="h-8 w-full" :class="{
                           'text-destructive hover:text-destructive': action.color === 'danger',
                           'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
                           'text-green-600 hover:text-green-600': action.color === 'success',
                         }">
-                          <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" />
+                          <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+                          <span v-if="action.label">{{ action.label }}</span>
                         </Button>
                       </component>
                       <a 
                         v-else-if="row._v_actions?.[action.name]?.url && row._v_actions?.[action.name]?.shouldOpenInNewTab"
                         :href="row._v_actions?.[action.name]?.url"
                         target="_blank"
-                        class="h-8 w-8 inline-flex items-center justify-center p-0 rounded-md hover:bg-muted"
+                        class="h-8 inline-flex items-center justify-center p-0 rounded-md hover:bg-muted"
+                        :class="action.label ? 'px-3' : 'w-8'"
                       >
-                        <Button variant="ghost" size="icon" class="h-8 w-8" :class="{
+                        <Button variant="ghost" :size="action.label ? 'sm' : 'icon'" class="h-8 w-full" :class="{
                           'text-destructive hover:text-destructive': action.color === 'danger',
                           'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
                           'text-green-600 hover:text-green-600': action.color === 'success',
                         }">
-                          <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" />
+                          <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+                          <span v-if="action.label">{{ action.label }}</span>
                         </Button>
                       </a>
                       <Button
                         v-else
-                        variant="ghost" size="icon" class="h-8 w-8"
-                        :class="{
+                        variant="ghost" :size="action.label ? 'sm' : 'icon'" class="h-8"
+                        :class="[{
                           'text-destructive hover:text-destructive': action.color === 'danger',
                           'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
                           'text-green-600 hover:text-green-600': action.color === 'success',
-                        }"
+                        }, action.label ? 'px-3' : 'w-8']"
                         @click="executeCustomAction(action, row)"
                       >
-                        <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" />
+                        <component :is="resolveIcon(action.icon)" class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+                        <span v-if="action.label">{{ action.label }}</span>
                       </Button>
                     </template>
                   </template>
@@ -821,20 +924,99 @@ const changePerPage = (val) => {
 
     <!-- Confirm Dialog -->
     <AlertDialog :open="confirmDialog.isOpen" @update:open="confirmDialog.isOpen = $event">
-      <AlertDialogContent>
+      <AlertDialogContent 
+        :class="confirmDialog.action?.modalWidth ? (maxWidthClass[confirmDialog.action.modalWidth] || confirmDialog.action.modalWidth) : 'sm:max-w-md'"
+        @interact-outside="(e) => { if (confirmDialog.action?.modalCloseByClickingAway === false) e.preventDefault() }"
+      >
         <AlertDialogHeader>
-          <AlertDialogTitle>{{ confirmDialog.title }}</AlertDialogTitle>
+          <AlertDialogTitle>{{ confirmDialog.action?.modalHeading || confirmDialog.title }}</AlertDialogTitle>
           <AlertDialogDescription>
-            {{ confirmDialog.description }}
+            {{ confirmDialog.action?.modalDescription || confirmDialog.description }}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel @click="confirmDialog.isOpen = false">Batal</AlertDialogCancel>
-          <AlertDialogAction @click="() => { confirmDialog.onConfirm(); confirmDialog.isOpen = false; }" :class="confirmDialog.title.includes('Hapus') ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''">
-            Lanjutkan
+        <AlertDialogFooter class="pt-4">
+          <AlertDialogCancel 
+            v-if="confirmDialog.action?.modalCancelAction !== false" 
+            @click="confirmDialog.isOpen = false"
+            :class="confirmDialog.action?.modalCancelActionColor === 'danger' ? 'text-destructive border-destructive hover:bg-destructive/10' : ''"
+          >
+            {{ confirmDialog.action?.modalCancelActionLabel || 'Batal' }}
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            v-if="confirmDialog.action?.modalSubmitAction !== false" 
+            @click="() => { confirmDialog.onConfirm(); confirmDialog.isOpen = false; }" 
+            :class="confirmDialog.action?.modalSubmitActionColor === 'danger' || confirmDialog.title.includes('Hapus') || confirmDialog.action?.color === 'danger' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''"
+          >
+            {{ confirmDialog.action?.modalSubmitActionLabel || 'Lanjutkan' }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <!-- Custom Action Form Dialog / AlertDialog Conditionally -->
+    <component 
+      :is="actionFormDialog.action?.requiresConfirmation ? AlertDialog : Dialog" 
+      :open="actionFormDialog.isOpen" 
+      @update:open="actionFormDialog.isOpen = $event"
+    >
+      <component 
+        :is="actionFormDialog.action?.requiresConfirmation ? AlertDialogContent : DialogContent" 
+        class="max-h-[90vh] overflow-y-auto" 
+        :class="actionFormDialog.action?.modalWidth ? (maxWidthClass[actionFormDialog.action.modalWidth] || actionFormDialog.action.modalWidth) : 'sm:max-w-xl'"
+        @interact-outside="(e) => { if (actionFormDialog.action?.modalCloseByClickingAway === false) e.preventDefault() }"
+      >
+        <component :is="actionFormDialog.action?.requiresConfirmation ? AlertDialogHeader : DialogHeader">
+          <component :is="actionFormDialog.action?.requiresConfirmation ? AlertDialogTitle : DialogTitle">
+            {{ actionFormDialog.action?.modalHeading || actionFormDialog.action?.label }}
+          </component>
+          <component 
+            v-if="actionFormDialog.action?.modalDescription"
+            :is="actionFormDialog.action?.requiresConfirmation ? AlertDialogDescription : DialogDescription"
+          >
+            {{ actionFormDialog.action?.modalDescription }}
+          </component>
+        </component>
+        
+        <div v-if="actionFormDialog.action?.infolist?.length" class="space-y-4 py-4 px-1">
+          <div v-for="(info, i) in actionFormDialog.action.infolist" :key="i" class="grid grid-cols-3 gap-2 py-2 border-b last:border-0 text-sm">
+            <div class="text-muted-foreground font-medium">{{ info.label }}</div>
+            <div class="col-span-2">{{ actionFormDialog.row[info.name] || '-' }}</div>
+          </div>
+        </div>
+        <form @submit.prevent="submitActionForm" class="space-y-4 py-4">
+          <FormRenderer
+            v-if="actionFormDialog.action?.formSchema?.length"
+            :components="actionFormDialog.action?.formSchema"
+            :formData="actionFormDialog.formData"
+            :errors="actionFormErrors"
+          />
+          <component 
+            :is="actionFormDialog.action?.requiresConfirmation ? AlertDialogFooter : DialogFooter" 
+            class="pt-4 border-t" 
+            v-if="actionFormDialog.action?.formSchema?.length || actionFormDialog.action?.modalSubmitAction !== false || actionFormDialog.action?.modalCancelAction !== false"
+          >
+            <Button 
+              v-if="actionFormDialog.action?.modalCancelAction !== false" 
+              type="button" 
+              variant="outline" 
+              @click="actionFormDialog.isOpen = false"
+              :class="actionFormDialog.action?.modalCancelActionColor === 'danger' ? 'text-destructive border-destructive hover:bg-destructive/10' : ''"
+            >
+              {{ actionFormDialog.action?.modalCancelActionLabel || 'Batal' }}
+            </Button>
+            <Button 
+              v-if="actionFormDialog.action?.modalSubmitAction !== false" 
+              type="submit" 
+              :disabled="isSubmittingCustomAction" 
+              class="gap-2"
+              :class="actionFormDialog.action?.modalSubmitActionColor === 'danger' || actionFormDialog.action?.color === 'danger' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''"
+            >
+              <Loader2 v-if="isSubmittingCustomAction" class="w-4 h-4 animate-spin" />
+              {{ actionFormDialog.action?.modalSubmitActionLabel || 'Lanjutkan' }}
+            </Button>
+          </component>
+        </form>
+      </component>
+    </component>
   </div>
 </template>

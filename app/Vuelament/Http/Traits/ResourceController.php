@@ -410,6 +410,51 @@ trait ResourceController
         return back()->with('success', $resource::getLabel() . ' berhasil dihapus permanen.');
     }
 
+    // ── Execute Row Action ───────────────────────────────
+
+    public function executeAction(Request $request, string|int $id)
+    {
+        $resource = static::$resource;
+        $model    = $resource::getModel();
+        $record   = $model::withTrashed()->findOrFail($id);
+        
+        $actionName = $request->input('action');
+        $actionData = $request->input('data', []);
+
+        // Find the action from Table schema
+        $tableSchema = $resource::tableSchema();
+        $actions = collect($tableSchema->getActions());
+        $action = $actions->firstWhere('name', $actionName);
+
+        if (!$action) {
+            abort(404, 'Action not found');
+        }
+
+        // Validate form schema if present
+        if ($action instanceof \App\Vuelament\Components\Table\Actions\Action && !empty($action->getFormComponents())) {
+            $rules = [];
+            $this->collectRulesFromComponents($action->getFormComponents(), $rules, null, 'create');
+            if ($rules) {
+                // Apply data.* to match the payload shape 'data.field'
+                $mappedRules = [];
+                foreach ($rules as $field => $fieldRules) {
+                    $mappedRules["data.{$field}"] = $fieldRules;
+                }
+                $validated = $request->validate(['data' => 'array'] + $mappedRules);
+                $actionData = $validated['data'] ?? [];
+            }
+        }
+
+        if (method_exists($action, 'execute')) {
+            $this->executeWithTransaction(function () use ($action, $record, $actionData) {
+                $action->execute($record, $actionData);
+            });
+            return back()->with('success', $action->toArray()['label'] . ' berhasil dijalankan.');
+        }
+
+        return back();
+    }
+
     // ── Private helpers ──────────────────────────────────
 
     protected function executeWithTransaction(\Closure $callback)

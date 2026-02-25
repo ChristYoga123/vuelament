@@ -23,4 +23,20 @@ export default defineConfig({
             ignored: ['**/storage/framework/views/**'],
         },
     },
+    build: {
+        chunkSizeWarningLimit: 1200,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('@vueup/vue-quill')) return 'vendor-quill';
+                        if (id.includes('@vuepic/vue-datepicker')) return 'vendor-datepicker';
+                        if (id.includes('@inertiajs')) return 'vendor-inertia';
+                        if (id.includes('vue') || id.includes('@vue')) return 'vendor-vue';
+                        return 'vendor'; 
+                    }
+                }
+            }
+        }
+    }
 });

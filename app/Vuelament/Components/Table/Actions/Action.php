@@ -21,7 +21,7 @@ class Action extends BaseTableAction
 
     public function form(array $schema): static
     {
-        $this->formSchema = array_map(fn($c) => $c->toArray(), $schema);
+        $this->formSchema = $schema;
         return $this;
     }
 
@@ -42,7 +42,12 @@ class Action extends BaseTableAction
     protected function schema(): array
     {
         return [
-            'formSchema' => $this->formSchema,
+            'formSchema' => array_map(fn($c) => method_exists($c, 'toArray') ? $c->toArray() : $c, $this->formSchema),
         ];
+    }
+    
+    public function getFormComponents(): array
+    {
+        return $this->formSchema;
     }
 }

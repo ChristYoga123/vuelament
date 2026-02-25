@@ -6,22 +6,30 @@ use App\Models\User;
 use App\Vuelament\Core\PageSchema;
 use App\Vuelament\Core\BaseResource;
 use Illuminate\Support\Facades\Hash;
-use App\Vuelament\Components\Layout\Grid;
+use App\Vuelament\Components\Form\Radio;
 use App\Vuelament\Components\Form\Toggle;
-use App\Vuelament\Components\Form\TextInput;
+use App\Vuelament\Components\Layout\Grid;
 use App\Vuelament\Components\Table\Table;
-use App\Vuelament\Components\Table\Columns\TextColumn;
-use App\Vuelament\Components\Table\Columns\ToggleColumn;
+use App\Vuelament\Components\Form\Checkbox;
+use App\Vuelament\Components\Form\Textarea;
+use App\Vuelament\Components\Form\FileInput;
+use App\Vuelament\Components\Form\TextInput;
+use App\Vuelament\Components\Form\DatePicker;
+use App\Vuelament\Components\Form\RichEditor;
+use App\Vuelament\Components\Form\TimePicker;
 use App\Vuelament\Components\Actions\ActionGroup;
+use App\Vuelament\Components\Filters\TrashFilter;
 use App\Vuelament\Components\Table\FiltersLayout;
 use App\Vuelament\Components\Actions\CreateAction;
 use App\Vuelament\Components\Filters\SelectFilter;
-use App\Vuelament\Components\Filters\TrashFilter;
+use App\Vuelament\Components\Form\DateRangePicker;
 use App\Vuelament\Components\Table\Actions\Action;
 use App\Vuelament\Components\Actions\DeleteBulkAction;
 use App\Vuelament\Components\Table\Actions\EditAction;
+use App\Vuelament\Components\Table\Columns\TextColumn;
 use App\Vuelament\Components\Actions\RestoreBulkAction;
 use App\Vuelament\Components\Table\Actions\DeleteAction;
+use App\Vuelament\Components\Table\Columns\ToggleColumn;
 use App\Vuelament\Components\Table\Actions\RestoreAction;
 use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
 use App\Vuelament\Components\Table\Actions\ForceDeleteAction;
@@ -76,13 +84,68 @@ class UserResource extends BaseResource
                             ->color(fn(User $user) => $user->is_active ? 'success' : 'danger')
                     ])
                     ->actions([
-                        Action::make('report')
-                            ->icon('file')
+                        Action::make('form')
+                            ->icon('form')
                             ->color('success')
-                            ->label('Laporan')
-                            ->url(fn(User $user) => ReportPage::getUrl(['record' => $user->id])),
-                        EditAction::make(),
-                        DeleteAction::make(),
+                            ->label('Form')
+                            ->modalWidth('4xl')
+                            ->modalCloseByClickingAway(false)
+                            ->modalCancelActionLabel('Tutup')
+                            ->modalSubmitAction(false)
+                            ->form([
+                                TextInput::make('text')
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('number')
+                                    ->required()
+                                    ->number(),
+                                TextInput::make('email')
+                                    ->required()
+                                    ->email(),
+                                TextInput::make('password')
+                                    ->required()
+                                    ->password()
+                                    ->revealable()
+                                    ->minLength(4),
+                                Toggle::make('is_active')
+                                    ->required(),
+                                Radio::make('radio')
+                                    ->required()
+                                    ->options([
+                                        'option1' => 'Option 1',
+                                        'option2' => 'Option 2',
+                                        'option3' => 'Option 3',
+                                    ]),
+                                Checkbox::make('checkbox')
+                                    ->required()
+                                    ->options([
+                                        'option1' => 'Option 1',
+                                        'option2' => 'Option 2',
+                                        'option3' => 'Option 3',
+                                    ]),
+                                RichEditor::make('content')
+                                    ->required(),
+                                Textarea::make('textarea')
+                                    ->required(),
+                                DatePicker::make('date')
+                                    ->required(),
+                                TimePicker::make('time')
+                                    ->required(),
+                                DateRangePicker::make('date_range')
+                                    ->required(),
+                                FileInput::make('file')
+                                    ->label('File (Single)')
+                                    ->required(),
+                                FileInput::make('files')
+                                    ->label('File (Multiple)')
+                                    ->multiple()
+                                    ->required()
+                                    ->reorderable(),
+                            ]),
+                        EditAction::make()
+                            ->label('Edit'),
+                        DeleteAction::make()
+                            ->label('Delete'),
                         RestoreAction::make(),
                         ForceDeleteAction::make(),
                     ])

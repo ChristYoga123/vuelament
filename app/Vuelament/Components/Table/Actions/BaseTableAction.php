@@ -24,10 +24,23 @@ abstract class BaseTableAction
     protected bool $hidden = false;
     protected bool $disabled = false;
     protected ?string $tooltip = null;
+    
+    protected ?string $modalHeading = null;
+    protected ?string $modalDescription = null;
+    protected ?string $modalSubmitActionLabel = null;
+    protected ?string $modalCancelActionLabel = null;
+    protected bool $modalSubmitAction = true;
+    protected bool $modalCancelAction = true;
+    protected ?string $modalSubmitActionColor = null;
+    protected ?string $modalCancelActionColor = null;
+    protected ?string $modalWidth = null;
+    protected ?bool $modalCloseByClickingAway = null;
+    protected array $infolist = [];
 
     public function __construct(string $name = '')
     {
         $this->name = $name;
+        $this->label = $name ? ucfirst(str_replace('_', ' ', $name)) : '';
     }
 
     public static function make(string $name = ''): static
@@ -48,6 +61,18 @@ abstract class BaseTableAction
     public function hidden(bool $v = true): static { $this->hidden = $v; return $this; }
     public function disabled(bool $v = true): static { $this->disabled = $v; return $this; }
     public function tooltip(string $v): static { $this->tooltip = $v; return $this; }
+
+    public function modalHeading(?string $v): static { $this->modalHeading = $v; return $this; }
+    public function modalDescription(?string $v): static { $this->modalDescription = $v; return $this; }
+    public function modalSubmitActionLabel(?string $v): static { $this->modalSubmitActionLabel = $v; return $this; }
+    public function modalCancelActionLabel(?string $v): static { $this->modalCancelActionLabel = $v; return $this; }
+    public function modalSubmitAction(bool $v = true): static { $this->modalSubmitAction = $v; return $this; }
+    public function modalCancelAction(bool $v = true): static { $this->modalCancelAction = $v; return $this; }
+    public function modalSubmitActionColor(?string $v): static { $this->modalSubmitActionColor = $v; return $this; }
+    public function modalCancelActionColor(?string $v): static { $this->modalCancelActionColor = $v; return $this; }
+    public function modalWidth(?string $v): static { $this->modalWidth = $v; return $this; }
+    public function modalCloseByClickingAway(?bool $v = true): static { $this->modalCloseByClickingAway = $v; return $this; }
+    public function infolist(array $v): static { $this->infolist = array_map(fn($c) => method_exists($c, 'toArray') ? $c->toArray() : $c, $v); return $this; }
 
     public function getName(): string { return $this->name; }
 
@@ -96,6 +121,17 @@ abstract class BaseTableAction
             'requiresConfirmation' => $this->requiresConfirmation,
             'confirmationTitle'    => $this->confirmationTitle,
             'confirmationMessage'  => $this->confirmationMessage,
+            'modalHeading'         => $this->modalHeading ?? $this->confirmationTitle ?? $this->label,
+            'modalDescription'     => $this->modalDescription ?? $this->confirmationMessage,
+            'modalSubmitActionLabel'=> $this->modalSubmitActionLabel ?? 'Lanjutkan',
+            'modalCancelActionLabel'=> $this->modalCancelActionLabel ?? 'Batal',
+            'modalSubmitAction'    => $this->modalSubmitAction,
+            'modalCancelAction'    => $this->modalCancelAction,
+            'modalSubmitActionColor'=> $this->modalSubmitActionColor,
+            'modalCancelActionColor'=> $this->modalCancelActionColor,
+            'modalWidth'           => $this->modalWidth ?? 'sm:max-w-xl',
+            'modalCloseByClickingAway' => $this->modalCloseByClickingAway ?? true,
+            'infolist'             => $this->infolist,
         ], $this->schema());
     }
 

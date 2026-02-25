@@ -5,6 +5,7 @@ namespace App\Vuelament\Components\Table;
 class Column
 {
     protected string $name = '';
+    protected string $type = 'TextColumn';
     protected string $label = '';
     protected bool $sortable = false;
     protected bool $searchable = false;
@@ -23,6 +24,7 @@ class Column
     protected ?string $dateFormat = null;
     protected ?string $moneyFormat = null;
     protected bool $badge = false;
+    protected bool $isToggle = false;
     protected ?array $badgeColors = null;   // ['draft' => 'warning', 'published' => 'success']
 
     public function __construct(string $name)
@@ -55,10 +57,12 @@ class Column
     public function dateFormat(string $v): static { $this->dateFormat = $v; return $this; }
     public function money(string $format = 'IDR'): static { $this->moneyFormat = $format; return $this; }
     public function badge(array $colors = []): static { $this->badge = true; $this->badgeColors = $colors; return $this; }
+    public function asToggle(bool $v = true): static { $this->isToggle = $v; return $this; }
 
     public function toArray(string $operation = 'create'): array
     {
         return [
+            'type'        => $this->type ?? class_basename(static::class),
             'name'        => $this->name,
             'label'       => $this->label,
             'sortable'    => $this->sortable,
@@ -79,6 +83,7 @@ class Column
             'moneyFormat' => $this->moneyFormat,
             'badge'       => $this->badge,
             'badgeColors' => $this->badgeColors,
+            'isToggle'    => $this->isToggle,
         ];
     }
 }

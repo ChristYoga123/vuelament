@@ -1,8 +1,8 @@
 <script setup>
 /**
- * VTable — reusable table component (full-featured, 100% sama dengan Resource Index)
+ * Table — reusable table component (full-featured, 100% sama dengan Resource Index)
  *
- * Cukup panggil <VTable /> di custom page Vue dan tabel langsung
+ * Cukup panggil <Table /> di custom page Vue dan tabel langsung
  * ter-render lengkap dengan search, sort, pagination, filters,
  * column toggle, checkboxes, bulk actions, row actions, confirm dialog.
  *
@@ -42,6 +42,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
+import { Switch } from '@/components/ui/switch'
 
 const props = defineProps({
   schema: { type: Object, default: null },
@@ -129,6 +130,22 @@ const sortBy = (field) => {
   navigateWithParams({
     sort: field,
     direction: newDir,
+    preserveScroll: true,
+  })
+}
+
+const isTruthy = (val) => {
+  return val === true || val === 1 || val === '1' || val === 'true'
+}
+
+// ── Column Toggles (Interactive) ─────────────────────
+const updateToggleColumn = (row, colName, value) => {
+  router.patch(`/${panelPath.value}/${pageSlug.value}/${row.id}/update-column`, {
+    column: colName,
+    value: value ? 1 : 0
+  }, {
+    preserveScroll: true,
+    preserveState: true,
   })
 }
 
@@ -446,7 +463,7 @@ const changePerPage = (val) => {
                 <div>
                   <label class="text-xs font-medium text-muted-foreground mb-1.5 block">{{ filter.label }}</label>
                   <select
-                    v-if="filter.type === 'SelectFilter'"
+                    v-if="filter.type === 'SelectFilter' || filter.type === 'TrashFilter'"
                     v-model="filterValues[filter.name]"
                     @change="applyFilters()"
                     class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-xs focus:border-ring focus:ring-ring/50 focus:ring-[3px] outline-none"
@@ -510,7 +527,7 @@ const changePerPage = (val) => {
           <div v-for="filter in tableFilters" :key="filter.name">
             <label class="text-xs font-medium text-muted-foreground mb-1.5 block">{{ filter.label }}</label>
             <select
-              v-if="filter.type === 'SelectFilter'"
+              v-if="filter.type === 'SelectFilter' || filter.type === 'TrashFilter'"
               v-model="filterValues[filter.name]"
               @change="applyFilters()"
               class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-xs focus:border-ring focus:ring-ring/50 focus:ring-[3px] outline-none"
@@ -593,12 +610,25 @@ const changePerPage = (val) => {
                 :key="col.name"
                 class="px-4 py-3 whitespace-nowrap"
               >
+                <!-- Badge -->
                 <span v-if="col.badge" :class="[
                   'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
                   row[col.name] ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                 ]">
                   {{ formatCell(row, col) }}
                 </span>
+                
+                <!-- Toggle -->
+                <div v-else-if="col.isToggle || col.type === 'ToggleColumn'" class="flex items-center">
+                  <Switch
+                    :checked="isTruthy(row[col.name])"
+                    :model-value="isTruthy(row[col.name])"
+                    @update:checked="updateToggleColumn(row, col.name, $event)"
+                    @update:model-value="updateToggleColumn(row, col.name, $event)"
+                  />
+                </div>
+
+                <!-- Normal Cell -->
                 <span v-else>{{ formatCell(row, col) }}</span>
               </td>
               <td v-if="actions.length" class="px-4 py-3 text-right">

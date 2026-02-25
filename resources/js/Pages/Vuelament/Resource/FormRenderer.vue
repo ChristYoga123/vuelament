@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Eye, EyeOff, Upload, X, FileIcon, ImageIcon, GripVertical } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -25,6 +26,10 @@ const emit = defineEmits(['update:formData'])
 const revealedInputs = ref({})
 const toggleReveal = (name) => {
   revealedInputs.value[name] = !revealedInputs.value[name]
+}
+
+const isTruthy = (val) => {
+  return val === true || val === 1 || val === '1' || val === 'true'
 }
 
 // File input state
@@ -293,12 +298,13 @@ const resetReorderState = () => {
 
     <!-- Toggle -->
     <div v-else-if="comp.type === 'Toggle' || comp.type === 'toggle'" class="flex items-center gap-3 py-2">
-      <input
+      <Switch
         :id="comp.name"
-        v-model="formData[comp.name]"
-        type="checkbox"
+        :checked="isTruthy(formData[comp.name])"
+        :model-value="isTruthy(formData[comp.name])"
+        @update:checked="val => formData[comp.name] = val ? 1 : 0"
+        @update:model-value="val => formData[comp.name] = val ? 1 : 0"
         :disabled="comp.disabled"
-        class="size-4 rounded border-input accent-primary cursor-pointer"
       />
       <Label :for="comp.name">{{ comp.label }}</Label>
       <p v-if="comp.hint" class="text-xs text-muted-foreground ml-2">{{ comp.hint }}</p>

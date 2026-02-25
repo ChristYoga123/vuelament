@@ -31,19 +31,6 @@ class SelectFilter extends BaseFilter
     public function searchable(bool $v = true): static { $this->searchable = $v; return $this; }
     public function multiple(bool $v = true): static { $this->multiple = $v; return $this; }
 
-    public function withTrashed(): static
-    {
-        $this->isTrashed = true;
-        if (empty($this->name) || $this->name === 'default') {
-            $this->name = 'trashed';
-        }
-        return $this->label('Status Terhapus')
-                    ->placeholder('Tidak Termasuk Dihapus')
-                    ->options([
-                        'with' => 'Termasuk Dihapus',
-                        'only' => 'Hanya yang Dihapus',
-                    ]);
-    }
 
     protected function schema(): array
     {

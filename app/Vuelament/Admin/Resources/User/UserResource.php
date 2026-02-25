@@ -3,16 +3,20 @@
 namespace App\Vuelament\Admin\Resources\User;
 
 use App\Models\User;
-use App\Vuelament\Facades\V;
 use App\Vuelament\Core\PageSchema;
 use App\Vuelament\Core\BaseResource;
 use Illuminate\Support\Facades\Hash;
+use App\Vuelament\Components\Layout\Grid;
+use App\Vuelament\Components\Form\Toggle;
+use App\Vuelament\Components\Form\TextInput;
 use App\Vuelament\Components\Table\Table;
-use App\Vuelament\Components\Table\Column;
+use App\Vuelament\Components\Table\Columns\TextColumn;
+use App\Vuelament\Components\Table\Columns\ToggleColumn;
 use App\Vuelament\Components\Actions\ActionGroup;
 use App\Vuelament\Components\Table\FiltersLayout;
 use App\Vuelament\Components\Actions\CreateAction;
 use App\Vuelament\Components\Filters\SelectFilter;
+use App\Vuelament\Components\Filters\TrashFilter;
 use App\Vuelament\Components\Table\Actions\Action;
 use App\Vuelament\Components\Actions\DeleteBulkAction;
 use App\Vuelament\Components\Table\Actions\EditAction;
@@ -41,27 +45,30 @@ class UserResource extends BaseResource
                 Table::make()
                 ->query(fn() => User::query()->withoutRole(['super_admin'])->latest())
                     ->columns([
-                        Column::make('id')
+                        TextColumn::make('id')
                             ->label('ID')
                             ->sortable(),
-                        Column::make('name')
+                        TextColumn::make('name')
                             ->label('Name')
                             ->sortable()
                             ->searchable(),
-                        Column::make('email')
+                        TextColumn::make('email')
                             ->label('Email')
                             ->sortable()
                             ->searchable(),
-                        Column::make('created_at')
+                        TextColumn::make('created_at')
                             ->label('Dibuat')
                             ->dateFormat('d/m/Y')
                             ->sortable()
                             ->toggleable(true, true),
-                        Column::make('updated_at')
+                        TextColumn::make('updated_at')
                             ->label('Diupdate')
                             ->dateFormat('d/m/Y')
                             ->sortable()
                             ->toggleable(true, true),
+                        ToggleColumn::make('is_active')
+                            ->label('Aktif')
+                            ->sortable(),
                     ])
                     ->actions([
                         Action::make('report')
@@ -84,8 +91,7 @@ class UserResource extends BaseResource
                             ]),
                     ])
                     ->filters([
-                        SelectFilter::make()
-                            ->withTrashed()
+                        TrashFilter::make()
                     ])
                     ->headerActions([
                         CreateAction::make(),
@@ -101,19 +107,22 @@ class UserResource extends BaseResource
         return PageSchema::make()
             ->title('Buat ' . static::$label)
             ->components([
-                V::grid(1)
+                Grid::make(1)
                     ->schema([
-                        V::textInput('name')
+                        TextInput::make('name')
                             ->label('Name')
                             ->required()
                             ->uniqueIgnoreRecord(),
-                        V::textInput('email')
+                        TextInput::make('email')
                             ->label('Email')
                             ->type('email')
                             ->email()
                             ->required()
                             ->uniqueIgnoreRecord(),
-                        V::textInput('password')
+                        Toggle::make('is_active')
+                            ->label('Status Aktif')
+                            ->hint('Matikan ini untuk mencegah user login.'),
+                        TextInput::make('password')
                             ->label('Password')
                             ->password()
                             ->revealable()

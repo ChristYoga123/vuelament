@@ -1,6 +1,6 @@
 <script setup>
 import DashboardLayout from '@/Layouts/DashboardLayout.vue'
-import VTable from '@/components/vuelament/VTable.vue'
+import Table from '@/components/vuelament/Table.vue'
 
 const props = defineProps({
   resource: Object,
@@ -12,6 +12,6 @@ const props = defineProps({
 
 <template>
   <DashboardLayout :title="tableSchema?.title || resource.label" :description="resource.description">
-    <VTable />
+    <Table />
   </DashboardLayout>
 </template>

@@ -266,6 +266,26 @@ trait ResourceController
             ->with('success', $resource::getLabel() . ' berhasil diupdate.');
     }
 
+    // ── Update Column (Single Field / Toggle) ────────────
+
+    public function updateColumn(Request $request, string|int $id)
+    {
+        $resource = static::$resource;
+        $model = $resource::getModel();
+        $record = $model::findOrFail($id);
+
+        $column = $request->input('column');
+        $value = $request->input('value');
+
+        if (!$column) {
+            abort(400, 'Nama kolom diperlukan.');
+        }
+
+        $record->update([$column => $value]);
+
+        return back()->with('success', 'Berhasil memperbarui data.');
+    }
+
     // ── Destroy ──────────────────────────────────────────
 
     public function destroy(string|int $id)

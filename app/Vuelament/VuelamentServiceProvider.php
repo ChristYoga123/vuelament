@@ -148,6 +148,7 @@ class VuelamentServiceProvider extends ServiceProvider
 
         Route::get("{$slug}/{id}/edit",   [$controllerClass, 'edit'])->name("{$panelId}.{$slug}.edit");
         Route::put("{$slug}/{id}",        [$controllerClass, 'update'])->name("{$panelId}.{$slug}.update");
+        Route::patch("{$slug}/{id}/update-column", [$controllerClass, 'updateColumn'])->name("{$panelId}.{$slug}.update-column");
         Route::delete("{$slug}/{id}",     [$controllerClass, 'destroy'])->name("{$panelId}.{$slug}.destroy");
 
         // SoftDelete single row routes

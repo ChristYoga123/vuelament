@@ -13,7 +13,7 @@ class Column
     protected bool $hidden = false;
     protected ?string $alignment = null;   // left, center, right
     protected ?string $width = null;
-    protected ?string $color = null;
+    protected \Closure|string|null $color = null;
     protected ?string $icon = null;
     protected ?string $prefix = null;
     protected ?string $suffix = null;
@@ -26,10 +26,13 @@ class Column
     protected bool $badge = false;
     protected bool $isToggle = false;
     protected ?array $badgeColors = null;   // ['draft' => 'warning', 'published' => 'success']
+    protected ?\Closure $getStateUsing = null;
+    protected ?\Closure $formatStateUsing = null;
 
     public function __construct(string $name)
     {
         $this->name = $name;
+        $this->label = ucfirst(str_replace('_', ' ', $name));
     }
 
     public static function make(string $name): static
@@ -46,7 +49,7 @@ class Column
     public function alignCenter(): static { return $this->alignment('center'); }
     public function alignRight(): static { return $this->alignment('right'); }
     public function width(string $v): static { $this->width = $v; return $this; }
-    public function color(string $v): static { $this->color = $v; return $this; }
+    public function color(\Closure|string $v): static { $this->color = $v; return $this; }
     public function icon(string $v): static { $this->icon = $v; return $this; }
     public function prefix(string $v): static { $this->prefix = $v; return $this; }
     public function suffix(string $v): static { $this->suffix = $v; return $this; }
@@ -58,6 +61,24 @@ class Column
     public function money(string $format = 'IDR'): static { $this->moneyFormat = $format; return $this; }
     public function badge(array $colors = []): static { $this->badge = true; $this->badgeColors = $colors; return $this; }
     public function asToggle(bool $v = true): static { $this->isToggle = $v; return $this; }
+    public function getStateUsing(\Closure $callback): static { $this->getStateUsing = $callback; return $this; }
+    public function formatStateUsing(\Closure $callback): static { $this->formatStateUsing = $callback; return $this; }
+
+    public function getName(): string { return $this->name; }
+    public function getGetStateUsing(): ?\Closure { return $this->getStateUsing; }
+    public function getFormatStateUsing(): ?\Closure { return $this->formatStateUsing; }
+    
+    public function evaluateColor(mixed $record, mixed $state): ?string
+    {
+        if (is_callable($this->color)) {
+            return app()->call($this->color, [
+                'record' => $record,
+                'state' => $state,
+                get_class($record) => $record,
+            ]);
+        }
+        return $this->color;
+    }
 
     public function toArray(string $operation = 'create'): array
     {
@@ -71,7 +92,7 @@ class Column
             'hidden'      => $this->hidden,
             'alignment'   => $this->alignment,
             'width'       => $this->width,
-            'color'       => $this->color,
+            'color'       => is_string($this->color) ? $this->color : null,
             'icon'        => $this->icon,
             'prefix'      => $this->prefix,
             'suffix'      => $this->suffix,

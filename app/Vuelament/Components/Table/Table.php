@@ -83,6 +83,11 @@ class Table
         return $this->filters;
     }
 
+    public function getColumns(): array
+    {
+        return $this->columns;
+    }
+
     public function getActions(): array
     {
         return $this->actions;

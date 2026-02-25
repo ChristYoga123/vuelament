@@ -1,883 +1,177 @@
 # Vuelament
 
-**NOTE: Akan menjadi package Laravel**
+Vuelament is a powerful, elegant, and developer-friendly administration panel builder for Laravel, powered by Vue 3, Inertia.js, and Tailwind CSS. It is heavily inspired by the philosophy of [Filament PHP](https://filamentphp.com), bringing the joy of rapid backend development to the modern Vue ecosystem.
 
-**Admin panel builder untuk Laravel** — terinspirasi oleh [Filament](https://filamentphp.com), dibangun dengan **Vue.js 3**, **Inertia.js**, dan **shadcn-vue**.
-
-Vuelament menyediakan cara deklaratif untuk membangun admin panel lengkap: resources (CRUD), form builder, table builder, actions, widgets, filter, dan navigasi — semua didefinisikan dari PHP tanpa menulis frontend secara manual.
+Say goodbye to writing boilerplate frontend code for your CRUD operations. With Vuelament, you can build beautifully designed, highly interactive, and fully responsive admin panels by writing simple, declarative PHP classes.
 
 ---
 
-## ✨ Fitur Utama
+## 🌟 Key Features
 
-- 🏗️ **Resource Generator** — CRUD otomatis dari model Eloquent
-- 📊 **Table Builder** — sortable, searchable, paginated, selectable columns
-- 📝 **Form Builder** — TextInput, Select, DatePicker, Toggle, RichEditor, Repeater, dll
-- ⚡ **Bulk Actions** — Hapus massal, restore, force delete dengan dropdown grouped
-- 🎨 **Dark / Light Mode** — toggle tema di header
-- 🔐 **Auth & Middleware** — login page bawaan dengan role-based guard
-- 🧩 **Modular Panel** — multi panel support (admin, manager, dll)
-- 📦 **Auto-discover** — resources, pages, widgets otomatis ter-register
-
----
-
-## 📋 Requirements
-
-- PHP >= 8.1
-- Laravel >= 10.x
-- Node.js >= 18.x
-- Composer
+- **Filament-Inspired Syntax:** Construct tables, forms, and actions using a familiar fluent PHP API.
+- **Modern Tech Stack:** Built on top of Laravel, Vue 3 (Composition API), Inertia.js, Tailwind CSS, and `shadcn-vue`.
+- **Resource Management:** Scaffold entire CRUD operations (Create, Read, Update, Delete) with a single `Resource` class.
+- **Advanced Table Builder:** Full-featured data tables including sorting, searching, pagination, custom column formatting, filters, and row/bulk actions.
+- **Advanced Form Builder:** Create complex forms effortlessly. Features include Grids, Sections, dependent fields (show/hide), dynamic validation rules, inline dehydration, and various input types (Text, Password, Toggles, Selects, File Uploads, etc.).
+- **Automatic Labels & State Formatting:** Out-of-the-box smart labeling and closure-based state evaluation (`getStateUsing`, `formatStateUsing`, `color`) for ultimate flexibility.
+- **Custom Pages:** Easily create dedicated Vue pages within your panel using Artisan commands.
+- **Seamless SPA Experience:** Enjoy lightning-fast page transitions and optimistic UI updates without full page reloads.
 
 ---
 
-## 🚀 Installation
+## 🚀 Quick Start
 
-### 1. Install Dependencies
+### 1. Installation
 
-```bash
-composer install
-npm install
-```
-
-### 2. Setup Environment
+Require the package via Composer _(Make sure you have an existing Laravel + Inertia Vue project setup)_:
 
 ```bash
-cp .env.example .env
-php artisan key:generate
+composer require vuelament/vuelament
 ```
 
-### 3. Migrasi Database
+Install the required NPM dependencies:
 
 ```bash
-php artisan migrate
+npm install lucide-vue-next @inertiajs/vue3 class-variance-authority clsx tailwind-merge
 ```
 
-### 4. Buat User Admin
+### 2. Creating a Panel
 
-```bash
-php artisan vuelament:user
-```
+First, set up a Service Provider for your panel to define the path, branding, and discoverable directories for your resources and pages.
 
-Atau dengan opsi langsung:
+### 3. Creating a Resource
 
-```bash
-php artisan vuelament:user --name="Admin" --email="admin@gmail.com" --password="password" --role="super_admin"
-```
-
-### 5. Build Frontend
-
-```bash
-# Development
-npm run dev
-
-# Production
-npm run build
-```
-
-### 6. Jalankan Server
-
-```bash
-php artisan serve
-```
-
-Akses panel di: **http://127.0.0.1:8000/admin**
-
----
-
-## 🛠️ Usage
-
-### Panel Provider
-
-Setiap panel didefinisikan di `app/Vuelament/Providers/`. Contoh `AdminPanelProvider.php`:
+To manage an Eloquent model (e.g., `User`), create a Resource class:
 
 ```php
-namespace App\Vuelament\Providers;
-
-use App\Vuelament\Core\Panel;
-use App\Vuelament\Core\NavigationGroup;
-use App\Vuelament\VuelamentServiceProvider;
-
-class AdminPanelProvider extends VuelamentServiceProvider
-{
-    public function panel(): Panel
-    {
-        return Panel::make()
-            ->id('admin')
-            ->path('admin')
-            ->brandName('Admin Panel')
-            ->login()
-            ->middleware(['web'])
-            ->authMiddleware([\App\Vuelament\Http\Middleware\Authenticate::class])
-            ->colors(['primary' => '#6366f1'])
-            ->discoverResources(
-                app_path('Vuelament/Admin/Resources'),
-                'App\\Vuelament\\Admin\\Resources'
-            )
-            ->navigation([
-                NavigationGroup::make('Master')
-                    ->items([
-                        ...UserResource::getNavigationItems(),
-                    ])
-            ]);
-    }
-}
+php artisan vuelament:resource User
 ```
 
-Panel provider harus didaftarkan di `config/app.php` pada array `providers`.
+This will generate a `UserResource.php` file. You can then define your Table and Form schemas using the fluent API:
 
----
-
-### Panel Access (Authorization)
-
-Secara default, Vuelament mencoba mengecek _role_ menggunakan package Spatie Permission. Jika Anda tidak menggunakannya, **akses panel hanya diizinkan otomatis ketika aplikasi berada di environment `local`**. Untuk environment `production`, Anda **wajib** mendefinisikan logika otorisasi secara eksplisit agar panel Anda aman.
-
-Tambahkan trait `HasPanelAccess` pada model `User` dan _override_ method `canAccessPanel`:
+#### Defining the Table
 
 ```php
-use App\Vuelament\Traits\HasPanelAccess;
-use App\Vuelament\Core\Panel;
-
-class User extends Authenticatable
-{
-    use HasPanelAccess; // Wajib
-
-    public function canAccessPanel(Panel $panel): bool
-    {
-        // Contoh: Hanya user di bawah domain perusahaan yang boleh akses panel admin
-        if ($panel->getId() === 'admin') {
-            return str_ends_with($this->email, '@perusahaan.com') && $this->is_active;
-        }
-
-        return false;
-    }
-}
-```
-
----
-
-### Membuat Resource
-
-#### Artisan Command
-
-```bash
-# Basic
-php artisan vuelament:resource Post
-
-# Dengan auto-generate field dari database
-php artisan vuelament:resource Post --generate
-
-# Dengan panel tertentu
-php artisan vuelament:resource Post --panel=Admin
-
-# Dengan model custom
-php artisan vuelament:resource Post --model=BlogPost
-
-# Overwrite jika sudah ada
-php artisan vuelament:resource Post --force
-```
-
-Command ini akan menghasilkan:
-
-- `app/Vuelament/Admin/Resources/PostResource.php`
-- `app/Http/Controllers/Vuelament/Admin/PostController.php`
-
----
-
-### Struktur Resource
-
-Setiap resource memiliki 2 method utama: `tableSchema()` dan `formSchema()`.
-
-```php
-namespace App\Vuelament\Admin\Resources;
-
-use App\Models\Post;
-use App\Vuelament\Facades\V;
-use App\Vuelament\Core\PageSchema;
-use App\Vuelament\Core\BaseResource;
 use App\Vuelament\Components\Table\Table;
-use App\Vuelament\Components\Table\Column;
-use App\Vuelament\Components\Actions\ActionGroup;
-use App\Vuelament\Components\Actions\CreateAction;
-use App\Vuelament\Components\Actions\DeleteBulkAction;
-use App\Vuelament\Components\Table\Actions\EditAction;
-use App\Vuelament\Components\Table\Actions\DeleteAction;
+use App\Vuelament\Components\Table\Columns\TextColumn;
+use App\Vuelament\Components\Table\Columns\ToggleColumn;
 
-class PostResource extends BaseResource
+public static function tableSchema(): Table
 {
-    protected static string $model = Post::class;
-    protected static string $slug = 'posts';
-    protected static string $label = 'Post';
-    protected static string $icon = 'file-text';
+    return Table::make()
+        ->columns([
+            TextColumn::make('name')
+                ->label('Full Name')
+                ->sortable()
+                ->searchable(),
 
-    protected static int $navigationSort = 1;
+            TextColumn::make('email')
+                ->label('Email Address')
+                ->searchable(),
 
-    public static function tableSchema(): PageSchema
-    {
-        return PageSchema::make()
-            ->title(static::$label)
-            ->components([
-                Table::make()
-                    ->columns([
-                        Column::make('id')->label('ID')->sortable(),
-                        Column::make('title')->label('Judul')->sortable()->searchable(),
-                        Column::make('status')->label('Status')->badge(),
-                        Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),
-                    ])
-                    ->actions([
-                        EditAction::make(),
-                        DeleteAction::make(),
-                    ])
-                    ->bulkActions([
-                        ActionGroup::make('Aksi Massal')
-                            ->icon('list')
-                            ->actions([
-                                DeleteBulkAction::make(),
-                            ]),
-                    ])
-                    ->filters([])
-                    ->headerActions([
-                        CreateAction::make(),
-                    ])
-                    ->searchable()
-                    ->paginated()
-                    ->selectable(),
-            ]);
-    }
+            ToggleColumn::make('is_active')
+                ->label('Status'),
 
-    public static function formSchema(): PageSchema
-    {
-        return PageSchema::make()
-            ->title('Buat ' . static::$label)
-            ->components([
-                V::grid(2)->schema([
-                    V::textInput('title')->label('Judul')->required(),
-                    V::select('category_id')
-                        ->label('Kategori')
-                        ->options(\App\Models\Category::pluck('name', 'id')->toArray()),
-                ]),
-                V::richEditor('content')->label('Konten')->required(),
-                V::toggle('is_published')->label('Published'),
-            ]);
-    }
+            TextColumn::make('roles')
+                ->label('Role')
+                ->badge()
+                ->color(fn ($record) => $record->role === 'admin' ? 'success' : 'info')
+                ->getStateUsing(fn ($record) => strtoupper($record->role)),
+        ]);
 }
 ```
 
----
-
-### Resource Data Hooks
-
-Sebelum atau sesudah proses Create / Update, Anda bisa mengintersepsi (tweak) `$data` atau `$record` _Eloquent_ layaknya Laravel murni lewat method-method hook berikut di dalam file Resource Anda `(misal UserResource.php)`:
+#### Defining the Form
 
 ```php
-    // Memanipulasi $data sebelum disimpan ke DB (saat Create)
-    public static function mutateFormDataBeforeCreate(array $data): array
-    {
-        $data['user_id'] = auth()->id();
-        return $data;
-    }
-
-    // Eksekusi logic setelah record baru terbentuk di DB
-    public static function afterCreate(\Illuminate\Database\Eloquent\Model $record, array $data): void
-    {
-        // Contoh: Kirim email notifikasi
-        // Mail::to($record->email)->send(new WelcomeMail($record));
-    }
-
-    // Memanipulasi $data sebelum disimpan ke DB (saat Edit/Update)
-    public static function mutateFormDataBeforeSave(array $data): array
-    {
-        // ...
-        return $data;
-    }
-
-    // Eksekusi logic setelah record di-update di DB
-    public static function afterSave(\Illuminate\Database\Eloquent\Model $record, array $data): void
-    {
-        // ...
-    }
-```
-
----
-
-### Custom Pages
-
-Selain Resource (CRUD), Anda juga bisa membuat halaman custom. Sangat berguna untuk merender halaman _Report_, _Settings_, atau form _Single Action_.
-
-#### Artisan Command
-
-```bash
-php artisan vuelament:page SettingsPage
-```
-
-#### Struktur Custom Page
-
-Berkat arsitektur _Headless/Server-Driven UI_ (_Zero Vue Files_), secara default Custom Page akan meminjam template generik bawaan. Anda **tidak wajib** membuat `<template> Vue` secara manual jika Anda hanya butuh merender form/tabel sederhana.
-
-```php
-namespace App\Vuelament\Admin\Pages;
-
-use App\Vuelament\Core\BasePage;
 use App\Vuelament\Core\PageSchema;
-use App\Vuelament\Components\Table\Table;
-use App\Vuelament\Components\Table\Column;
-use App\Models\User;
+use App\Vuelament\Components\Layout\Grid;
+use App\Vuelament\Components\Form\TextInput;
+use App\Vuelament\Components\Form\Toggle;
 
-class SettingsPage extends BasePage
+public static function formSchema(): PageSchema
 {
-    protected static string $slug = 'settings';
-    protected static string $title = 'Pengaturan Aplikasi';
-    protected static ?string $description = 'Ubah parameter core dari aplikasi Anda.';
-    protected static string $icon = 'settings';
+    return PageSchema::make()
+        ->components([
+            Grid::make(2)->schema([
+                TextInput::make('name')
+                    ->required()
+                    ->maxLength(255),
 
-    // (Opsional) Mengarahkan menu ini ke grup sidebar tertentu
-    // protected static ?string $navigationGroup = 'Master';
+                TextInput::make('email')
+                    ->email()
+                    ->required(),
 
-    /**
-     * Otomatis merender Vuelament Table pada halaman
-     */
-    public static function table(): ?PageSchema
-    {
-        return PageSchema::make()
-            ->components([
-                Table::make()
-                    ->query(fn() => User::where('role', 'admin'))
-                    ->columns([
-                        Column::make('name')->label('Nama'),
-                        Column::make('email')->label('Email'),
-                    ])
-                    ->paginated()
-            ]);
-    }
+                TextInput::make('password')
+                    ->password()
+                    ->required(fn (string $operation) => $operation === 'create')
+                    ->dehydrateStateUsing(fn ($state) => Hash::make($state)),
+
+                Toggle::make('is_active')
+                    ->default(true),
+            ])
+        ]);
 }
 ```
 
-Jika Anda memerlukan halaman dashboard dengan chart/kanban kompleks yang tidak bisa dibungkus dengan komponen PHP, Anda dapat menimpa (override) view standar ke file Vue buatan Anda sendiri:
-
-```php
-    // Ubah pointer ini ke path file Vue komponen Anda (resources/js/Pages/...)
-    protected static string $view = 'Vuelament/Pages/Admin/SettingsPage';
-```
-
-#### Resource Sub-Pages & Breadcrumbs
-
-Jika halaman _Custom Page_ dimaksudkan sebagai halaman "anak" dari sebuah resource (bukan halaman global standalone), Anda dapat mendaftarkan property `$resource` pada Page tersebut. Ini akan membuat:
-
-1. URL secara otomatis mengikuti format Resource (misal `/admin/users/{record}/report`).
-2. Page dilompati dari auto-discovery global.
-3. Otomatis menerima pelemparan data `$record` dari database jika dipanggil.
-
-```php
-class ReportPage extends BasePage
-{
-    // Meletakkan page ini di bawah UserResource
-    protected static ?string $resource = UserResource::class;
-
-    // (Opsional) Mengustomisasi breadcrumb
-    public static function getBreadcrumbs(): array
-    {
-        return [
-            url('/admin') => 'Dashboard',
-            UserResource::getUrl('index') => 'Pengguna',
-            null => 'Laporan Custom',
-        ];
-    }
-}
-```
-
-#### Custom Parameter Name pada Sub-Pages
-
-Secara default, Vuelament merekomendasikan penamaan `{record}` pada parameter rute _Custom Page_ (contoh: `/admin/users/{record}/report`). Meski begitu, Anda bebas menggunakan penamaan apa saja seperti `{user_id}` atau `{invoice}`.
-
-Vuelament Router akan secara otomatis mengekstrak _parameter pertama_ apapun yang ia temukan dan tetap mengirimkannya ke model Eloquent pada metode `getData()`.
-
-Untuk menggunakan parameter kustom, cukup daftarkan secara eksplisit di fungsi `getPages()` pada Resource Anda menggunakan `PageRegistration`:
-
-```php
-use App\Vuelament\Core\PageRegistration;
-
-    public static function getPages(): array
-    {
-        return [
-            'index'  => static::class,
-            'create' => static::class,
-            'edit'   => static::class,
-            // Bebas ganti param {record} menjadi {user_id} sesuai kehendak
-            'report' => PageRegistration::make(ReportPage::class)->route('{user_id}/report'),
-        ];
-    }
-```
-
-Dan jangan lupa sesuaikan nama kunci _array_-nya saat memanggil pelemparan rute di dalam Action url Anda:
-
-```php
-->url(fn(User $user) => ReportPage::getUrl(['user_id' => $user->id]))
-```
-
-_Note:_ Anda juga bisa meng- override metode `getBreadcrumbs(string $operation, mixed $record = null): array` pada `ResourceController` Anda.
+That's it! Vuelament will automatically render the List, Create, and Edit pages with all the configured features.
 
 ---
 
-### Table Builder
+## 📖 Component Reference
 
-#### Columns
+### Table Columns
 
-```php
-Column::make('name')->label('Nama')->sortable()->searchable(),
-Column::make('email')->label('Email')->sortable()->searchable(),
-Column::make('is_active')->label('Aktif')->badge(),
-Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),
-Column::make('notes')->label('Catatan')->toggleable(true, true), // toggleable, hidden by default
-```
+- `TextColumn::make('field')`
+- `ToggleColumn::make('field')`
+- _More to come..._
 
-#### Row Actions
+_Available Modifiers:_ `->label()`, `->sortable()`, `->searchable()`, `->badge()`, `->color()`, `->getStateUsing()`, `->formatStateUsing()`, `->prefix()`, `->suffix()`.
 
-```php
-->actions([
-    Action::make('report')
-        ->icon('file')
-        ->color('success')  // 'danger', 'warning', 'success', 'primary'
-        ->label('Laporan')
-        ->url(fn(User $user) => ReportPage::getUrl(['record' => $user->id]))
-        ->openUrlInNewTab(), // Buka tab baru jika diklik
-    EditAction::make(),
-    DeleteAction::make(),
-    RestoreAction::make(),         // untuk SoftDeletes
-    ForceDeleteAction::make(),     // untuk SoftDeletes
-])
-```
+### Form Inputs
 
-#### Bulk Actions (Grouped)
+- `TextInput::make('field')`
+- `Toggle::make('field')`
+- `FileInput::make('field')`
+- `Select::make('field')`
+- `Repeater::make('field')`
 
-Bulk actions ditampilkan sebagai dropdown saat ada item yang dipilih:
+_Available Modifiers:_ `->required()`, `->disabled()`, `->unique()`, `->dehydrateStateUsing()`, `->visible()`.
 
-```php
-use App\Vuelament\Components\Actions\ActionGroup;
-use App\Vuelament\Components\Actions\DeleteBulkAction;
-use App\Vuelament\Components\Actions\RestoreBulkAction;
-use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
+### Form Layouts
 
-->bulkActions([
-    ActionGroup::make('Aksi Massal')
-        ->icon('list')
-        ->actions([
-            DeleteBulkAction::make(),
-            RestoreBulkAction::make(),         // untuk SoftDeletes
-            ForceDeleteBulkAction::make(),     // untuk SoftDeletes
-        ]),
-])
-```
-
-#### Header Actions
-
-```php
-->headerActions([
-    CreateAction::make(),
-])
-```
-
-#### Custom Table Query
-
-Secara default, Table akan memanggil `YourModel::query()`. Jika ingin memfilter atau mensortir base query:
-
-```php
-Table::make()
-    ->query(fn() => User::query()->where('is_active', true)->latest())
-    ->columns([...])
-```
-
-#### Table Options
-
-```php
-Table::make()
-    ->searchable()          // enable search bar
-    ->paginated()           // enable pagination
-    ->perPage(25)           // default per page
-    ->perPageOptions([10, 25, 50, 100])
-    ->selectable()          // checkbox select
-    ->defaultSort('name', 'asc')
-    ->emptyStateHeading('Belum ada data')
-    ->emptyStateDescription('Klik tombol tambah untuk membuat data baru.')
-```
+- `Grid::make(columns)`
+- `Section::make('Heading')`
+- `Card::make()`
 
 ---
 
-### Filters
+## 🛠 Advanced Usage
 
-Filter mendukung 3 layout yang bisa dikonfigurasi:
+### Dependency Injection in Closures
 
-```php
-use App\Vuelament\Components\Table\FiltersLayout;
-use App\Vuelament\Components\Filters\SelectFilter;
-```
-
-#### 1. Dropdown (Default)
-
-Filter tersembunyi di balik icon filter button:
+Vuelament evaluates closures using Laravel's robust service container. You can type-hint the current `$record` or the raw `$state` to execute conditional logic exactly like Filament:
 
 ```php
-->filters([
-    SelectFilter::make('status')
-        ->label('Status')
-        ->options([
-            'active'   => 'Aktif',
-            'inactive' => 'Nonaktif',
-        ]),
-])
-// atau secara eksplisit:
-->filters([
-    SelectFilter::make('status')->label('Status')->options([...]),
-], layout: FiltersLayout::Dropdown)
+TextColumn::make('balance')
+    ->color(function (User $user) {
+        if ($user->balance < 0) return 'danger';
+        if ($user->balance > 1000) return 'success';
+        return 'warning';
+    })
+    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 0, ',', '.'));
 ```
 
-#### 2. Above Content
+### Flash Message Suppression
 
-Filter selalu visible di atas tabel:
-
-```php
-->filters([
-    SelectFilter::make('category_id')
-        ->label('Kategori')
-        ->options(Category::pluck('name', 'id')->toArray()),
-    SelectFilter::make('status')
-        ->label('Status')
-        ->options(['draft' => 'Draft', 'published' => 'Published']),
-], layout: FiltersLayout::AboveContent)
-```
-
-#### 3. Above Content Collapsible
-
-Filter di atas tabel dengan toggle show/hide:
-
-```php
-->filters([
-    SelectFilter::make('trashed')
-        ->label('Status')
-        ->options([
-            ''     => 'Tanpa Trashed',
-            'with' => 'Dengan Trashed',
-            'only' => 'Hanya Trashed',
-        ]),
-], layout: FiltersLayout::AboveContentCollapsible)
-```
-
-#### Menggunakan `filtersLayout()` terpisah
-
-```php
-->filters([...])
-->filtersLayout(FiltersLayout::AboveContent)
-```
-
-#### Filter yang tersedia
-
-| Filter           | Deskripsi                    |
-| ---------------- | ---------------------------- |
-| `SelectFilter`   | Dropdown select dengan opsi  |
-| `ToggleFilter`   | Toggle on/off                |
-| `RadioFilter`    | Radio button group           |
-| `CheckboxFilter` | Checkbox group               |
-| `CustomFilter`   | Filter custom dengan closure |
+Toggles and inline column adjustments process silently via Vue's optimistic UI updates, skipping full round-trip page flashes and ensuring your application behaves like a true, seamless SPA.
 
 ---
 
-### Form Builder
+## 🤝 Contributing
 
-Gunakan facade `V` untuk shorthand:
-
-```php
-// Text Input
-V::textInput('name')->label('Nama')->required()->maxLength(255)
-V::textInput('email')->label('Email')->type('email')->required()
-V::textInput('price')->label('Harga')->type('number')
-V::textInput('password')->label('Password')->password()->revealable()
-
-// Textarea
-V::textarea('description')->label('Deskripsi')->rows(5)
-
-// Rich Editor
-V::richEditor('content')->label('Konten')
-
-// Select
-V::select('category_id')
-    ->label('Kategori')
-    ->options(['draft' => 'Draft', 'published' => 'Published'])
-    ->searchable()
-
-// Date & Time
-V::datePicker('birth_date')->label('Tanggal Lahir')
-V::timePicker('start_time')->label('Waktu Mulai')
-V::dateRangePicker('period')->label('Periode')
-
-// Toggle & Checkbox
-V::toggle('is_active')->label('Aktif')
-V::checkbox('agree')->label('Setuju dengan syarat')
-
-// Radio
-V::radio('gender')
-    ->label('Jenis Kelamin')
-    ->options(['male' => 'Laki-laki', 'female' => 'Perempuan'])
-
-// File Upload
-V::fileInput('avatar')->label('Foto')->image()->maxSize(2048)
-
-// Repeater
-V::repeater('items')->label('Item')->schema([
-    V::textInput('name')->label('Nama'),
-    V::textInput('qty')->label('Qty')->type('number'),
-])
-```
-
-#### Layout Components
-
-```php
-// Grid
-V::grid(2)->schema([
-    V::textInput('first_name'),
-    V::textInput('last_name'),
-])
-
-// Section
-V::section('Informasi Dasar')->schema([
-    V::textInput('name'),
-])
-
-// Card
-V::card('Detail')->schema([
-    V::textarea('notes'),
-])
-```
-
-#### Validation
-
-Validasi otomatis dibangun dari properti komponen (`required()`, `maxLength()`, `type()`, dll). Bisa juga override manual:
-
-```php
-public static function rules(string $action, mixed $id = null): array
-{
-    return [
-        'name'  => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email' . ($id ? ",{$id}" : ''),
-    ];
-}
-```
-
----
-
-### Data Lifecycle & Hooks (Form)
-
-Form inputs memiliki siklus hidup yang memungkinkan manipulasi state sebelum disimpan, serta konfigurasi validasi yang dinamis:
-
-```php
-V::textInput('password')
-    ->label('Password')
-    ->password()
-    ->revealable()
-    // 1. Dinamis berdasarkan 'create' atau 'edit'
-    ->required(fn (string $operation): bool => $operation === 'create')
-    // 2. Manipulasi data sebelum validator/penyimpanan ke DB (Hash string)
-    ->dehydrateStateUsing(fn (string $state): string => Hash::make($state))
-    // 3. Batalkan state dehydrate (jangan simpan) jika value kosong (misal saat edit tapi password kosong)
-    ->saved(fn (?string $state): bool => filled($state))
-```
-
----
-
-### Unique Validation
-
-```php
-V::textInput('email')
-    ->label('Email')
-    ->type('email')
-    ->required()
-    ->uniqueIgnoreRecord()  // auto skip current record on edit
-```
-
----
-
-### SoftDeletes Support
-
-Jika model menggunakan `SoftDeletes`, tambahkan:
-
-```php
-// Di resource
-protected static bool $softDeletes = true;
-
-// Actions
-->actions([
-    EditAction::make(),
-    DeleteAction::make(),
-    RestoreAction::make(),
-    ForceDeleteAction::make(),
-])
-
-// Bulk Actions
-->bulkActions([
-    ActionGroup::make('Aksi Massal')
-        ->icon('list')
-        ->actions([
-            DeleteBulkAction::make(),
-            RestoreBulkAction::make(),
-            ForceDeleteBulkAction::make(),
-        ]),
-])
-
-// Filter
-->filters([
-    SelectFilter::make()->withTrashed(),
-])
-```
-
----
-
-### Widgets
-
-Widget ditampilkan di halaman dashboard atau sebagai komponen tambahan:
-
-#### Stats Overview
-
-```php
-use App\Vuelament\Components\Widgets\StatsOverviewWidget;
-use App\Vuelament\Components\Widgets\Stat;
-
-StatsOverviewWidget::make()
-    ->stats([
-        Stat::make('Total User', User::count())
-            ->description('User terdaftar')
-            ->icon('users')
-            ->color('primary'),
-        Stat::make('Pendapatan', 'Rp 15.000.000')
-            ->description('+12% dari bulan lalu')
-            ->icon('trending-up')
-            ->color('success'),
-        Stat::make('Order Pending', Order::where('status', 'pending')->count())
-            ->description('Menunggu proses')
-            ->icon('clock')
-            ->color('warning'),
-    ])
-```
-
-#### Chart Widget
-
-```php
-use App\Vuelament\Components\Widgets\ChartWidget;
-
-ChartWidget::make()
-    ->heading('Penjualan Bulanan')
-    ->type('bar')  // bar, line, pie, doughnut
-    ->data([
-        'labels' => ['Jan', 'Feb', 'Mar', 'Apr'],
-        'datasets' => [
-            [
-                'label' => 'Penjualan',
-                'data' => [120, 190, 300, 250],
-            ]
-        ]
-    ])
-```
-
-#### Table Widget
-
-```php
-use App\Vuelament\Components\Widgets\TableWidget;
-
-TableWidget::make()
-    ->heading('Order Terbaru')
-    ->columns([...])
-    ->query(fn() => Order::latest()->limit(5)->get())
-```
-
----
-
-### Dark Mode
-
-Dark/Light mode toggle tersedia di header top bar. Preferensi disimpan di `localStorage` dan otomatis mendeteksi preferensi sistem.
-
----
-
-### Icons
-
-Vuelament menggunakan [Lucide Icons](https://lucide.dev/icons/). Semua icon didefinisikan dengan format kebab-case:
-
-```php
-protected static string $icon = 'users';         // → Users
-protected static string $icon = 'file-text';      // → FileText
-protected static string $icon = 'layout-dashboard'; // → LayoutDashboard
-```
-
----
-
-## 📁 Struktur Direktori
-
-Kini semua komponen terkait sebuah resource (Resource config, Controller, Model Service, dan Pages spesifik) di-kelompokkan menjadi satu folder untuk memudahkan isolasi business logic (_Colocated Pattern_):
-
-```
-app/Vuelament/
-├── Admin/
-│   ├── Resources/
-│   │   ├── User/
-│   │   │   ├── UserResource.php
-│   │   │   ├── UserController.php
-│   │   │   ├── UserService.php
-│   │   │   ├── Report.php             # Custom Page atau widget khusus resource
-│   │   │   └── ...                    # File lain yang berhubungan khusus dengan User
-│   ├── Pages/              # Custom pages global/standalone
-│   └── Widgets/            # Dashboard widgets global/standalone
-├── Commands/
-│   ├── MakeResourceCommand.php
-│   ├── MakeUserCommand.php
-│   ├── MakePanelCommand.php
-│   └── MakePageCommand.php
-├── Components/
-│   ├── Actions/            # ActionGroup, BulkAction, CreateAction, dll
-│   ├── Filters/            # SelectFilter, ToggleFilter, dll
-│   ├── Form/               # TextInput, Select, DatePicker, dll
-│   ├── Infolists/          # TextEntry, ImageEntry
-│   ├── Layout/             # Grid, Section, Card
-│   ├── Table/              # Table, Column, row Actions
-│   └── Widgets/            # StatsOverview, Chart, TableWidget
-├── Core/
-│   ├── BaseResource.php
-│   ├── BaseComponent.php
-│   ├── PageSchema.php
-│   ├── Panel.php
-│   ├── NavigationGroup.php
-│   └── NavigationItem.php
-├── Facades/
-│   └── V.php               # Shorthand facade
-├── Http/
-│   ├── Traits/ResourceController.php
-│   └── Middleware/
-├── Providers/
-│   └── AdminPanelProvider.php
-├── Stubs/                   # Template untuk code generation
-└── VuelamentServiceProvider.php
-
-resources/js/
-├── Layouts/
-│   └── DashboardLayout.vue  # Sidebar + topbar + dark mode
-├── Pages/Vuelament/
-│   ├── Auth/Login.vue
-│   ├── Dashboard.vue
-│   └── Resource/
-│       ├── Index.vue         # Table + bulk actions
-│       ├── Create.vue        # Form create
-│       └── Edit.vue          # Form edit
-└── components/ui/            # shadcn-vue components
-```
-
----
-
-## 🧪 Artisan Commands
-
-| Command                                 | Deskripsi                          |
-| --------------------------------------- | ---------------------------------- |
-| `vuelament:resource {name}`             | Generate resource + controller     |
-| `vuelament:resource {name} --generate`  | Auto-generate dari database schema |
-| `vuelament:user`                        | Buat user admin                    |
-| `vuelament:panel {name}`                | Generate panel provider baru       |
-| `vuelament:page {name} --resource=User` | Generate custom page               |
-
----
+Contributions are welcome! Please feel free to submit a Pull Request if you'd like to add new input types, column formats, or improve the engine.
 
 ## 📄 License
 
-MIT License
+Vuelament is open-sourced software licensed under the [MIT license](LICENSE).

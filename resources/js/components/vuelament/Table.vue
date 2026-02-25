@@ -140,12 +140,20 @@ const isTruthy = (val) => {
 
 // ── Column Toggles (Interactive) ─────────────────────
 const updateToggleColumn = (row, colName, value) => {
+  // Preemptively update the UI to make it feel instant
+  row[colName] = value ? 1 : 0
+  
   router.patch(`/${panelPath.value}/${pageSlug.value}/${row.id}/update-column`, {
     column: colName,
     value: value ? 1 : 0
   }, {
     preserveScroll: true,
     preserveState: true,
+    only: ['data'], // Only reload the table data, suppressing full-page updates/flashes
+    onError: () => {
+      // Revert on error
+      row[colName] = !value ? 1 : 0
+    }
   })
 }
 
@@ -308,7 +316,10 @@ const resolveIcon = (name) => {
 }
 
 const formatCell = (row, col) => {
-  let val = row[col.name]
+  let val = row._v_columns?.[col.name]?.formatted !== undefined 
+    ? row._v_columns[col.name].formatted 
+    : row[col.name]
+    
   if (val === null || val === undefined) return '—'
   if (col.dateFormat && val) {
     try {
@@ -317,7 +328,8 @@ const formatCell = (row, col) => {
     } catch { return val }
   }
   if (col.badge) {
-    return val ? 'Ya' : 'Tidak'
+    if (typeof val === 'boolean') return val ? 'Ya' : 'Tidak'
+    return String(val)
   }
   return String(val)
 }
@@ -613,9 +625,15 @@ const changePerPage = (val) => {
                 <!-- Badge -->
                 <span v-if="col.badge" :class="[
                   'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                  row._v_columns?.[col.name]?.color === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 
+                  row._v_columns?.[col.name]?.color === 'danger' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                  row._v_columns?.[col.name]?.color === 'warning' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                  row._v_columns?.[col.name]?.color === 'info' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
                   row[col.name] ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                ]">
+                ]" :style="row._v_columns?.[col.name]?.color && !['success', 'danger', 'warning', 'info'].includes(row._v_columns?.[col.name]?.color) ? `background-color: ${row._v_columns?.[col.name]?.color}20; color: ${row._v_columns?.[col.name]?.color}` : ''">
+                  <span v-if="col.prefix" class="mr-1 opacity-70">{{ col.prefix }}</span>
                   {{ formatCell(row, col) }}
+                  <span v-if="col.suffix" class="ml-1 opacity-70">{{ col.suffix }}</span>
                 </span>
                 
                 <!-- Toggle -->
@@ -629,7 +647,19 @@ const changePerPage = (val) => {
                 </div>
 
                 <!-- Normal Cell -->
-                <span v-else>{{ formatCell(row, col) }}</span>
+                <span v-else 
+                  :class="[
+                    row._v_columns?.[col.name]?.color === 'success' ? 'text-green-600 dark:text-green-400' : 
+                    row._v_columns?.[col.name]?.color === 'danger' ? 'text-red-600 dark:text-red-400' :
+                    row._v_columns?.[col.name]?.color === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+                    row._v_columns?.[col.name]?.color === 'info' ? 'text-blue-600 dark:text-blue-400' : ''
+                  ]"
+                  :style="row._v_columns?.[col.name]?.color && !['success', 'danger', 'warning', 'info'].includes(row._v_columns?.[col.name]?.color) ? `color: ${row._v_columns?.[col.name]?.color}` : ''"
+                >
+                  <span v-if="col.prefix" class="mr-1 opacity-70">{{ col.prefix }}</span>
+                  {{ formatCell(row, col) }}
+                  <span v-if="col.suffix" class="ml-1 opacity-70">{{ col.suffix }}</span>
+                </span>
               </td>
               <td v-if="actions.length" class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">

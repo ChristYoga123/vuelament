@@ -69,6 +69,11 @@ class UserResource extends BaseResource
                         ToggleColumn::make('is_active')
                             ->label('Aktif')
                             ->sortable(),
+                        TextColumn::make('keaktifan')
+                            ->label('Status')
+                            ->getStateUsing(fn(User $user) => $user->is_active ? 'Aktif' : 'Tidak Aktif')
+                            ->badge()
+                            ->color(fn(User $user) => $user->is_active ? 'success' : 'danger')
                     ])
                     ->actions([
                         Action::make('report')
@@ -115,7 +120,6 @@ class UserResource extends BaseResource
                             ->uniqueIgnoreRecord(),
                         TextInput::make('email')
                             ->label('Email')
-                            ->type('email')
                             ->email()
                             ->required()
                             ->uniqueIgnoreRecord(),

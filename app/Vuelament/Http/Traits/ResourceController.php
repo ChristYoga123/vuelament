@@ -91,7 +91,8 @@ trait ResourceController
 
         // Evaluate Table Actions per record
         if ($tableComponent) {
-            $data->getCollection()->transform(function ($record) use ($tableComponent) {
+            $tableColumns = $tableComponent->getColumns();
+            $data->getCollection()->transform(function ($record) use ($tableComponent, $tableColumns) {
                 $vActions = [];
                 foreach ($tableComponent->getActions() as $action) {
                     $vActions[$action->getName()] = [
@@ -99,6 +100,42 @@ trait ResourceController
                     ];
                 }
                 $record->setAttribute('_v_actions', $vActions);
+                
+                $vColumns = [];
+                foreach ($tableColumns as $col) {
+                    $val = $record->{$col->getName()};
+                    if ($col->getGetStateUsing()) {
+                        $params = [
+                            'record' => $record,
+                            'state' => $val,
+                        ];
+                        if (is_object($record)) {
+                            $params[get_class($record)] = $record;
+                        }
+                        $val = app()->call($col->getGetStateUsing(), $params);
+                        // Set evaluated state back to literal record to match component bindings
+                        $record->{$col->getName()} = $val;
+                    }
+                    
+                    $formatted = $val;
+                    if ($col->getFormatStateUsing()) {
+                        $params = [
+                            'record' => $record,
+                            'state' => $val,
+                        ];
+                        if (is_object($record)) {
+                            $params[get_class($record)] = $record;
+                        }
+                        $formatted = app()->call($col->getFormatStateUsing(), $params);
+                    }
+                    
+                    $vColumns[$col->getName()] = [
+                        'formatted' => $formatted,
+                        'color' => $col->evaluateColor($record, $val),
+                    ];
+                }
+                $record->setAttribute('_v_columns', $vColumns);
+                
                 return $record;
             });
         }
@@ -283,7 +320,7 @@ trait ResourceController
 
         $record->update([$column => $value]);
 
-        return back()->with('success', 'Berhasil memperbarui data.');
+        return back();
     }
 
     // ── Destroy ──────────────────────────────────────────
@@ -460,8 +497,12 @@ trait ResourceController
                 $name = $component->getName();
                 
                 if (!array_key_exists($name, $data)) {
-                    // check if saved but not present in data (maybe unchecked toggle). if missing completely, keep going.
-                    continue;
+                    // Check if saved but not present in data (e.g. unchecked toggle)
+                    if ($component instanceof \App\Vuelament\Components\Form\Toggle) {
+                        $data[$name] = false;
+                    } else {
+                        continue;
+                    }
                 }
                 
                 $state = $data[$name];

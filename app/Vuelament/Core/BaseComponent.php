@@ -13,6 +13,7 @@ abstract class BaseComponent
     public function __construct(string $name = '')
     {
         $this->name = $name;
+        $this->label = $name ? ucfirst(str_replace('_', ' ', $name)) : '';
     }
 
     public static function make(string $name = ''): static

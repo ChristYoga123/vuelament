@@ -55,13 +55,11 @@ abstract class BaseTableAction
     {
         if (is_callable($this->url)) {
             try {
-                $reflection = new \ReflectionFunction(\Closure::fromCallable($this->url));
-                $params = $reflection->getParameters();
-                if (count($params) > 0 && $record !== null) {
-                    return call_user_func($this->url, $record);
-                } elseif (count($params) === 0) {
-                    return call_user_func($this->url);
+                $params = ['record' => $record];
+                if (is_object($record)) {
+                    $params[get_class($record)] = $record;
                 }
+                return app()->call($this->url, $params);
             } catch (\Exception $e) {
                 // Ignore evaluation error
             }

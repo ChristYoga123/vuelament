@@ -21,7 +21,7 @@ class MakePanelCommand extends Command
 
         $this->generatePanelProvider($name, $id, $path);
 
-        $this->info("✅ PanelProvider [{$name}PanelProvider] berhasil dibuat!");
+        $this->info("✅ PanelProvider [{$name}PanelProvider] created successfully!");
         $this->newLine();
         $this->line("Langkah selanjutnya:");
         $this->line("  1. Daftarkan di bootstrap/providers.php:");

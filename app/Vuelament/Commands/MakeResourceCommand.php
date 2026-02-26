@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class MakeResourceCommand extends Command
 {
     protected $signature = 'vuelament:resource {name : Name resource (contoh: User)}
-                            {--model= : Name model (default: sama dengan nama resource)}
+                            {--model= : Name model (default: sama with nama resource)}
                             {--panel=Admin : Name panel tujuan (default: Admin)}
                             {--generate : Auto-generate fields dari database/migration}
                             {--force : Overwrite jika sudah ada}';
@@ -43,7 +43,7 @@ class MakeResourceCommand extends Command
         $this->generateController($name, $panel);
         $this->generateService($name, $panel);
 
-        $this->info("✅ Resource [{$name}Resource] dan [{$name}Controller] berhasil dibuat!");
+        $this->info("✅ Resource [{$name}Resource] and [{$name}Controller] created successfully!");
         $this->newLine();
         $this->line("Routes otomatis ter-register dari Panel config.");
         $this->newLine();

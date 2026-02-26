@@ -32,10 +32,10 @@ class MakeUserCommand extends Command
         if ($user) {
             $this->warn("User [{$email}] sudah ada.");
 
-            if ($this->confirm('Assign role dan update password?', true)) {
+            if ($this->confirm('Assign role and update password?', true)) {
                 $user->update(['password' => Hash::make($password)]);
                 $this->assignRole($user, $role);
-                $this->info("✅ User [{$email}] di-update dan role [{$role}] di-assign.");
+                $this->info("✅ User [{$email}] di-update and role [{$role}] di-assign.");
             }
 
             return self::SUCCESS;
@@ -50,7 +50,7 @@ class MakeUserCommand extends Command
 
         $this->assignRole($user, $role);
 
-        $this->info("✅ User [{$email}] berhasil dibuat dengan role [{$role}].");
+        $this->info("✅ User [{$email}] created successfully with role [{$role}].");
         $this->newLine();
         $this->line("  Login: /" . $panel->getPath() . "/login");
 

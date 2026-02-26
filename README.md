@@ -127,7 +127,7 @@ public static function formSchema(): PageSchema
 {
     return PageSchema::make()
         ->components([
-            Toggle::make('is_active')->label('Status Aktif'),
+            Toggle::make('is_active')->label('Active Status'),
 
             // Shows INSTANTLY when is_active is toggled on (no server request!)
             TextInput::make('activation_code')
@@ -255,7 +255,7 @@ Action::make('form')
     ->modalHeading('Detailed User Form')
     ->modalWidth('4xl') // Using Tailwind JIT sizes: sm, md, lg, xl, 2xl, 3xl, etc.
     ->modalCloseByClickingAway(false) // Force user to click cancel/submit
-    ->modalCancelActionLabel('Tutup')
+    ->modalCancelActionLabel('Close')
     ->form([
         TextInput::make('reference_id')->required(),
         Radio::make('type')->options([

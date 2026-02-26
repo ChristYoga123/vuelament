@@ -31,7 +31,7 @@ class MakePageCommand extends Command
         $pagePathDesc = $resourceFolder ? "Resources/{$resourceFolder}" : "Pages";
         $pageNamespaceDesc = $resourceFolder ? "Resources\\{$resourceFolder}" : "Pages";
 
-        $this->info("✅ Page [{$name}] berhasil dibuat!");
+        $this->info("✅ Page [{$name}] created successfully!");
         $this->newLine();
         $this->line("Files created:");
         $this->line("  - app/Vuelament/{$pathPrefix}{$pagePathDesc}/{$name}.php");
@@ -200,7 +200,7 @@ const props = defineProps({
         <p class="text-sm text-muted-foreground">
           Halaman ini di-generate oleh <code class="rounded bg-muted px-1 py-0.5">php artisan vuelament:page {{ name }}</code>.
           Anda bisa mengedit file Vue ini di <code class="rounded bg-muted px-1 py-0.5">resources/js/Pages/Vuelament/Pages/{{ viewPath }}.vue</code>
-          dan class PHP-nya.
+          and class PHP-nya.
         </p>
       </CardContent>
     </Card>

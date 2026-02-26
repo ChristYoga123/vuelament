@@ -140,7 +140,7 @@ const {
           >
             <Button size="sm" class="gap-1.5">
               <Plus class="w-4 h-4" />
-              Tambah
+              {{ action.label }}
             </Button>
           </Link>
         </template>
@@ -191,7 +191,7 @@ const {
                 v-if="actions.length"
                 class="px-4 py-3 text-right font-medium text-muted-foreground"
               >
-                Aksi
+                Actions
               </th>
             </tr>
           </thead>
@@ -241,7 +241,7 @@ const {
                     {{ tableConfig.emptyStateHeading }}
                   </p>
                   <p class="text-sm">
-                    {{ tableConfig?.emptyStateDescription || 'Tidak ada data ditemukan.' }}
+                    {{ tableConfig?.emptyStateDescription || 'No data found.' }}
                   </p>
                 </div>
               </td>

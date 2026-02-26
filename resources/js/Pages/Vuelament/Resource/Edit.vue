@@ -81,13 +81,13 @@ const getInputType = (comp) => {
         <form @submit.prevent="submit" class="space-y-4">
           <FormRenderer :components="components" :formData="formData" :errors="errors" />
 
-          <div class="flex items-center gap-3 pt-2">
+          <div class="flex items-center gap-2">
             <Button type="submit" :disabled="submitting" class="gap-2">
-              <Loader2 v-if="submitting" class="w-4 h-4 animate-spin" />
-              {{ submitting ? 'Menyimpan...' : 'Update' }}
+              <component :is="resolveIcon('loader-2')" v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
+              {{ submitting ? 'Saving...' : 'Save' }}
             </Button>
             <Link :href="`/${panelPath}/${resource.slug}`">
-              <Button variant="outline" type="button">Batal</Button>
+              <Button variant="outline" type="button">Cancel</Button>
             </Link>
           </div>
         </form>

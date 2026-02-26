@@ -43,19 +43,19 @@ const { confirmDialog } = inject('tableState')
           :class="confirmDialog.action?.modalCancelActionColor === 'danger'
             ? 'text-destructive border-destructive hover:bg-destructive/10' : ''"
         >
-          {{ confirmDialog.action?.modalCancelActionLabel || 'Batal' }}
+          {{ confirmDialog.action?.modalCancelActionLabel || 'Cancel' }}
         </AlertDialogCancel>
         <AlertDialogAction
           v-if="confirmDialog.action?.modalSubmitAction !== false"
           @click="() => { confirmDialog.onConfirm(); confirmDialog.isOpen = false }"
           :class="
             confirmDialog.action?.modalSubmitActionColor === 'danger' ||
-            confirmDialog.title.includes('Hapus') ||
+            confirmDialog.title.includes('Delete') ||
             confirmDialog.action?.color === 'danger'
               ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''
           "
         >
-          {{ confirmDialog.action?.modalSubmitActionLabel || 'Lanjutkan' }}
+          {{ confirmDialog.action?.modalSubmitActionLabel || 'Continue' }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

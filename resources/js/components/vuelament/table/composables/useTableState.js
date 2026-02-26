@@ -218,9 +218,9 @@ export function useTableState(props) {
   const deleteRecord = (id, action = null) => {
     confirmDialog.value = {
       isOpen: true,
-      title: action?.confirmationTitle || 'Hapus Data',
+      title: action?.confirmationTitle || 'Delete Data',
       description:
-        action?.confirmationMessage || 'Yakin ingin menghapus data ini?',
+        action?.confirmationMessage || 'Are you sure you want to delete this record?',
       action,
       onConfirm: () => {
         router.delete(`/${panelPath.value}/${pageSlug.value}/${id}`, {
@@ -236,7 +236,7 @@ export function useTableState(props) {
       title: action?.confirmationTitle || 'Restore Data',
       description:
         action?.confirmationMessage ||
-        'Yakin ingin mengembalikan data ini?',
+        'Are you sure you want to restore this record?',
       action,
       onConfirm: () => {
         router.post(
@@ -251,10 +251,10 @@ export function useTableState(props) {
   const forceDeleteRecord = (id, action = null) => {
     confirmDialog.value = {
       isOpen: true,
-      title: action?.confirmationTitle || 'Hapus Permanen',
+      title: action?.confirmationTitle || 'Delete Permanently',
       description:
         action?.confirmationMessage ||
-        'Yakin ingin menghapus data ini secara permanen? Data tidak dapat dikembalikan.',
+        'Are you sure you want to permanently delete this record? This action cannot be undone.',
       action,
       onConfirm: () => {
         router.delete(
@@ -270,7 +270,7 @@ export function useTableState(props) {
     const title = action.confirmationTitle || action.label
     const description =
       action.confirmationMessage ||
-      `Yakin ingin melakukan aksi pada ${count} data yang dipilih?`
+      `Are you sure you want to perform this action on ${count} selected records?`
 
     if (action.requiresConfirmation) {
       confirmDialog.value = {

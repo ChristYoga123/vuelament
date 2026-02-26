@@ -7,9 +7,9 @@ use Illuminate\Support\Str;
 
 class MakePageCommand extends Command
 {
-    protected $signature = 'vuelament:page {name : Nama page (contoh: Settings)}
-                            {--panel=Admin : Nama panel tujuan (default: Admin)}
-                            {--resource= : Nama Resource untuk melampirkan page (opsional, contoh: User)}
+    protected $signature = 'vuelament:page {name : Name page (contoh: Settings)}
+                            {--panel=Admin : Name panel tujuan (default: Admin)}
+                            {--resource= : Name Resource untuk melampirkan page (opsional, contoh: User)}
                             {--force : Overwrite jika sudah ada}';
 
     protected $description = 'Generate Vuelament custom page (PHP class + Vue component)';

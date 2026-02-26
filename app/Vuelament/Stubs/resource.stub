@@ -23,7 +23,6 @@ class {{ name }}Resource extends BaseResource
     public static function tableSchema(): PageSchema
     {
         return PageSchema::make()
-            ->title(static::$label)
             ->components([
                 Table::make()
                     ->columns([
@@ -57,7 +56,6 @@ class {{ name }}Resource extends BaseResource
     public static function formSchema(): PageSchema
     {
         return PageSchema::make()
-            ->title('Buat ' . static::$label)
             ->components([
                 TextInput::make('name')
                     ->label('Nama')

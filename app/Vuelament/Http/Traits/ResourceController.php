@@ -198,7 +198,7 @@ trait ResourceController
         } else {
             $base[$resource::getUrl('index')] = $resource::getLabel();
             if ($operation === 'create') {
-                $base[null] = 'Buat';
+                $base[null] = 'Create';
             } elseif ($operation === 'edit') {
                 $base[null] = 'Edit';
             }
@@ -315,7 +315,7 @@ trait ResourceController
         $value = $request->input('value');
 
         if (!$column) {
-            abort(400, 'Nama kolom diperlukan.');
+            abort(400, 'Name kolom diperlukan.');
         }
 
         $record->update([$column => $value]);
@@ -335,7 +335,7 @@ trait ResourceController
             $record->delete();
         });
 
-        return back()->with('success', $resource::getLabel() . ' berhasil dihapus.');
+        return back()->with('success', $resource::getLabel() . ' deleted successfully.');
     }
 
     // ── Bulk Destroy ─────────────────────────────────────
@@ -349,7 +349,7 @@ trait ResourceController
             $model::whereIn('id', $ids)->delete();
         });
 
-        return back()->with('success', count($ids) . ' data berhasil dihapus.');
+        return back()->with('success', count($ids) . ' records deleted successfully.');
     }
 
     // ── Bulk Restore (soft delete) ──────────────────────
@@ -377,7 +377,7 @@ trait ResourceController
             $model::withTrashed()->whereIn('id', $ids)->forceDelete();
         });
 
-        return back()->with('success', count($ids) . ' data berhasil dihapus permanen.');
+        return back()->with('success', count($ids) . ' records permanently deleted successfully.');
     }
 
     // ── Restore (soft delete) ────────────────────────────
@@ -407,7 +407,7 @@ trait ResourceController
             $record->forceDelete();
         });
 
-        return back()->with('success', $resource::getLabel() . ' berhasil dihapus permanen.');
+        return back()->with('success', $resource::getLabel() . ' permanently deleted successfully.');
     }
 
     // ── Execute Row Action ───────────────────────────────

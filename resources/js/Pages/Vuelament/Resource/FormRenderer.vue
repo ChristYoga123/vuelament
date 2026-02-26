@@ -361,7 +361,7 @@ const resetReorderState = () => {
         class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         :class="errors[comp.name] ? 'border-destructive focus-visible:ring-destructive' : 'border-input focus-visible:ring-ring'"
       >
-        <option value="">{{ comp.placeholder || `Pilih ${comp.label}` }}</option>
+        <option value="">{{ comp.placeholder || `Select ${comp.label}` }}</option>
         <option v-for="opt in comp.options" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>
@@ -371,17 +371,23 @@ const resetReorderState = () => {
     </div>
 
     <!-- Toggle -->
-    <div v-else-if="(comp.type === 'Toggle' || comp.type === 'toggle') && isVisible(comp)" class="flex items-center gap-3 py-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
-      <Switch
-        :id="comp.name"
-        :checked="isTruthy(formData[comp.name])"
-        :model-value="isTruthy(formData[comp.name])"
-        @update:checked="val => formData[comp.name] = val ? 1 : 0"
-        @update:model-value="val => formData[comp.name] = val ? 1 : 0"
-        :disabled="isDisabled(comp)"
-      />
-      <Label :for="comp.name">{{ comp.label }}</Label>
-      <p v-if="comp.hint" class="text-xs text-muted-foreground ml-2">{{ comp.hint }}</p>
+    <div v-else-if="(comp.type === 'Toggle' || comp.type === 'toggle') && isVisible(comp)" class="space-y-2 py-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+      <div class="flex items-center gap-3">
+        <Switch
+          :id="comp.name"
+          :checked="isTruthy(formData[comp.name])"
+          :model-value="isTruthy(formData[comp.name])"
+          @update:checked="val => formData[comp.name] = val ? 1 : 0"
+          @update:model-value="val => formData[comp.name] = val ? 1 : 0"
+          :disabled="isDisabled(comp)"
+        />
+        <Label :for="comp.name">
+          {{ comp.label }}
+          <span v-if="isRequired(comp)" class="text-destructive">*</span>
+        </Label>
+      </div>
+      <p v-if="comp.hint" class="text-xs text-muted-foreground">{{ comp.hint }}</p>
+      <p v-if="errors[comp.name]" class="text-sm text-destructive">{{ errors[comp.name] }}</p>
     </div>
 
     <!-- Radio -->
@@ -402,7 +408,7 @@ const resetReorderState = () => {
 
     <!-- Checkbox -->
     <div v-else-if="(comp.type === 'Checkbox' || comp.type === 'checkbox') && isVisible(comp)" class="space-y-3" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
-      <Label>
+      <Label v-if="comp.multiple">
         {{ comp.label }}
         <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
@@ -426,7 +432,10 @@ const resetReorderState = () => {
               @update:checked="val => formData[comp.name] = val ? 1 : 0"
               :disabled="isDisabled(comp)"
             />
-            <Label :for="comp.name" class="font-normal cursor-pointer">{{ comp.label }}</Label>
+            <Label :for="comp.name" class="font-normal cursor-pointer">
+              {{ comp.label }}
+              <span v-if="isRequired(comp)" class="text-destructive">*</span>
+            </Label>
           </div>
         </template>
       </div>

@@ -52,7 +52,7 @@ const {
       >
         <Trash2 class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
         <span v-if="action.label">{{ action.label }}</span>
-        <span v-else class="sr-only">Hapus</span>
+        <span v-else class="sr-only">Delete</span>
       </Button>
 
       <!-- Restore -->
@@ -84,7 +84,7 @@ const {
       >
         <Trash2 class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
         <span v-if="action.label">{{ action.label }}</span>
-        <span v-else class="sr-only">Hapus Permanen</span>
+        <span v-else class="sr-only">Delete Permanently</span>
       </Button>
 
       <!-- Custom Action -->

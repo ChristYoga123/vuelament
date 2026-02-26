@@ -27,7 +27,7 @@ const props = defineProps({
           <CardDescription>Otomatis diteruskan oleh Vuelament dari Resource jika ada {record}.</CardDescription>
         </CardHeader>
         <CardContent>
-          <pre class="bg-muted p-4 rounded-lg text-sm overflow-auto">{{ record || 'Tidak ada record' }}</pre>
+          <pre class="bg-muted p-4 rounded-lg text-sm overflow-auto">{{ record || 'No record' }}</pre>
         </CardContent>
       </Card>
 
@@ -38,7 +38,7 @@ const props = defineProps({
           <CardDescription>Diteruskan dari deklarasi metod public static function getData().</CardDescription>
         </CardHeader>
         <CardContent>
-          <pre class="bg-muted p-4 rounded-lg text-sm overflow-auto">{{ reportStats || 'Tidak ada extra data' }}</pre>
+          <pre class="bg-muted p-4 rounded-lg text-sm overflow-auto">{{ reportStats || 'No extra data' }}</pre>
         </CardContent>
       </Card>
     </div>

@@ -48,7 +48,6 @@ class UserResource extends BaseResource
     public static function tableSchema(): PageSchema
     {
         return PageSchema::make()
-            ->title(static::$label)
             ->components([
                 Table::make()
                 ->query(fn() => User::query()->withoutRole(['super_admin'])->latest())
@@ -65,21 +64,21 @@ class UserResource extends BaseResource
                             ->sortable()
                             ->searchable(),
                         TextColumn::make('created_at')
-                            ->label('Dibuat')
+                            ->label('Created')
                             ->dateFormat('d/m/Y')
                             ->sortable()
                             ->toggleable(true, true),
                         TextColumn::make('updated_at')
-                            ->label('Diupdate')
+                            ->label('Updated')
                             ->dateFormat('d/m/Y')
                             ->sortable()
                             ->toggleable(true, true),
                         ToggleColumn::make('is_active')
-                            ->label('Aktif')
+                            ->label('Active')
                             ->sortable(),
                         TextColumn::make('keaktifan')
                             ->label('Status')
-                            ->getStateUsing(fn(User $user) => $user->is_active ? 'Aktif' : 'Tidak Aktif')
+                            ->getStateUsing(fn(User $user) => $user->is_active ? 'Active' : 'Inactive')
                             ->badge()
                             ->color(fn(User $user) => $user->is_active ? 'success' : 'danger')
                     ])
@@ -90,7 +89,7 @@ class UserResource extends BaseResource
                             ->label('Form')
                             ->modalWidth('4xl')
                             ->modalCloseByClickingAway(false)
-                            ->modalCancelActionLabel('Tutup')
+                            ->modalCancelActionLabel('Close')
                             ->modalSubmitAction(false)
                             ->form([
                                 TextInput::make('text')
@@ -173,7 +172,6 @@ class UserResource extends BaseResource
     public static function formSchema(): PageSchema
     {
         return PageSchema::make()
-            ->title('Buat ' . static::$label)
             ->components([
                 Grid::make(1)
                     ->schema([
@@ -187,8 +185,8 @@ class UserResource extends BaseResource
                             ->required()
                             ->uniqueIgnoreRecord(),
                         Toggle::make('is_active')
-                            ->label('Status Aktif')
-                            ->hint('Matikan ini untuk mencegah user login.'),
+                            ->label('Status Active')
+                            ->hint('Turn off to prevent user login.'),
                         TextInput::make('password')
                             ->label('Password')
                             ->password()

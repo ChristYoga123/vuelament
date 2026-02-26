@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class MakePanelCommand extends Command
 {
-    protected $signature = 'vuelament:panel {name=Admin : Nama panel (contoh: Admin)}
+    protected $signature = 'vuelament:panel {name=Admin : Name panel (contoh: Admin)}
                             {--id= : Panel ID / URL prefix (default: lowercase nama)}
                             {--force : Overwrite jika sudah ada}';
 
@@ -27,7 +27,7 @@ class MakePanelCommand extends Command
         $this->line("  1. Daftarkan di bootstrap/providers.php:");
         $this->line("     App\\Vuelament\\Providers\\{$name}PanelProvider::class,");
         $this->newLine();
-        $this->line("  2. Hapus default VuelamentServiceProvider jika tidak dipakai.");
+        $this->line("  2. Delete default VuelamentServiceProvider jika tidak dipakai.");
         $this->newLine();
         $this->line("  URL panel: /{$path}");
         $this->line("  Login:     /{$path}/login");

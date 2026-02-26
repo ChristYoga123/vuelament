@@ -25,7 +25,7 @@ class Select extends BaseForm
 
     public function optionsFrom(string $v): static { $this->optionsFrom = $v; return $this; }
 
-    public function createOptionForm(array $schema, string $endpoint, string $label = 'Buat Baru'): static
+    public function createOptionForm(array $schema, string $endpoint, string $label = 'Create New'): static
     {
         $this->createOptionSchema   = array_map(fn($c) => $c->toArray(), $schema);
         $this->createOptionEndpoint = $endpoint;

@@ -29,7 +29,7 @@ const {
           <Loader2 v-if="isSearching" class="w-4 h-4 text-muted-foreground animate-spin" />
           <Search v-else class="w-4 h-4 text-muted-foreground" />
         </span>
-        <Input v-model="search" placeholder="Cari..." class="pl-9 h-9" />
+        <Input v-model="search" placeholder="Search..." class="pl-9 h-9" />
       </template>
     </div>
 

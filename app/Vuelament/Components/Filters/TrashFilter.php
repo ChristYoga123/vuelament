@@ -12,10 +12,11 @@ class TrashFilter extends SelectFilter
         $this->isTrashed = true;
         
         $this->label('Status Terhapus')
-             ->placeholder('Tidak Termasuk Dihapus')
-             ->options([
-                 'with' => 'Termasuk Dihapus',
-                 'only' => 'Hanya yang Dihapus',
-             ]);
+             ->placeholder('Tidak Termasuk Dihapus');
+        $this->options = [
+            ''     => 'Without Trashed',
+            'with' => 'With Trashed',
+            'only' => 'Only Trashed',
+        ];
     }
 }

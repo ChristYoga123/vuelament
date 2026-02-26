@@ -10,7 +10,7 @@ namespace App\Vuelament\Components\Widgets;
  *     ->heading('Transaksi Terakhir')
  *     ->columns([
  *         ['key' => 'id',     'label' => 'ID'],
- *         ['key' => 'name',   'label' => 'Nama'],
+ *         ['key' => 'name',   'label' => 'Name'],
  *         ['key' => 'amount', 'label' => 'Jumlah'],
  *     ])
  *     ->rows([
@@ -39,7 +39,7 @@ class TableWidget extends BaseWidget
             'columnSpan'   => $this->columnSpan,
             'columns'      => $this->columns,
             'rows'         => $this->rows,
-            'emptyMessage' => $this->emptyMessage ?? 'Tidak ada data.',
+            'emptyMessage' => $this->emptyMessage ?? 'No data available.',
         ];
     }
 }

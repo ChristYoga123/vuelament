@@ -5,10 +5,10 @@ namespace App\Vuelament\Components\Table\Actions;
 class ForceDeleteAction extends BaseTableAction
 {
     protected string $type = 'ForceDeleteAction';
-    protected string $label = 'Hapus Permanen';
+    protected string $label = 'Delete Permanently';
     protected ?string $icon = 'trash';
     protected ?string $color = 'danger';
     protected bool $requiresConfirmation = true;
-    protected ?string $confirmationTitle = 'Hapus Permanen';
-    protected ?string $confirmationMessage = 'Data akan dihapus secara permanen dan tidak dapat dikembalikan. Lanjutkan?';
+    protected ?string $confirmationTitle = 'Delete Permanently';
+    protected ?string $confirmationMessage = 'Data will be permanently deleted and cannot be recovered. Continue?';
 }

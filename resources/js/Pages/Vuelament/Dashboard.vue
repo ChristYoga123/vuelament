@@ -72,7 +72,7 @@ const displayStats = computed(() => stats.value.length ? stats.value : defaultSt
               <span class="text-xs font-bold text-primary">1</span>
             </div>
             <div>
-              <p class="text-sm font-medium">Buat Resource</p>
+              <p class="text-sm font-medium">Create Resource</p>
               <p class="text-xs text-muted-foreground">
                 <code class="rounded bg-muted px-1 py-0.5">php artisan vuelament:resource Product</code>
               </p>

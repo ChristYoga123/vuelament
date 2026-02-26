@@ -89,7 +89,7 @@ abstract class BaseResource
 
     public static function getNavigationItems(): array
     {
-        // Simpan slug relatif saja — Panel akan prepend path di buildCustomNavigation()
+        // Save slug relatif saja — Panel akan prepend path di buildCustomNavigation()
         return [
             NavigationItem::make(static::getNavigationLabel())
                 ->icon(static::getNavigationIcon())

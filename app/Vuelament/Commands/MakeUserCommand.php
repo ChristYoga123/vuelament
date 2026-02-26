@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\Hash;
 class MakeUserCommand extends Command
 {
     protected $signature = 'vuelament:user
-                            {--name= : Nama user}
+                            {--name= : Name user}
                             {--email= : Email user}
                             {--password= : Password user}
                             {--role=super_admin : Role yang diberikan (default: super_admin)}';
 
-    protected $description = 'Buat user untuk akses panel Vuelament';
+    protected $description = 'Create user untuk akses panel Vuelament';
 
     public function handle(): int
     {
@@ -41,7 +41,7 @@ class MakeUserCommand extends Command
             return self::SUCCESS;
         }
 
-        // Buat user baru
+        // Create user baru
         $user = $userModel::create([
             'name'     => $name,
             'email'    => $email,

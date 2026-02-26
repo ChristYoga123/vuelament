@@ -98,7 +98,7 @@ const {
             :class="actionFormDialog.action?.modalCancelActionColor === 'danger'
               ? 'text-destructive border-destructive hover:bg-destructive/10' : ''"
           >
-            {{ actionFormDialog.action?.modalCancelActionLabel || 'Batal' }}
+            {{ actionFormDialog.action?.modalCancelActionLabel || 'Cancel' }}
           </Button>
           <Button
             v-if="actionFormDialog.action?.modalSubmitAction !== false"

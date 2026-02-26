@@ -42,15 +42,15 @@ const submit = () => {
   <AuthLayout title="Register">
     <Card>
       <CardHeader class="text-center">
-        <CardTitle class="text-xl">Buat Akun</CardTitle>
-        <CardDescription>Daftar untuk mulai menggunakan panel</CardDescription>
+        <CardTitle class="text-xl">Create Account</CardTitle>
+        <CardDescription>Enter your details to register</CardDescription>
       </CardHeader>
 
       <CardContent>
         <form @submit.prevent="submit" class="space-y-4">
           <!-- Name -->
           <div class="space-y-2">
-            <Label for="name">Nama</Label>
+            <Label for="name">Name</Label>
             <Input
               id="name"
               v-model="form.name"
@@ -109,7 +109,7 @@ const submit = () => {
 
           <!-- Confirm Password -->
           <div class="space-y-2">
-            <Label for="password_confirmation">Konfirmasi Password</Label>
+            <Label for="password_confirmation">Confirm Password</Label>
             <Input
               id="password_confirmation"
               v-model="form.password_confirmation"
@@ -126,16 +126,16 @@ const submit = () => {
             :disabled="form.processing"
           >
             <svg v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-            {{ form.processing ? 'Mendaftar...' : 'Daftar' }}
+            {{ form.processing ? 'Registering...' : 'Register' }}
           </Button>
         </form>
       </CardContent>
 
       <CardFooter class="justify-center">
         <p class="text-sm text-muted-foreground">
-          Sudah punya akun?
+          Already have an account?
           <Link :href="`/${panelPath}/login`" class="text-primary underline-offset-4 hover:underline font-medium">
-            Masuk
+            Sign in
           </Link>
         </p>
       </CardFooter>

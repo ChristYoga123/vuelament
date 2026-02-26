@@ -93,7 +93,7 @@ abstract class BaseAction
             'modalHeading'         => $this->modalHeading ?? $this->confirmationTitle ?? $this->label,
             'modalDescription'     => $this->modalDescription ?? $this->confirmationMessage,
             'modalSubmitActionLabel'=> $this->modalSubmitActionLabel ?? 'Lanjutkan',
-            'modalCancelActionLabel'=> $this->modalCancelActionLabel ?? 'Batal',
+            'modalCancelActionLabel'=> $this->modalCancelActionLabel ?? 'Cancel',
             'modalSubmitAction'    => $this->modalSubmitAction,
             'modalCancelAction'    => $this->modalCancelAction,
             'modalSubmitActionColor'=> $this->modalSubmitActionColor,

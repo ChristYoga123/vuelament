@@ -10,7 +10,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: 'Pilih waktu...'
+    default: 'Select time...'
   },
   timePicker: {
     type: Boolean,

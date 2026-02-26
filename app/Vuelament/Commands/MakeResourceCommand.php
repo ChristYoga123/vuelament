@@ -8,9 +8,9 @@ use Illuminate\Support\Str;
 
 class MakeResourceCommand extends Command
 {
-    protected $signature = 'vuelament:resource {name : Nama resource (contoh: User)}
-                            {--model= : Nama model (default: sama dengan nama resource)}
-                            {--panel=Admin : Nama panel tujuan (default: Admin)}
+    protected $signature = 'vuelament:resource {name : Name resource (contoh: User)}
+                            {--model= : Name model (default: sama dengan nama resource)}
+                            {--panel=Admin : Name panel tujuan (default: Admin)}
                             {--generate : Auto-generate fields dari database/migration}
                             {--force : Overwrite jika sudah ada}';
 
@@ -228,7 +228,7 @@ class MakeResourceCommand extends Command
         foreach ($columns as $col) {
             $tableColumns .= $this->mapColumnToTableColumn($col) . "\n";
         }
-        $tableColumns .= "                        Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),";
+        $tableColumns .= "                        Column::make('created_at')->label('Created')->dateFormat('d/m/Y')->sortable(),";
 
         // Build form components
         $formComponents = '';
@@ -323,7 +323,6 @@ class {$name}Resource extends BaseResource
     public static function tableSchema(): PageSchema
     {
         return PageSchema::make()
-            ->title(static::\$label)
             ->components([
                 Table::make()
                     ->columns([
@@ -351,7 +350,6 @@ class {$name}Resource extends BaseResource
     public static function formSchema(): PageSchema
     {
         return PageSchema::make()
-            ->title('Buat ' . static::\$label)
             ->components([
 {$formComponents}
             ]);

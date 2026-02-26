@@ -2,8 +2,12 @@
 
 namespace App\Vuelament\Core;
 
+use App\Vuelament\Traits\HasReactivity;
+
 abstract class BaseComponent
 {
+    use HasReactivity;
+
     protected string $type = '';
     protected string $name = '';
     protected string $label = '';
@@ -33,41 +37,56 @@ abstract class BaseComponent
         return $this;
     }
 
-    // Tampilkan komponen hanya jika field lain bernilai tertentu
-    // contoh: ->showWhen('role', 'admin')
+    /**
+     * Legacy — tampilkan komponen hanya jika field lain bernilai tertentu.
+     * Contoh: ->showWhen('role', 'admin')
+     *
+     * Secara internal ini sekarang menambahkan reactivity rule.
+     */
     public function showWhen(string $field, mixed $value): static
     {
+        // Backward compat: store in conditions for old code
         $this->conditions[] = [
             'field'    => $field,
             'value'    => $value,
             'operator' => '=',
         ];
+
+        // Also register as reactivity rule for Vue client-side evaluation
+        $this->visibleWhen($field, $value);
+
         return $this;
     }
 
     public function toArray(string $operation = 'create'): array
     {
-        return array_merge([
+        $result = array_merge([
             'type'       => $this->type,
             'name'       => $this->name,
             'label'      => $this->label,
             'hidden'     => $this->evaluate($this->hidden, $operation),
             'conditions' => $this->conditions,
         ], $this->schema($operation));
+
+        // Inject reactivity rules if any
+        $reactivity = $this->getReactivity();
+        if (!empty($reactivity)) {
+            $result['reactivity'] = $reactivity;
+        }
+
+        return $result;
     }
 
     /**
      * Mengevaluasi value yang bisa saja Closure
-     * Injektsi $get dan $set disediakan jika form me-request state-refresh
      */
     protected function evaluate(mixed $value, string $operation = 'create'): mixed
     {
         if (is_callable($value)) {
-            // Mencegah error jika callable membutuhkan $get / $set saat toArray dipanggil pertama kali (kosong)
             return app()->call($value, [
                 'operation' => $operation,
                 'get' => fn($field) => request()->input($field),
-                'set' => fn($field, $val) => null, // Setter works only in live-validation route
+                'set' => fn($field, $val) => null,
             ]);
         }
         return $value;

@@ -11,8 +11,10 @@
 - **Beautiful UI**: Uses Tailwind CSS v4 and Shadcn-Vue for a premium, accessible, and easily customizable design.
 - **VILT Stack**: Seamless SPA experience powered by Laravel, Inertia, Vue 3, and Tailwind.
 - **Complete Form Builder**: Supports Rich Editor (Vue Quill), Date/Time Pickers (VueDatePicker), File Uploads, Selects, Toggles, Checkboxes, Radios, and responsive Grid Layouts.
-- **Robust Table Builder**: Supports filtering, search, pagination, bulk actions, and custom column rendering.
+- **Client-Side Form Reactivity**: Show/hide, enable/disable, and change required state of fields **instantly without server requests**.
+- **Robust Table Builder**: Supports filtering, search, pagination, bulk actions, column toggling, and rich column types (Text, Badge, Toggle, Checkbox, Image, Icon).
 - **Dynamic Modals**: Conditional Action dialogs, flexible modal widths, click-away handling, and dangerous action confirmations.
+- **Modular Architecture**: Clean, maintainable codebase with composables, sub-components, and separated concerns.
 
 ## 📦 Requirements
 
@@ -93,15 +95,97 @@ public static function formSchema(): PageSchema
 
 #### Available Form Controls:
 
-- `TextInput`
-- `Textarea`
-- `RichEditor` (Powered by VueQuill)
-- `DatePicker`, `TimePicker`, `DateRangePicker` (Powered by VuePic)
-- `Select`
-- `Checkbox`
-- `Radio`
-- `Toggle`
-- `FileInput`
+- `TextInput` — text, email, password, number, with prefix/suffix and revealable support
+- `Textarea` — multi-line text input
+- `RichEditor` — Rich text editor (powered by VueQuill)
+- `DatePicker`, `TimePicker`, `DateRangePicker` — Date/time selection (powered by VuePic)
+- `Select` — Dropdown selection
+- `Checkbox` — Single or multiple checkbox group
+- `Radio` — Radio button group with horizontal/vertical layout
+- `Toggle` — Switch toggle (powered by Shadcn Switch)
+- `FileInput` — File upload with drag & drop, preview, and reorder support
+
+### Form Reactivity (Client-Side)
+
+Vuelament evaluates form visibility, disabled, and required states **entirely on the client** — no server requests needed for simple field interactions. This is a major performance advantage over Filament/Livewire.
+
+#### ⚔️ Vuelament vs Filament (Behavior Comparison)
+
+| Interaction                                  | Filament (Livewire)                                                    | Vuelament (Vue 3 + Inertia)                                               |
+| -------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Toggle a field to show another**           | 🛑 Triggers a network request to the server, re-renders the component. | ⚡ **Instant**. Evaluated entirely in JavaScript via `useFormReactivity`. |
+| **Change required state based on selection** | 🛑 Requires a network request.                                         | ⚡ **Instant**. Handled locally without any server overhead.              |
+| **Simple validation visibility**             | 🛑 Network round-trip, can feel sluggish on slow connections.          | ⚡ **Instant**. Zero latency.                                             |
+| **Complex logic (coming soon)**              | Server-side execution via Closure.                                     | Hybrid: specific fields trigger lightweight AJAX for state evaluation.    |
+
+```php
+use App\Vuelament\Components\Form\TextInput;
+use App\Vuelament\Components\Form\Toggle;
+use App\Vuelament\Components\Form\Select;
+
+public static function formSchema(): PageSchema
+{
+    return PageSchema::make()
+        ->components([
+            Toggle::make('is_active')->label('Status Aktif'),
+
+            // Shows INSTANTLY when is_active is toggled on (no server request!)
+            TextInput::make('activation_code')
+                ->visibleWhen('is_active', true)
+                ->requiredWhen('is_active', true),
+
+            Select::make('type')->options([
+                'standard' => 'Standard',
+                'premium'  => 'Premium',
+            ]),
+
+            // Shows only when type = 'premium'
+            TextInput::make('premium_code')
+                ->visibleWhen('type', 'premium'),
+
+            // Disabled when is_locked = true
+            TextInput::make('email')
+                ->disabledWhen('is_locked', true),
+
+            // Shows when category field is filled (any value)
+            Select::make('subcategory')
+                ->visibleWhen('category', operator: 'filled'),
+        ]);
+}
+```
+
+#### Available Reactivity Methods:
+
+| Method                           | Description                                |
+| -------------------------------- | ------------------------------------------ |
+| `->visibleWhen('field', value)`  | Show when field equals value               |
+| `->hiddenWhen('field', value)`   | Hide when field equals value               |
+| `->disabledWhen('field', value)` | Disable when field equals value            |
+| `->enabledWhen('field', value)`  | Enable when field equals value             |
+| `->requiredWhen('field', value)` | Required when field equals value           |
+| `->visibleWhenAll([...])`        | Show when ALL conditions match (AND logic) |
+| `->visibleWhenAny([...])`        | Show when ANY condition matches (OR logic) |
+
+#### Supported Operators:
+
+`===`, `!==`, `in`, `notIn`, `filled`, `blank`, `>`, `<`, `>=`, `<=`
+
+```php
+// Multiple conditions (AND)
+TextInput::make('bank_account')
+    ->visibleWhenAll([
+        ['field' => 'payment_method', 'value' => 'transfer'],
+        ['field' => 'is_active', 'value' => true],
+    ]);
+
+// Value in array
+TextInput::make('notes')
+    ->visibleWhen('status', ['pending', 'review'], operator: 'in');
+
+// Filled check (not empty)
+Select::make('subcategory')
+    ->visibleWhen('category', operator: 'filled');
+```
 
 ### Defining Tables
 
@@ -111,6 +195,9 @@ Define the list view columns, actions, and filters inside `tableSchema()`:
 use App\Vuelament\Components\Table\Table;
 use App\Vuelament\Components\Table\Columns\TextColumn;
 use App\Vuelament\Components\Table\Columns\ToggleColumn;
+use App\Vuelament\Components\Table\Columns\CheckboxColumn;
+use App\Vuelament\Components\Table\Columns\ImageColumn;
+use App\Vuelament\Components\Table\Columns\IconColumn;
 use App\Vuelament\Components\Table\Actions\EditAction;
 use App\Vuelament\Components\Table\Actions\DeleteAction;
 use App\Vuelament\Components\Filters\SelectFilter;
@@ -125,6 +212,9 @@ public static function tableSchema(): PageSchema
                     TextColumn::make('name')->searchable()->sortable(),
                     TextColumn::make('email'),
                     ToggleColumn::make('is_active'),
+                    CheckboxColumn::make('is_verified'),
+                    ImageColumn::make('avatar')->circle()->size('32px'),
+                    IconColumn::make('status_icon'),
                 ])
                 ->actions([
                     EditAction::make(),
@@ -136,6 +226,18 @@ public static function tableSchema(): PageSchema
         ]);
 }
 ```
+
+#### Available Column Types:
+
+| Column           | Description                                                                     |
+| ---------------- | ------------------------------------------------------------------------------- |
+| `TextColumn`     | Text with optional prefix, suffix, color, badge, and date formatting            |
+| `ToggleColumn`   | Interactive switch toggle with loading state (disabled while request processes) |
+| `CheckboxColumn` | Interactive checkbox with loading state                                         |
+| `ImageColumn`    | Image display with `->circle()`, `->thumbnail()`, `->size()`                    |
+| `IconColumn`     | Dynamic Lucide icon with color support                                          |
+
+All interactive columns (Toggle, Checkbox) automatically show a **disabled/loading state** while processing server requests — preventing spam clicks and giving users clear visual feedback.
 
 ---
 
@@ -276,6 +378,49 @@ Vuelament is optimized to have minimal impact on your users' network:
 
 - **Automatic Code Splitting**: Through Vite, large libraries (`vue-quill`, `vue-datepicker`) are isolated into their own chunks. They only load when the specific form component is evaluated.
 - **Inertia.js Driven**: Lightning-fast SPA page transitions, no full browser reloads.
+- **Client-Side Reactivity**: Form visibility, disabled, and required states are evaluated in Vue without server requests — unlike Filament/Livewire which round-trips every interaction.
+- **Interactive Column Loading States**: Toggle and Checkbox columns disable during server requests, preventing spam and providing clear UX feedback.
+
+---
+
+## 📁 Architecture & Folder Structure
+
+Vuelament follows a modular Vue component architecture for maintainability:
+
+```
+resources/js/components/vuelament/
+├── Table.vue                           # Main table orchestrator (~260 lines)
+├── table/
+│   ├── utils.js                        # Pure helpers (resolveIcon, formatCell, isTruthy)
+│   ├── composables/
+│   │   └── useTableState.js            # All reactive table state & logic
+│   ├── columns/
+│   │   ├── ColumnCell.vue              # Dispatcher (selects component by col.type)
+│   │   ├── TextCell.vue                # Normal text + prefix/suffix/color
+│   │   ├── BadgeCell.vue               # Badge rendering with colors
+│   │   ├── ToggleCell.vue              # Wraps Shadcn Switch + disabled behavior
+│   │   ├── CheckboxCell.vue            # Native checkbox + disabled behavior
+│   │   ├── ImageCell.vue               # Image with circle/thumbnail/size
+│   │   └── IconCell.vue                # Dynamic Lucide icon + color
+│   ├── TableToolbar.vue                # Search + filter dropdown + column toggle
+│   ├── TableFiltersAbove.vue           # Filter layout above table content
+│   ├── TableRowActions.vue             # Row actions (edit, delete, custom)
+│   ├── TablePagination.vue             # Pagination + per page selector
+│   ├── TableConfirmDialog.vue          # Confirmation dialog
+│   └── TableActionFormDialog.vue       # Custom action form/infolist dialog
+├── form/
+│   ├── RichEditor.vue                  # Rich text editor wrapper
+│   ├── DatePicker.vue                  # Date/time picker wrapper
+│   └── composables/
+│       └── useFormReactivity.js         # Client-side form reactivity evaluator
+```
+
+### Key Design Patterns:
+
+- **Composables** (`useTableState`, `useFormReactivity`) — extract all reactive logic from components
+- **Provide/Inject** — table sub-components access shared state without prop drilling
+- **Column Cell Dispatcher** — `ColumnCell.vue` routes to the correct sub-component based on `col.type`, making it easy to add new column types
+- **HasReactivity Trait** (PHP) — provides `visibleWhen()`, `disabledWhen()`, `requiredWhen()` methods that serialize to JSON rules evaluated client-side
 
 ---
 

@@ -1,14 +1,15 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, toRef } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Eye, EyeOff, Upload, X, FileIcon, ImageIcon, GripVertical } from 'lucide-vue-next'
+import { Eye, EyeOff, Upload, X, FileIcon, ImageIcon, GripVertical, Loader2 } from 'lucide-vue-next'
 import RichEditor from '@/components/vuelament/form/RichEditor.vue'
 import DatePicker from '@/components/vuelament/form/DatePicker.vue'
+import { useFormReactivity } from '@/components/vuelament/form/composables/useFormReactivity'
 
 const props = defineProps({
   components: {
@@ -28,6 +29,9 @@ const props = defineProps({
     default: false,
   }
 })
+
+// ── Client-side reactivity (no server requests!) ────
+const { isVisible, isDisabled, isRequired, loadingFields } = useFormReactivity(toRef(props, 'formData'))
 
 const TransparentWrapper = (props, { slots }) => slots.default ? slots.default() : null
 
@@ -227,7 +231,7 @@ const resetReorderState = () => {
     <template v-for="comp in components" :key="comp.name || comp.type + Math.random()">
     
     <!-- Nested Layout Components -->
-    <div v-if="comp.type === 'Grid'" :class="[getGridClass(comp.columns), applyAutoLayout ? getAutoColSpan(comp) : '']">
+    <div v-if="comp.type === 'Grid' && isVisible(comp)" :class="[getGridClass(comp.columns), applyAutoLayout ? getAutoColSpan(comp) : '']">
       <FormRenderer 
         :components="comp.components" 
         :formData="formData" 
@@ -238,7 +242,7 @@ const resetReorderState = () => {
     </div>
 
     <!-- Section -->
-    <div v-else-if="comp.type === 'Section'" class="mb-4 rounded-xl border bg-card text-card-foreground shadow" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="comp.type === 'Section' && isVisible(comp)" class="mb-4 rounded-xl border bg-card text-card-foreground shadow" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <div v-if="comp.heading" class="flex flex-col space-y-1.5 p-6">
         <h3 class="font-semibold leading-none tracking-tight">{{ comp.heading }}</h3>
       </div>
@@ -254,10 +258,10 @@ const resetReorderState = () => {
     </div>
 
     <!-- Text Input -->
-    <div v-else-if="comp.type === 'TextInput' || comp.type === 'text-input'" class="space-y-2 relative" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="(comp.type === 'TextInput' || comp.type === 'text-input') && isVisible(comp)" class="space-y-2 relative" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label :for="comp.name">
         {{ comp.label }}
-        <span v-if="comp.required" class="text-destructive">*</span>
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
       <div class="relative">
         <Input
@@ -265,8 +269,8 @@ const resetReorderState = () => {
           v-model="formData[comp.name]"
           :type="getInputType(comp)"
           :placeholder="comp.placeholder || ''"
-          :required="comp.required"
-          :disabled="comp.disabled"
+          :required="isRequired(comp)"
+          :disabled="isDisabled(comp)"
           :readonly="comp.readonly"
           :class="[
             comp.revealable ? 'pr-10' : '',
@@ -288,18 +292,18 @@ const resetReorderState = () => {
       <p v-if="errors[comp.name]" class="text-sm text-destructive">{{ errors[comp.name] }}</p>
     </div>
 
-    <!-- Textarea (Fallback) -->
-    <div v-else-if="comp.type === 'Textarea' || comp.type === 'textarea'" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <!-- Textarea -->
+    <div v-else-if="(comp.type === 'Textarea' || comp.type === 'textarea') && isVisible(comp)" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label :for="comp.name">
         {{ comp.label }}
-        <span v-if="comp.required" class="text-destructive">*</span>
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
       <textarea
         :id="comp.name"
         v-model="formData[comp.name]"
         :placeholder="comp.placeholder || ''"
-        :required="comp.required"
-        :disabled="comp.disabled"
+        :required="isRequired(comp)"
+        :disabled="isDisabled(comp)"
         :rows="comp.rows || 4"
         class="flex w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         :class="errors[comp.name] ? 'border-destructive focus-visible:ring-destructive' : 'border-input focus-visible:ring-ring'"
@@ -309,17 +313,17 @@ const resetReorderState = () => {
     </div>
 
     <!-- Rich Editor -->
-    <div v-else-if="comp.type === 'RichEditor'" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="comp.type === 'RichEditor' && isVisible(comp)" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label :for="comp.name">
         {{ comp.label }}
-        <span v-if="comp.required" class="text-destructive">*</span>
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
       <RichEditor
         :id="comp.name"
         v-model="formData[comp.name]"
         :placeholder="comp.placeholder || ''"
         :minHeight="comp.minHeight || 200"
-        :readOnly="comp.disabled"
+        :readOnly="isDisabled(comp)"
         :class="errors[comp.name] ? 'border-destructive focus-within:ring-destructive relative border rounded-md ring-offset-background' : ''"
       />
       <p v-if="comp.hint" class="text-xs text-muted-foreground">{{ comp.hint }}</p>
@@ -327,15 +331,15 @@ const resetReorderState = () => {
     </div>
 
     <!-- Date/Time Picker -->
-    <div v-else-if="comp.type === 'DatePicker' || comp.type === 'date-picker' || comp.type === 'TimePicker' || comp.type === 'DateRangePicker'" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="(comp.type === 'DatePicker' || comp.type === 'date-picker' || comp.type === 'TimePicker' || comp.type === 'DateRangePicker') && isVisible(comp)" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label :for="comp.name">
         {{ comp.label }}
-        <span v-if="comp.required" class="text-destructive">*</span>
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
       <DatePicker
         v-model="formData[comp.name]"
         :placeholder="comp.placeholder || ''"
-        :disabled="comp.disabled"
+        :disabled="isDisabled(comp)"
         :timePicker="comp.type === 'TimePicker'"
         :range="comp.type === 'DateRangePicker'"
       />
@@ -344,16 +348,16 @@ const resetReorderState = () => {
     </div>
 
     <!-- Select -->
-    <div v-else-if="comp.type === 'Select' || comp.type === 'select'" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="(comp.type === 'Select' || comp.type === 'select') && isVisible(comp)" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label :for="comp.name">
         {{ comp.label }}
-        <span v-if="comp.required" class="text-destructive">*</span>
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
       <select
         :id="comp.name"
         v-model="formData[comp.name]"
-        :required="comp.required"
-        :disabled="comp.disabled"
+        :required="isRequired(comp)"
+        :disabled="isDisabled(comp)"
         class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         :class="errors[comp.name] ? 'border-destructive focus-visible:ring-destructive' : 'border-input focus-visible:ring-ring'"
       >
@@ -367,26 +371,26 @@ const resetReorderState = () => {
     </div>
 
     <!-- Toggle -->
-    <div v-else-if="comp.type === 'Toggle' || comp.type === 'toggle'" class="flex items-center gap-3 py-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="(comp.type === 'Toggle' || comp.type === 'toggle') && isVisible(comp)" class="flex items-center gap-3 py-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Switch
         :id="comp.name"
         :checked="isTruthy(formData[comp.name])"
         :model-value="isTruthy(formData[comp.name])"
         @update:checked="val => formData[comp.name] = val ? 1 : 0"
         @update:model-value="val => formData[comp.name] = val ? 1 : 0"
-        :disabled="comp.disabled"
+        :disabled="isDisabled(comp)"
       />
       <Label :for="comp.name">{{ comp.label }}</Label>
       <p v-if="comp.hint" class="text-xs text-muted-foreground ml-2">{{ comp.hint }}</p>
     </div>
 
     <!-- Radio -->
-    <div v-else-if="comp.type === 'Radio' || comp.type === 'radio'" class="space-y-3" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="(comp.type === 'Radio' || comp.type === 'radio') && isVisible(comp)" class="space-y-3" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label>
         {{ comp.label }}
-        <span v-if="comp.required" class="text-destructive">*</span>
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
-      <RadioGroup v-model="formData[comp.name]" :disabled="comp.disabled" :class="comp.layout === 'horizontal' ? 'flex flex-row flex-wrap gap-4' : 'flex flex-col gap-2'">
+      <RadioGroup v-model="formData[comp.name]" :disabled="isDisabled(comp)" :class="comp.layout === 'horizontal' ? 'flex flex-row flex-wrap gap-4' : 'flex flex-col gap-2'">
         <div class="flex items-center space-x-2" v-for="opt in comp.options" :key="opt.value">
           <RadioGroupItem :id="`${comp.name}-${opt.value}`" :value="opt.value" />
           <Label :for="`${comp.name}-${opt.value}`" class="font-normal cursor-pointer">{{ opt.label }}</Label>
@@ -397,10 +401,10 @@ const resetReorderState = () => {
     </div>
 
     <!-- Checkbox -->
-    <div v-else-if="comp.type === 'Checkbox' || comp.type === 'checkbox'" class="space-y-3" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="(comp.type === 'Checkbox' || comp.type === 'checkbox') && isVisible(comp)" class="space-y-3" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label>
         {{ comp.label }}
-        <span v-if="comp.required" class="text-destructive">*</span>
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
       <div :class="comp.layout === 'horizontal' ? 'flex flex-row flex-wrap gap-4' : 'flex flex-col gap-2'">
         <template v-if="comp.multiple">
@@ -409,7 +413,7 @@ const resetReorderState = () => {
               :id="`${comp.name}-${opt.value}`" 
               :checked="(formData[comp.name] || []).includes(opt.value)"
               @update:checked="val => toggleCheckbox(comp.name, opt.value, val)"
-              :disabled="comp.disabled"
+              :disabled="isDisabled(comp)"
             />
             <Label :for="`${comp.name}-${opt.value}`" class="font-normal cursor-pointer">{{ opt.label }}</Label>
           </div>
@@ -420,7 +424,7 @@ const resetReorderState = () => {
               :id="comp.name" 
               :checked="isTruthy(formData[comp.name])"
               @update:checked="val => formData[comp.name] = val ? 1 : 0"
-              :disabled="comp.disabled"
+              :disabled="isDisabled(comp)"
             />
             <Label :for="comp.name" class="font-normal cursor-pointer">{{ comp.label }}</Label>
           </div>
@@ -431,7 +435,7 @@ const resetReorderState = () => {
     </div>
 
     <!-- File Input -->
-    <div v-else-if="comp.type === 'FileInput' || comp.type === 'file-input'" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+    <div v-else-if="(comp.type === 'FileInput' || comp.type === 'file-input') && isVisible(comp)" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label :for="comp.name">
         {{ comp.label }}
         <span v-if="comp.required" class="text-destructive">*</span>

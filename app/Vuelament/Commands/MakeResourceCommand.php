@@ -124,18 +124,18 @@ class MakeResourceCommand extends Command
         if (Str::endsWith($name, '_id')) {
             $relation = Str::camel(str_replace('_id', '', $name));
             $relModel = Str::studly(str_replace('_id', '', $name));
-            return "                V::select('{$name}')->label('{$label}')->options(\\App\\Models\\{$relModel}::pluck('name', 'id')->toArray()){$required},";
+            return "                Select::make('{$name}')->label('{$label}')->options(\\App\\Models\\{$relModel}::pluck('name', 'id')->toArray()){$required},";
         }
 
         // Map by type
         return match (true) {
-            str_contains($type, 'text')                     => "                V::textarea('{$name}')->label('{$label}'){$required},",
-            str_contains($type, 'bool'), $type === 'tinyint' => "                V::toggle('{$name}')->label('{$label}'),",
-            str_contains($type, 'date'), str_contains($type, 'timestamp') => "                V::datePicker('{$name}')->label('{$label}'){$required},",
-            str_contains($type, 'int'), str_contains($type, 'decimal'), str_contains($type, 'float'), str_contains($type, 'double') => "                V::textInput('{$name}')->label('{$label}')->type('number'){$required},",
-            str_contains($type, 'json')                     => "                V::textarea('{$name}')->label('{$label}'){$required},",
-            $name === 'email'                                => "                V::textInput('{$name}')->label('{$label}')->type('email'){$required},",
-            default                                          => "                V::textInput('{$name}')->label('{$label}'){$required},",
+            str_contains($type, 'text')                     => "                Textarea::make('{$name}')->label('{$label}'){$required},",
+            str_contains($type, 'bool'), $type === 'tinyint' => "                Toggle::make('{$name}')->label('{$label}'),",
+            str_contains($type, 'date'), str_contains($type, 'timestamp') => "                DatePicker::make('{$name}')->label('{$label}'){$required},",
+            str_contains($type, 'int'), str_contains($type, 'decimal'), str_contains($type, 'float'), str_contains($type, 'double') => "                TextInput::make('{$name}')->label('{$label}')->type('number'){$required},",
+            str_contains($type, 'json')                     => "                Textarea::make('{$name}')->label('{$label}'){$required},",
+            $name === 'email'                                => "                TextInput::make('{$name}')->label('{$label}')->type('email'){$required},",
+            default                                          => "                TextInput::make('{$name}')->label('{$label}'){$required},",
         };
     }
 
@@ -149,7 +149,7 @@ class MakeResourceCommand extends Command
 
         return match (true) {
             str_contains($type, 'date'), str_contains($type, 'timestamp') => "                        Column::make('{$name}')->label('{$label}')->dateFormat('d/m/Y')->sortable(),",
-            str_contains($type, 'bool'), $type === 'tinyint'              => "                        Column::make('{$name}')->label('{$label}')->badge(),",
+            str_contains($type, 'bool'), $type === 'tinyint'              => "                        ToggleColumn::make('{$name}')->label('{$label}'),",
             default                                                        => "                        Column::make('{$name}')->label('{$label}')->sortable()->searchable(),",
         };
     }
@@ -251,9 +251,14 @@ class MakeResourceCommand extends Command
         // Build imports
         $imports = "use App\\Vuelament\\Core\\BaseResource;
 use App\\Vuelament\\Core\\PageSchema;
-use App\\Vuelament\\Facades\\V;
+use App\\Vuelament\\Components\\Form\\TextInput;
+use App\\Vuelament\\Components\\Form\\Textarea;
+use App\\Vuelament\\Components\\Form\\Select;
+use App\\Vuelament\\Components\\Form\\Toggle;
+use App\\Vuelament\\Components\\Form\\DatePicker;
 use App\\Vuelament\\Components\\Table\\Table;
 use App\\Vuelament\\Components\\Table\\Column;
+use App\\Vuelament\\Components\\Table\\Columns\\ToggleColumn;
 use App\\Vuelament\\Components\\Table\\Actions\\EditAction;
 use App\\Vuelament\\Components\\Table\\Actions\\DeleteAction;
 use App\\Vuelament\\Components\\Actions\\ActionGroup;

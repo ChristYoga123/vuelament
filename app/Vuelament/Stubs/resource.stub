@@ -4,7 +4,6 @@ namespace {{ namespace }};
 
 use App\Vuelament\Core\BaseResource;
 use App\Vuelament\Core\PageSchema;
-use App\Vuelament\Facades\V;
 use App\Vuelament\Components\Table\Table;
 use App\Vuelament\Components\Table\Column;
 use App\Vuelament\Components\Table\Actions\EditAction;
@@ -12,7 +11,7 @@ use App\Vuelament\Components\Table\Actions\DeleteAction;
 use App\Vuelament\Components\Actions\ActionGroup;
 use App\Vuelament\Components\Actions\CreateAction;
 use App\Vuelament\Components\Actions\DeleteBulkAction;
-use App\Vuelament\Components\Filters\SelectFilter;
+use App\Vuelament\Components\Form\TextInput;
 
 class {{ name }}Resource extends BaseResource
 {
@@ -60,7 +59,7 @@ class {{ name }}Resource extends BaseResource
         return PageSchema::make()
             ->title('Buat ' . static::$label)
             ->components([
-                V::textInput('name')
+                TextInput::make('name')
                     ->label('Nama')
                     ->required()
                     ->maxLength(255)

@@ -7,8 +7,8 @@ import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Eye, EyeOff, Upload, X, FileIcon, ImageIcon, GripVertical } from 'lucide-vue-next'
-import RichEditor from '@/components/vuelament/RichEditor.vue'
-import VuelamentDatePicker from '@/components/vuelament/VuelamentDatePicker.vue'
+import RichEditor from '@/components/vuelament/form/RichEditor.vue'
+import DatePicker from '@/components/vuelament/form/DatePicker.vue'
 
 const props = defineProps({
   components: {
@@ -332,7 +332,7 @@ const resetReorderState = () => {
         {{ comp.label }}
         <span v-if="comp.required" class="text-destructive">*</span>
       </Label>
-      <VuelamentDatePicker
+      <DatePicker
         v-model="formData[comp.name]"
         :placeholder="comp.placeholder || ''"
         :disabled="comp.disabled"

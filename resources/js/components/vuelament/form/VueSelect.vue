@@ -214,14 +214,6 @@ const submitCreateOption = async () => {
     </div>
 
     <!-- Dropdown -->
-    <Teleport to="body">
-      <div
-        v-if="isOpen"
-        ref="dropdownRef"
-        class="fixed inset-0 z-9998"
-        @click="isOpen = false"
-      />
-    </Teleport>
     <div
       v-if="isOpen"
       class="absolute z-9999 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-2"

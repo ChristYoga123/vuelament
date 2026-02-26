@@ -43,7 +43,7 @@ const submit = () => {
   <AuthLayout title="Login">
     <Card>
       <CardHeader class="text-center">
-        <CardTitle class="text-xl">Selamat Datang</CardTitle>
+        <CardTitle class="text-xl">Welcome</CardTitle>
         <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
 

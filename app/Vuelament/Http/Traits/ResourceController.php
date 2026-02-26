@@ -246,7 +246,7 @@ trait ResourceController
 
         return redirect()
             ->route("{$panelId}.{$resource::getSlug()}.index")
-            ->with('success', $resource::getLabel() . ' berhasil dibuat.');
+            ->with('success', $resource::getLabel() . ' created successfully.');
     }
 
     // ── Edit ─────────────────────────────────────────────
@@ -300,7 +300,7 @@ trait ResourceController
 
         return redirect()
             ->route("{$panelId}.{$resource::getSlug()}.index")
-            ->with('success', $resource::getLabel() . ' berhasil diupdate.');
+            ->with('success', $resource::getLabel() . ' updated successfully.');
     }
 
     // ── Update Column (Single Field / Toggle) ────────────
@@ -363,7 +363,7 @@ trait ResourceController
             $model::withTrashed()->whereIn('id', $ids)->restore();
         });
 
-        return back()->with('success', count($ids) . ' data berhasil direstore.');
+        return back()->with('success', count($ids) . ' records restored successfully.');
     }
 
     // ── Bulk Force Delete ───────────────────────────────
@@ -392,7 +392,7 @@ trait ResourceController
             $record->restore();
         });
 
-        return back()->with('success', $resource::getLabel() . ' berhasil direstore.');
+        return back()->with('success', $resource::getLabel() . ' restored successfully.');
     }
 
     // ── Force Delete ─────────────────────────────────────
@@ -449,7 +449,7 @@ trait ResourceController
             $this->executeWithTransaction(function () use ($action, $record, $actionData) {
                 $action->execute($record, $actionData);
             });
-            return back()->with('success', $action->toArray()['label'] . ' berhasil dijalankan.');
+            return back()->with('success', $action->toArray()['label'] . ' executed successfully.');
         }
 
         return back();

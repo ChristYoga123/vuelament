@@ -101,7 +101,7 @@ const submit = () => {
                 @update:checked="form.remember = $event"
               />
               <Label for="remember" class="text-sm font-normal cursor-pointer">
-                Ingat saya
+                Remember Me
               </Label>
             </div>
           </div>

@@ -3,7 +3,7 @@
 namespace App\Vuelament\Components\Form;
 
 /**
- * Repeater — form component yang isinya bisa diulang (output: array)
+ * Repeater — a form component whose items can be repeated (output: array)
  */
 class Repeater extends BaseForm
 {
@@ -12,7 +12,8 @@ class Repeater extends BaseForm
     protected ?int $minItems = null;
     protected ?int $maxItems = null;
     protected ?int $columns = null;
-    protected string $addActionLabel = 'Tambah';
+    protected int $defaultItems = 1;
+    protected string $addActionLabel = 'Add';
     protected bool|\Closure $reorderable = true;
     protected bool|\Closure $deletable = true;
     protected bool|\Closure $collapsible = false;
@@ -29,6 +30,7 @@ class Repeater extends BaseForm
     public function minItems(int $v): static { $this->minItems = $v; return $this; }
     public function maxItems(int $v): static { $this->maxItems = $v; return $this; }
     public function columns(int $v): static { $this->columns = $v; return $this; }
+    public function defaultItems(int $v): static { $this->defaultItems = $v; return $this; }
     public function addActionLabel(string $v): static { $this->addActionLabel = $v; return $this; }
     public function reorderable(bool|\Closure $v = true): static { $this->reorderable = $v; return $this; }
     public function deletable(bool|\Closure $v = true): static { $this->deletable = $v; return $this; }
@@ -91,6 +93,7 @@ class Repeater extends BaseForm
             'minItems'       => $this->minItems,
             'maxItems'       => $this->maxItems,
             'columns'        => $this->columns,
+            'defaultItems'   => $this->defaultItems,
             'addActionLabel' => $this->addActionLabel,
             'reorderable'    => $this->evaluate($this->reorderable, $operation),
             'deletable'      => $this->evaluate($this->deletable, $operation),

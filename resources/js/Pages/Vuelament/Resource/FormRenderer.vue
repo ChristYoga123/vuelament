@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, toRef } from 'vue'
+import { ref, computed, toRef, onMounted } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Eye, EyeOff, Upload, X, FileIcon, ImageIcon, GripVertical, Loader2 } from 'lucide-vue-next'
 import RichEditor from '@/components/vuelament/form/RichEditor.vue'
+import VueSelect from '@/components/vuelament/form/VueSelect.vue'
 import DatePicker from '@/components/vuelament/form/DatePicker.vue'
 import { useFormReactivity } from '@/components/vuelament/form/composables/useFormReactivity'
 
@@ -224,6 +225,111 @@ const resetReorderState = () => {
   reorderDragOverIndex.value = null
   reorderFieldName.value = null
 }
+
+// ── Repeater helpers ────────────────────────────────
+const buildEmptyItem = (comp) => {
+  const emptyItem = {}
+  ;(comp.components || []).forEach(child => {
+    emptyItem[child.name] = child.type === 'Toggle' ? 0 : ''
+  })
+  return emptyItem
+}
+
+const repeaterAdd = (comp) => {
+  if (!props.formData[comp.name]) {
+    props.formData[comp.name] = []
+  }
+  props.formData[comp.name].push(buildEmptyItem(comp))
+}
+
+// Initialize repeater default items
+const initRepeaterDefaults = (components) => {
+  const walk = (comps) => {
+    for (const comp of (comps || [])) {
+      if (comp.type === 'Repeater' && !props.formData[comp.name]?.length) {
+        const count = comp.defaultItems ?? 1
+        const items = []
+        for (let i = 0; i < count; i++) items.push(buildEmptyItem(comp))
+        props.formData[comp.name] = items
+      }
+      // Recurse into Grid/Section
+      if (comp.components) walk(comp.components)
+    }
+  }
+  walk(components)
+}
+
+// Run on mount
+onMounted(() => {
+  initRepeaterDefaults(props.components)
+})
+
+const repeaterRemove = (fieldName, index) => {
+  if (props.formData[fieldName]) {
+    props.formData[fieldName].splice(index, 1)
+  }
+}
+
+const repeaterMoveUp = (fieldName, index) => {
+  if (index <= 0) return
+  const items = props.formData[fieldName]
+  const temp = items[index]
+  items[index] = items[index - 1]
+  items[index - 1] = temp
+}
+
+const repeaterMoveDown = (fieldName, index) => {
+  const items = props.formData[fieldName]
+  if (index >= items.length - 1) return
+  const temp = items[index]
+  items[index] = items[index + 1]
+  items[index + 1] = temp
+}
+
+// Repeater drag reorder
+const repeaterDragIndex = ref(null)
+const repeaterDragOverIndex = ref(null)
+const repeaterDragField = ref(null)
+
+const onRepeaterDragStart = (fieldName, index, event) => {
+  repeaterDragField.value = fieldName
+  repeaterDragIndex.value = index
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', index)
+}
+
+const onRepeaterDragOver = (fieldName, index, event) => {
+  if (repeaterDragField.value !== fieldName) return
+  event.preventDefault()
+  event.dataTransfer.dropEffect = 'move'
+  repeaterDragOverIndex.value = index
+}
+
+const onRepeaterDrop = (fieldName, index, event) => {
+  event.preventDefault()
+  if (repeaterDragField.value !== fieldName) return
+  const from = repeaterDragIndex.value
+  const to = index
+  if (from === null || from === to) {
+    resetRepeaterDragState()
+    return
+  }
+  const items = [...(props.formData[fieldName] || [])]
+  const [moved] = items.splice(from, 1)
+  items.splice(to, 0, moved)
+  props.formData[fieldName] = items
+  resetRepeaterDragState()
+}
+
+const onRepeaterDragEnd = () => {
+  resetRepeaterDragState()
+}
+
+const resetRepeaterDragState = () => {
+  repeaterDragIndex.value = null
+  repeaterDragOverIndex.value = null
+  repeaterDragField.value = null
+}
 </script>
 
 <template>
@@ -353,19 +459,20 @@ const resetReorderState = () => {
         {{ comp.label }}
         <span v-if="isRequired(comp)" class="text-destructive">*</span>
       </Label>
-      <select
+      <VueSelect
         :id="comp.name"
-        v-model="formData[comp.name]"
-        :required="isRequired(comp)"
+        :modelValue="formData[comp.name]"
+        @update:modelValue="val => formData[comp.name] = val"
+        :options="comp.options"
+        :optionsFrom="comp.optionsFrom"
+        :multiple="comp.multiple || false"
+        :searchable="comp.searchable || false"
         :disabled="isDisabled(comp)"
-        class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-        :class="errors[comp.name] ? 'border-destructive focus-visible:ring-destructive' : 'border-input focus-visible:ring-ring'"
-      >
-        <option value="">{{ comp.placeholder || `Select ${comp.label}` }}</option>
-        <option v-for="opt in comp.options" :key="opt.value" :value="opt.value">
-          {{ opt.label }}
-        </option>
-      </select>
+        :placeholder="comp.placeholder || `Select ${comp.label}`"
+        :createOptionSchema="comp.createOptionSchema"
+        :createOptionEndpoint="comp.createOptionEndpoint"
+        :createOptionLabel="comp.createOptionLabel || 'Create New'"
+      />
       <p v-if="comp.hint" class="text-xs text-muted-foreground">{{ comp.hint }}</p>
       <p v-if="errors[comp.name]" class="text-sm text-destructive">{{ errors[comp.name] }}</p>
     </div>
@@ -443,6 +550,160 @@ const resetReorderState = () => {
       <p v-if="errors[comp.name]" class="text-sm text-destructive">{{ errors[comp.name] }}</p>
     </div>
 
+    <!-- Repeater -->
+    <div v-else-if="comp.type === 'Repeater' && isVisible(comp)" class="space-y-3" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
+      <Label>
+        {{ comp.label }}
+        <span v-if="isRequired(comp)" class="text-destructive">*</span>
+      </Label>
+
+      <div class="space-y-3">
+        <div
+          v-for="(item, index) in (formData[comp.name] || [])"
+          :key="index"
+          :draggable="comp.reorderable"
+          @dragstart="comp.reorderable ? onRepeaterDragStart(comp.name, index, $event) : null"
+          @dragover="comp.reorderable ? onRepeaterDragOver(comp.name, index, $event) : null"
+          @drop="comp.reorderable ? onRepeaterDrop(comp.name, index, $event) : null"
+          @dragend="comp.reorderable ? onRepeaterDragEnd() : null"
+          :class="[
+            'relative rounded-lg border bg-card p-4 transition-all duration-200',
+            comp.reorderable ? 'cursor-grab active:cursor-grabbing' : '',
+            repeaterDragIndex === index && repeaterDragField === comp.name
+              ? 'opacity-40 scale-[0.98] bg-muted/50 border-dashed'
+              : '',
+            repeaterDragOverIndex === index && repeaterDragField === comp.name && repeaterDragIndex !== index
+              ? 'border-primary ring-1 ring-primary/30 bg-primary/5'
+              : '',
+          ]"
+        >
+          <!-- Header with index and actions -->
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <div
+                v-if="comp.reorderable"
+                class="shrink-0 flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              >
+                <GripVertical class="h-4 w-4" />
+              </div>
+              <span class="text-xs font-medium text-muted-foreground">#{{ index + 1 }}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <!-- Move up -->
+              <button
+                v-if="comp.reorderable && index > 0"
+                type="button"
+                @click="repeaterMoveUp(comp.name, index)"
+                class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+              </button>
+              <!-- Move down -->
+              <button
+                v-if="comp.reorderable && index < (formData[comp.name] || []).length - 1"
+                type="button"
+                @click="repeaterMoveDown(comp.name, index)"
+                class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <!-- Delete -->
+              <button
+                v-if="comp.deletable"
+                type="button"
+                @click="repeaterRemove(comp.name, index)"
+                class="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Nested form fields -->
+          <div :class="comp.columns ? `grid grid-cols-1 md:grid-cols-${comp.columns} gap-4` : 'space-y-4'">
+            <template v-for="child in comp.components" :key="child.name">
+              <div class="space-y-2">
+                <Label :for="`${comp.name}.${index}.${child.name}`">
+                  {{ child.label }}
+                  <span v-if="child.required" class="text-destructive">*</span>
+                </Label>
+                <!-- Text input -->
+                <Input
+                  v-if="child.type === 'TextInput'"
+                  :id="`${comp.name}.${index}.${child.name}`"
+                  :type="child.inputType || 'text'"
+                  v-model="item[child.name]"
+                  :placeholder="child.placeholder"
+                  :disabled="isDisabled(child)"
+                />
+                <!-- Textarea -->
+                <textarea
+                  v-else-if="child.type === 'Textarea'"
+                  :id="`${comp.name}.${index}.${child.name}`"
+                  v-model="item[child.name]"
+                  :placeholder="child.placeholder"
+                  :disabled="isDisabled(child)"
+                  :rows="child.rows || 3"
+                  class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+                <!-- Select (VueSelect) -->
+                <VueSelect
+                  v-else-if="child.type === 'Select'"
+                  :id="`${comp.name}.${index}.${child.name}`"
+                  :modelValue="item[child.name]"
+                  @update:modelValue="val => item[child.name] = val"
+                  :options="child.options"
+                  :optionsFrom="child.optionsFrom"
+                  :multiple="child.multiple || false"
+                  :searchable="child.searchable || false"
+                  :disabled="isDisabled(child)"
+                  :placeholder="child.placeholder || `Select ${child.label}`"
+                  :createOptionSchema="child.createOptionSchema"
+                  :createOptionEndpoint="child.createOptionEndpoint"
+                  :createOptionLabel="child.createOptionLabel || 'Create New'"
+                />
+                <!-- Toggle -->
+                <div v-else-if="child.type === 'Toggle'" class="flex items-center gap-3">
+                  <Switch
+                    :id="`${comp.name}.${index}.${child.name}`"
+                    :checked="isTruthy(item[child.name])"
+                    @update:checked="val => item[child.name] = val ? 1 : 0"
+                    :disabled="isDisabled(child)"
+                  />
+                </div>
+                <!-- Fallback: text input -->
+                <Input
+                  v-else
+                  :id="`${comp.name}.${index}.${child.name}`"
+                  v-model="item[child.name]"
+                  :placeholder="child.placeholder"
+                  :disabled="isDisabled(child)"
+                />
+                <p v-if="child.hint" class="text-xs text-muted-foreground">{{ child.hint }}</p>
+                <p v-if="errors[`${comp.name}.${index}.${child.name}`]" class="text-sm text-destructive">{{ errors[`${comp.name}.${index}.${child.name}`] }}</p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add button -->
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        @click="repeaterAdd(comp)"
+        :disabled="comp.maxItems && (formData[comp.name] || []).length >= comp.maxItems"
+        class="gap-1.5"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        {{ comp.addActionLabel || 'Add' }}
+      </Button>
+
+      <p v-if="comp.hint" class="text-xs text-muted-foreground">{{ comp.hint }}</p>
+      <p v-if="errors[comp.name]" class="text-sm text-destructive">{{ errors[comp.name] }}</p>
+    </div>
+
     <!-- File Input -->
     <div v-else-if="(comp.type === 'FileInput' || comp.type === 'file-input') && isVisible(comp)" class="space-y-2" :class="applyAutoLayout ? getAutoColSpan(comp) : ''">
       <Label :for="comp.name">
@@ -481,11 +742,11 @@ const resetReorderState = () => {
           </div>
           <div>
             <p class="text-sm font-medium">
-              {{ comp.placeholder || 'Klik atau seret file ke sini' }}
+              {{ comp.placeholder || 'Click or drag files here' }}
             </p>
             <p class="text-xs text-muted-foreground mt-0.5">
               <template v-if="comp.image">JPG, PNG, GIF, WebP, SVG</template>
-              <template v-else>Semua tipe file</template>
+              <template v-else>All file types</template>
               <template v-if="comp.maxSize"> · Max {{ comp.maxSize >= 1024 ? ((comp.maxSize / 1024).toFixed(0) + ' MB') : (comp.maxSize + ' KB') }}</template>
             </p>
           </div>
@@ -495,7 +756,7 @@ const resetReorderState = () => {
       <!-- Progress bar -->
       <div v-if="fileProgress[comp.name] != null" class="space-y-1">
         <div class="flex justify-between text-xs text-muted-foreground">
-          <span>Memuat file...</span>
+          <span>Loading file...</span>
           <span>{{ fileProgress[comp.name] }}%</span>
         </div>
         <div class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -560,7 +821,7 @@ const resetReorderState = () => {
             <button
               type="button"
               @click.stop="removeFile(comp, comp.multiple ? fi : null)"
-              class="shrink-0 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+              class="shrink-0 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
             >
               <X class="h-4 w-4" />
             </button>

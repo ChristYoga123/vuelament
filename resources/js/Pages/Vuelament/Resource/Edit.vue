@@ -83,7 +83,7 @@ const getInputType = (comp) => {
 
           <div class="flex items-center gap-2">
             <Button type="submit" :disabled="submitting" class="gap-2">
-              <component :is="resolveIcon('loader-2')" v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 v-if="submitting" class="w-4 h-4 animate-spin" />
               {{ submitting ? 'Saving...' : 'Save' }}
             </Button>
             <Link :href="`/${panelPath}/${resource.slug}`">

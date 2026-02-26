@@ -19,7 +19,7 @@ const defaultStats = [
   {
     title: 'Total Users',
     value: '0',
-    description: 'Pengguna terdaftar',
+    description: 'Registered users',
     icon: 'users',
   },
 ]
@@ -32,10 +32,10 @@ const displayStats = computed(() => stats.value.length ? stats.value : defaultSt
     <!-- Welcome -->
     <div class="mb-6">
       <h1 class="text-2xl font-bold tracking-tight">
-        Halo, {{ user.name || 'Admin' }}! 👋
+        Hello, {{ user.name || 'Admin' }}! 👋
       </h1>
       <p class="text-muted-foreground mt-1">
-        Selamat datang di panel {{ panel.brandName || 'Vuelament' }}.
+        Welcome to the {{ panel.brandName || 'Vuelament' }} panel.
       </p>
     </div>
 
@@ -63,8 +63,8 @@ const displayStats = computed(() => stats.value.length ? stats.value : defaultSt
     <div class="grid gap-4 md:grid-cols-2">
       <Card class="py-4 gap-2">
         <CardHeader class="px-4 pb-2">
-          <CardTitle class="text-lg">Mulai Cepat</CardTitle>
-          <CardDescription class="text-xs">Pelajari cara menggunakan panel admin</CardDescription>
+          <CardTitle class="text-lg">Quick Start</CardTitle>
+          <CardDescription class="text-xs">Learn how to use the admin panel</CardDescription>
         </CardHeader>
         <CardContent class="space-y-3 px-4 pb-0">
           <div class="flex items-start gap-3">
@@ -83,8 +83,8 @@ const displayStats = computed(() => stats.value.length ? stats.value : defaultSt
               <span class="text-xs font-bold text-primary">2</span>
             </div>
             <div>
-              <p class="text-sm font-medium">Daftarkan di Panel</p>
-              <p class="text-xs text-muted-foreground">Tambahkan class resource ke VuelamentServiceProvider</p>
+              <p class="text-sm font-medium">Register in Panel</p>
+              <p class="text-xs text-muted-foreground">Add the resource class to your PanelProvider</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
@@ -92,8 +92,8 @@ const displayStats = computed(() => stats.value.length ? stats.value : defaultSt
               <span class="text-xs font-bold text-primary">3</span>
             </div>
             <div>
-              <p class="text-sm font-medium">Selesai!</p>
-              <p class="text-xs text-muted-foreground">CRUD otomatis tersedia di sidebar</p>
+              <p class="text-sm font-medium">Done!</p>
+              <p class="text-xs text-muted-foreground">CRUD automatically available in sidebar</p>
             </div>
           </div>
         </CardContent>
@@ -101,8 +101,8 @@ const displayStats = computed(() => stats.value.length ? stats.value : defaultSt
 
       <Card class="py-4 gap-2">
         <CardHeader class="px-4 pb-2">
-          <CardTitle class="text-lg">Sistem Info</CardTitle>
-          <CardDescription class="text-xs">Informasi panel dan framework</CardDescription>
+          <CardTitle class="text-lg">System Info</CardTitle>
+          <CardDescription class="text-xs">Panel and framework information</CardDescription>
         </CardHeader>
         <CardContent class="px-4 pb-0">
           <div class="space-y-2 text-sm">

@@ -3,36 +3,38 @@
 namespace App\Vuelament\Admin\Resources\User;
 
 use App\Models\User;
-use App\Vuelament\Core\PageSchema;
-use App\Vuelament\Core\BaseResource;
-use Illuminate\Support\Facades\Hash;
+use App\Vuelament\Components\Actions\ActionGroup;
+use App\Vuelament\Components\Actions\CreateAction;
+use App\Vuelament\Components\Actions\DeleteBulkAction;
+use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
+use App\Vuelament\Components\Actions\RestoreBulkAction;
+use App\Vuelament\Components\Filters\SelectFilter;
+use App\Vuelament\Components\Filters\TrashFilter;
+use App\Vuelament\Components\Form\Checkbox;
+use App\Vuelament\Components\Form\DatePicker;
+use App\Vuelament\Components\Form\DateRangePicker;
+use App\Vuelament\Components\Form\FileInput;
 use App\Vuelament\Components\Form\Radio;
+use App\Vuelament\Components\Form\Repeater;
+use App\Vuelament\Components\Form\RichEditor;
+use App\Vuelament\Components\Form\Select;
+use App\Vuelament\Components\Form\Textarea;
+use App\Vuelament\Components\Form\TextInput;
+use App\Vuelament\Components\Form\TimePicker;
 use App\Vuelament\Components\Form\Toggle;
 use App\Vuelament\Components\Layout\Grid;
-use App\Vuelament\Components\Table\Table;
-use App\Vuelament\Components\Form\Checkbox;
-use App\Vuelament\Components\Form\Textarea;
-use App\Vuelament\Components\Form\FileInput;
-use App\Vuelament\Components\Form\TextInput;
-use App\Vuelament\Components\Form\DatePicker;
-use App\Vuelament\Components\Form\RichEditor;
-use App\Vuelament\Components\Form\TimePicker;
-use App\Vuelament\Components\Actions\ActionGroup;
-use App\Vuelament\Components\Filters\TrashFilter;
-use App\Vuelament\Components\Table\FiltersLayout;
-use App\Vuelament\Components\Actions\CreateAction;
-use App\Vuelament\Components\Filters\SelectFilter;
-use App\Vuelament\Components\Form\DateRangePicker;
 use App\Vuelament\Components\Table\Actions\Action;
-use App\Vuelament\Components\Actions\DeleteBulkAction;
-use App\Vuelament\Components\Table\Actions\EditAction;
-use App\Vuelament\Components\Table\Columns\TextColumn;
-use App\Vuelament\Components\Actions\RestoreBulkAction;
 use App\Vuelament\Components\Table\Actions\DeleteAction;
-use App\Vuelament\Components\Table\Columns\ToggleColumn;
-use App\Vuelament\Components\Table\Actions\RestoreAction;
-use App\Vuelament\Components\Actions\ForceDeleteBulkAction;
+use App\Vuelament\Components\Table\Actions\EditAction;
 use App\Vuelament\Components\Table\Actions\ForceDeleteAction;
+use App\Vuelament\Components\Table\Actions\RestoreAction;
+use App\Vuelament\Components\Table\Columns\TextColumn;
+use App\Vuelament\Components\Table\Columns\ToggleColumn;
+use App\Vuelament\Components\Table\FiltersLayout;
+use App\Vuelament\Components\Table\Table;
+use App\Vuelament\Core\BaseResource;
+use App\Vuelament\Core\PageSchema;
+use Illuminate\Support\Facades\Hash;
 
 class UserResource extends BaseResource
 {
@@ -140,6 +142,25 @@ class UserResource extends BaseResource
                                     ->multiple()
                                     ->required()
                                     ->reorderable(),
+                                Grid::make(1)
+                                    ->schema([
+                                        Repeater::make('tes')
+                                            ->minItems(1)
+                                            ->required()
+                                            ->reorderable()
+                                            ->childComponents([
+                                                TextInput::make('input_repeater'),
+                                                Select::make('select_repeater')
+                                                    ->options([
+                                                        'A' => 'A'
+                                                    ])
+                                                    ->searchable()
+                                                    ->multiple()
+                                                    ->createOptionForm([
+                                                        TextInput::make('input form')
+                                                    ], '#')
+                                            ])
+                                    ])
                             ]),
                         EditAction::make()
                             ->label('Edit'),

@@ -107,24 +107,9 @@ const provideEditModalFn = openEditModal
 <template>
   <DashboardLayout :title="tableSchema?.title || `Manage ${resource.label}`" :description="resource.description">
     
-    <div class="flex items-center justify-between mb-4">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight">{{ tableSchema?.title || `Manage ${resource.label}` }}</h1>
-        </div>
-        <div class="flex items-center gap-2">
-            <!-- This assumes getHeaderActions provides a CreateAction which we override here for simplicity -->
-            <Button @click="openCreateModal">
-                Create {{ resource.label }}
-            </Button>
-        </div>
-    </div>
-
     <!-- The Table Component. 
-         We pass an explicit editHandler if the table supports overriding action behaviors.
-         But by default standard Vuelament table routes to /edit. 
-         In Manage mode, we MUST override the edit action. 
-         We'll pass a custom property or emit catching in Table.vue if it supports it. -->
-    <Table @editAction="openEditModal" />
+         We listen for createAction and editAction emitted by the Table when in Manage mode. -->
+    <Table @createAction="openCreateModal" @editAction="openEditModal" />
 
     <!-- Create / Edit Modal -->
     <Dialog v-model:open="isModalOpen">

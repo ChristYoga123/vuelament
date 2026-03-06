@@ -14,7 +14,10 @@ const {
   panelPath, pageSlug,
   deleteRecord, restoreRecord, forceDeleteRecord,
   executeCustomAction,
+  isManageMode,
 } = inject('tableState')
+
+defineEmits(['editAction'])
 </script>
 
 <template>
@@ -22,7 +25,7 @@ const {
     <template v-for="action in actions" :key="action.name">
       <!-- Edit -->
       <Link
-        v-if="!row.deleted_at && (action.type === 'EditAction' || action.type === 'edit')"
+        v-if="!isManageMode && !row.deleted_at && (action.type === 'EditAction' || action.type === 'edit')"
         :href="`/${panelPath}/${pageSlug}/${row.id}/edit`"
       >
         <Button
@@ -38,6 +41,20 @@ const {
           <span v-else class="sr-only">Edit</span>
         </Button>
       </Link>
+      <Button
+        v-else-if="isManageMode && !row.deleted_at && (action.type === 'EditAction' || action.type === 'edit')"
+         variant="ghost" :size="action.label ? 'sm' : 'icon'" class="h-8"
+          :class="[action.label ? 'px-3' : 'w-8', {
+            'text-destructive hover:text-destructive': action.color === 'danger',
+            'text-yellow-400 hover:text-yellow-400': action.color === 'warning',
+            'text-green-600 hover:text-green-600': action.color === 'success',
+          }]"
+          @click="$emit('editAction', row)"
+      >
+         <Pencil class="w-3.5 h-3.5" :class="action.label ? 'mr-1.5' : ''" />
+         <span v-if="action.label">{{ action.label }}</span>
+         <span v-else class="sr-only">Edit</span>
+      </Button>
 
       <!-- Delete -->
       <Button

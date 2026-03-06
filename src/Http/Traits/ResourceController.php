@@ -140,7 +140,14 @@ trait ResourceController
         $tableSchema = $pageSchema->toArray('index');
         $panel = app('vuelament.panel');
 
-        return Inertia::render('Vuelament/Resource/Index', [
+        $pages = $resource::getPages();
+        $pageClass = $pages['index'] ?? null;
+        $view = 'Vuelament/Resource/Index';
+        if ($pageClass && method_exists($pageClass, 'getView')) {
+            $view = $pageClass::getView() ?: $view;
+        }
+
+        return Inertia::render($view, [
             'resource'    => [
                 'slug'        => $resource::getSlug(),
                 'label'       => $resource::getLabel(),
@@ -165,7 +172,14 @@ trait ResourceController
         $formSchema = $resource::formSchema()->toArray('create');
         $panel = app('vuelament.panel');
 
-        return Inertia::render('Vuelament/Resource/Create', [
+        $pages = $resource::getPages();
+        $pageClass = $pages['create'] ?? null;
+        $view = 'Vuelament/Resource/Create';
+        if ($pageClass && method_exists($pageClass, 'getView')) {
+            $view = $pageClass::getView() ?: $view;
+        }
+
+        return Inertia::render($view, [
             'resource'   => [
                 'slug'  => $resource::getSlug(),
                 'label' => $resource::getLabel(),
@@ -258,7 +272,14 @@ trait ResourceController
         $formSchema = $resource::editSchema()->toArray('edit');
         $panel = app('vuelament.panel');
 
-        return Inertia::render('Vuelament/Resource/Edit', [
+        $pages = $resource::getPages();
+        $pageClass = $pages['edit'] ?? null;
+        $view = 'Vuelament/Resource/Edit';
+        if ($pageClass && method_exists($pageClass, 'getView')) {
+            $view = $pageClass::getView() ?: $view;
+        }
+
+        return Inertia::render($view, [
             'resource'   => [
                 'slug'  => $resource::getSlug(),
                 'label' => $resource::getLabel(),

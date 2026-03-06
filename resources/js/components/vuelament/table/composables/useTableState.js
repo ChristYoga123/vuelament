@@ -9,6 +9,7 @@ export function useTableState(props) {
   const pageSlug = computed(
     () => pageProps.value.resource?.slug || pageProps.value.page?.slug || '',
   )
+  const isManageMode = computed(() => page.component === 'Vuelament/Resource/Manage')
 
   const resolvedFilters = computed(
     () => props.filters || pageProps.value.filters || {},
@@ -439,5 +440,6 @@ export function useTableState(props) {
     confirmDialog,
     // Navigation
     goToPage, changePerPage,
+    isManageMode,
   }
 }

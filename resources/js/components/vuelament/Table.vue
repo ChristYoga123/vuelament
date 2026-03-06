@@ -51,7 +51,10 @@ const {
   selectedIds, allSelected, toggleSelect,
   togglingStates, updateToggleColumn,
   sortBy, executeBulkAction,
+  isManageMode,
 } = state
+
+defineEmits(['createAction', 'editAction'])
 </script>
 
 <template>
@@ -135,7 +138,7 @@ const {
         <!-- Header actions -->
         <template v-for="action in headerActions" :key="action.name">
           <Link
-            v-if="action.type === 'CreateAction' || action.type === 'create'"
+            v-if="!isManageMode && (action.type === 'CreateAction' || action.type === 'create')"
             :href="`/${panelPath}/${pageSlug}/create`"
           >
             <Button size="sm" class="gap-1.5">
@@ -143,6 +146,14 @@ const {
               {{ action.label }}
             </Button>
           </Link>
+          <Button
+            v-else-if="isManageMode && (action.type === 'CreateAction' || action.type === 'create')"
+            @click="$emit('createAction')"
+            size="sm" class="gap-1.5"
+          >
+            <Plus class="w-4 h-4" />
+            {{ action.label }}
+          </Button>
         </template>
       </div>
     </div>
@@ -223,7 +234,7 @@ const {
                 />
               </td>
               <td v-if="actions.length" class="px-4 py-3 text-right">
-                <TableRowActions :row="row" :actions="actions" />
+                <TableRowActions :row="row" :actions="actions" @editAction="(row) => $emit('editAction', row)" />
               </td>
             </tr>
             <tr v-if="!rows?.length">

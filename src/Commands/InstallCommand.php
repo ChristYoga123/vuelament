@@ -89,6 +89,44 @@ class InstallCommand extends Command
             $this->line('  ⏭ jsconfig.json / tsconfig.json already exists.');
         }
 
+        // ── Step 8: Install NPM dependencies ────────────────
+        $this->task('Installing NPM dependencies...', function () {
+            $this->runShell('npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui class-variance-authority clsx tailwind-merge tw-animate-css 2>&1');
+        });
+
+        // ── Step 9: Shadcn-Vue init ─────────────────────────
+        $componentsJsonPath = base_path('components.json');
+        if (!file_exists($componentsJsonPath)) {
+            $this->task('Initializing Shadcn-Vue...', function () {
+                $this->runShell('npx -y shadcn-vue@latest init -y 2>&1');
+            });
+        } else {
+            $this->line('  ⏭ Shadcn-Vue already initialized (components.json exists).');
+        }
+
+        // ── Step 10: Toggle typescript & install components ──
+        // Workaround: Sidebar component fails with typescript:false.
+        // Temporarily set to true, install all components, then revert.
+        $componentsJsonPath = base_path('components.json');
+        if (file_exists($componentsJsonPath)) {
+            $this->task('Installing Shadcn-Vue components...', function () use ($componentsJsonPath) {
+                // Temporarily enable TypeScript (Sidebar workaround)
+                $json = file_get_contents($componentsJsonPath);
+                $config = json_decode($json, true);
+                $originalTs = $config['typescript'] ?? false;
+                $config['typescript'] = true;
+                file_put_contents($componentsJsonPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+
+                // Install all required components
+                $components = 'alert-dialog avatar breadcrumb button card checkbox dialog dropdown-menu input label pagination popover scroll-area select separator sheet sidebar skeleton switch table textarea tooltip';
+                $this->runShell("npx -y shadcn-vue@latest add {$components} -y 2>&1");
+
+                // Revert typescript setting
+                $config['typescript'] = $originalTs;
+                file_put_contents($componentsJsonPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+            });
+        }
+
         // ── Summary ─────────────────────────────────────────
         $this->newLine();
         $this->info('✅ Vuelament installed successfully!');
@@ -96,20 +134,13 @@ class InstallCommand extends Command
 
         $this->line('  Next steps:');
         $this->newLine();
-        $this->line('  1. Install NPM dependencies:');
-        $this->line('     <fg=yellow>npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui class-variance-authority clsx tailwind-merge tw-animate-css</>');
-        $this->newLine();
-        $this->line('  2. Set up Shadcn-Vue UI components:');
-        $this->line('     <fg=yellow>npx -y shadcn-vue@latest init</>');
-        $this->line('     <fg=yellow>npx -y shadcn-vue@latest add alert-dialog avatar breadcrumb button card checkbox dialog dropdown-menu input label pagination popover scroll-area select separator sheet sidebar skeleton switch table textarea tooltip</>');
-        $this->newLine();
-        $this->line('  3. Run migrations:');
+        $this->line('  1. Run migrations:');
         $this->line('     <fg=yellow>php artisan migrate</>');
         $this->newLine();
-        $this->line('  4. Create admin user:');
+        $this->line('  2. Create admin user:');
         $this->line('     <fg=yellow>php artisan vuelament:user</>');
         $this->newLine();
-        $this->line('  5. Start dev server:');
+        $this->line('  3. Start dev server:');
         $this->line('     <fg=yellow>npm run dev</>');
         $this->newLine();
         $this->line("  Panel URL: <fg=cyan>/{$panelId}</>");
@@ -267,5 +298,17 @@ JSON;
         $this->line("  {$description}");
         $callback();
         $this->line("    <fg=green>✓ Done.</>");
+    }
+
+    /**
+     * Run a shell command in the project root.
+     */
+    protected function runShell(string $command): void
+    {
+        $process = \Symfony\Component\Process\Process::fromShellCommandline($command, base_path());
+        $process->setTimeout(300); // 5 minutes max
+        $process->run(function ($type, $buffer) {
+            $this->output->write($buffer);
+        });
     }
 }

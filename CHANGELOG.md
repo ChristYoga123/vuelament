@@ -30,9 +30,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.1] - 2026-03-06
 
+### Added
+
+- **Fully automated `vuelament:install`**: The install command now handles the entire frontend setup automatically:
+  - Installs all required NPM dependencies (Inertia, Vue, Shadcn-Vue, etc.).
+  - Initializes Shadcn-Vue (`npx shadcn-vue@latest init`).
+  - Installs all required UI components (including Sidebar) with automatic TypeScript toggle workaround.
+  - Scaffolds `jsconfig.json` to prevent the `✖ Validating import alias` error.
+  - Users only need to run `php artisan vuelament:install` — no manual NPM or Shadcn-Vue commands needed.
+
 ### Fixed
 
-- **Shadcn-Vue import alias validation error**: `vuelament:install` now automatically scaffolds `jsconfig.json` with `@/*` path alias when neither `jsconfig.json` nor `tsconfig.json` exists. This prevents the `✖ Validating import alias` error when running `npx shadcn-vue@latest init`.
+- **Shadcn-Vue Sidebar install error**: Automatically toggles `typescript: true` in `components.json` before installing components (workaround for `[@vue/compiler-sfc] Failed to resolve import source "."` bug), then reverts to `false` after installation.
+- **Shadcn-Vue import alias validation error**: Automatically scaffolds `jsconfig.json` with `@/*` path alias when neither `jsconfig.json` nor `tsconfig.json` exists.
 
 ---
 

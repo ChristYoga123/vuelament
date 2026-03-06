@@ -221,15 +221,31 @@ class MakeResourceCommand extends Command
         }
 
         $namespacePrefix = $panel ? "\\{$panel}" : "";
+        $plural = Str::plural($name);
 
         if (!empty($columns)) {
-            $content = $this->buildGeneratedResource($name, $model, $slug, $namespacePrefix, $columns, $hasSoftDeletes);
+            $content = $this->buildGeneratedResource($name, $model, $slug, $namespacePrefix, $columns, $hasSoftDeletes, $isSimple);
         } else {
             $stub = $this->getResourceStub();
             $namespace = "App\\Vuelament{$namespacePrefix}\\{$name}";
+
+            if ($isSimple) {
+                // If simple, replace the getPages method block in stub
+                $pagesBlock = <<<PHP
+    public static function getPages(): array
+    {
+        return [
+            'index' => Resources\Manage{$plural}::class,
+        ];
+    }
+PHP;
+                // find where getPages is in the stub and replace it
+                $stub = preg_replace('/public static function getPages\(\): array\s*\{\s*return \[[^\]]*\];\s*\}/s', $pagesBlock, $stub);
+            }
+
             $content = str_replace(
-                ['{{ namespace }}', '{{ name }}', '{{ model }}', '{{ modelFqn }}', '{{ slug }}', '{{ label }}'],
-                [$namespace, $name, $model, "App\\Models\\{$model}", $slug, Str::headline($name)],
+                ['{{ namespace }}', '{{ name }}', '{{ model }}', '{{ modelFqn }}', '{{ slug }}', '{{ label }}', '{{ plural }}'],
+                [$namespace, $name, $model, "App\\Models\\{$model}", $slug, Str::headline($name), $plural],
                 $stub
             );
         }
@@ -243,7 +259,7 @@ class MakeResourceCommand extends Command
         $this->info("  Created: app/Vuelament/{$pathPrefix}{$name}/{$name}Resource.php");
     }
 
-    protected function buildGeneratedResource(string $name, string $model, string $slug, string $namespacePrefix, array $columns, bool $hasSoftDeletes = false): string
+    protected function buildGeneratedResource(string $name, string $model, string $slug, string $namespacePrefix, array $columns, bool $hasSoftDeletes = false, bool $isSimple = false): string
     {
         $namespace = "App\\Vuelament{$namespacePrefix}\\{$name}";
         $modelFqn  = "App\\Models\\{$model}";
@@ -380,11 +396,72 @@ class {$name}Resource extends BaseResource
 
     public static function getPages(): array
     {
-        return [
+
+        if ($isSimple) {
+            $pagesStr = "        return [
+            'index'  => Resources\\Manage{$plural}::class,
+        ];";
+        } else {
+            $pagesStr = "        return [
             'index'  => Resources\\List{$plural}::class,
             'create' => Resources\\Create{$name}::class,
             'edit'   => Resources\\Edit{$name}::class,
-        ];
+        ];";
+        }
+
+        return <<<PHP
+<?php
+
+namespace {$namespace};
+
+{$imports}
+
+class {$name}Resource extends BaseResource
+{
+    protected static string \$model = '{$modelFqn}';
+    protected static string \$slug = '{$slug}';
+    protected static string \$label = '{$label}';
+    protected static string \$icon = 'circle';{$softDeleteProp}
+
+    // ── Navigation ───────────────────────────────────────
+    protected static int \$navigationSort = 0;
+    // protected static ?string \$navigationGroup = 'Master Data';
+
+    public static function tableSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->components([
+                Table::make()
+                    ->columns([
+{$tableColumns}
+                    ])
+                    ->actions([
+{$tableActions}
+                    ])
+                    ->bulkActions([
+                        ActionGroup::make('Aksi Massal')
+                            ->icon('list')
+                            ->actions([
+                                DeleteBulkAction::make(),
+                            ]),
+                    ]){$filters}
+                    ->searchable()
+                    ->paginated()
+                    ->selectable(),
+            ]);
+    }
+
+    public static function formSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->components([
+{$formComponents}
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+{$pagesStr}
     }
 
     public static function rules(string \$action, mixed \$id = null): array
@@ -482,10 +559,18 @@ PHP;
 namespace {$baseNamespace};
 
 use ChristYoga123\\Vuelament\\Core\\Pages\\ManageRecords;
+use ChristYoga123\\Vuelament\\Components\\Actions\\CreateAction;
 
 class {$className} extends ManageRecords
 {
     protected static ?string \$resource = \\{$resourceClass}::class;
+
+    public static function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
+        ];
+    }
 }
 PHP;
                 file_put_contents($path, $content);

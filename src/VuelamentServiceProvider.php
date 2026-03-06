@@ -45,9 +45,11 @@ class VuelamentServiceProvider extends ServiceProvider
         // ── Inertia Global Shares ───────────────────
         Inertia::share([
             'errors' => function () {
-                return Session::get('errors')
-                    ? Session::get('errors')->getBag('default')->getMessages()
-                    : (object) [];
+                if ($errors = Session::get('errors')) {
+                    $bags = $errors->getBag('default')->getMessages();
+                    return collect($bags)->map(fn($msgs) => $msgs[0])->toArray();
+                }
+                return (object) [];
             },
         ]);
 

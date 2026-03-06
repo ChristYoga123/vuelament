@@ -56,6 +56,7 @@ Install Inertia, Vue, Tailwind plugins, and other essential Vuelament dependenci
 
 ```bash
 npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui class-variance-authority clsx tailwind-merge tw-animate-css
+npm install -D typescript vue-tsc
 ```
 
 ### 4. Setup Shadcn-Vue (Manual Initialization)

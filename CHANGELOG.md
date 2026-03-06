@@ -5,6 +5,15 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2026-03-06
+
+### Added
+
+- **Documentation**: Added instructions to install `typescript` and `vue-tsc` as dev-dependencies to resolve `[@vue/compiler-sfc] Failed to load TypeScript` issues for users opting into `typescript: true` during Shadcn-Vue installation.
+- **Install Command**: Updated post-install terminal instructions to output the typescript / vue-tsc dependencies.
+
+---
+
 ## [1.2.3] - 2026-03-06
 
 ### Changed

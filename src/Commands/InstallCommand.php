@@ -106,6 +106,7 @@ class InstallCommand extends Command
         $this->newLine();
         $this->line('  1. Install NPM dependencies:');
         $this->line('     <fg=cyan>npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui class-variance-authority clsx tailwind-merge tw-animate-css</>');
+        $this->line('     <fg=cyan>npm install -D typescript vue-tsc</>');
         $this->newLine();
         $this->line('  2. Init Shadcn-Vue (ensure alias is @/components and @/lib/utils):');
         $this->line('     <fg=cyan>npx shadcn-vue@latest init</>');

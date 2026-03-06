@@ -126,4 +126,22 @@ class V
 
     public static function page(): PageSchema { return PageSchema::make(); }
     public static function panel(): Panel { return Panel::make(); }
+
+    // ── Registry (multi-panel) ───────────────────────────
+
+    /**
+     * Dapatkan Vuelament registry singleton.
+     */
+    public static function registry(): \ChristYoga123\Vuelament\Vuelament { return app('vuelament'); }
+
+    /**
+     * Dapatkan current (active) panel.
+     * Shortcut untuk app('vuelament.panel')
+     */
+    public static function currentPanel(): Panel { return app('vuelament.panel'); }
+
+    /**
+     * Dapatkan panel berdasarkan ID.
+     */
+    public static function getPanel(string $id): Panel { return app('vuelament')->getPanel($id); }
 }

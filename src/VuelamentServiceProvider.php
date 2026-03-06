@@ -7,7 +7,11 @@ use Illuminate\Support\ServiceProvider;
 /**
  * VuelamentServiceProvider — auto-discovered by Laravel.
  *
- * Handles config merging, command registration, and asset publishing.
+ * Handles:
+ * - Registry singleton ('vuelament') registration
+ * - Dynamic 'vuelament.panel' binding (current panel resolution)
+ * - Config merging, command registration, and asset publishing
+ *
  * User panel providers (AdminPanelProvider, etc.) extend PanelServiceProvider instead.
  */
 class VuelamentServiceProvider extends ServiceProvider
@@ -15,6 +19,23 @@ class VuelamentServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/vuelament.php', 'vuelament');
+
+        // ── Vuelament Registry (singleton) ─────────
+        // Central registry yang menyimpan semua panel instances.
+        // PanelServiceProvider::register() akan memanggil registerPanel() ke sini.
+        $this->app->singleton('vuelament', function () {
+            return new Vuelament();
+        });
+
+        $this->app->alias('vuelament', Vuelament::class);
+
+        // ── Dynamic Panel Binding ──────────────────
+        // 'vuelament.panel' selalu resolve ke "current panel" dari registry.
+        // - HTTP context → detect dari URL path
+        // - CLI context  → dari --panel option atau default panel
+        $this->app->bind('vuelament.panel', function ($app) {
+            return $app->make('vuelament')->getCurrentPanel();
+        });
     }
 
     public function boot(): void

@@ -21,11 +21,19 @@ abstract class PanelServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Bind Panel sebagai singleton (scoped per panel provider)
-        $panelId = $this->panel()->getId();
+        $panel = $this->panel();
+        $panelId = $panel->getId();
 
-        $this->app->singleton("vuelament.panel.{$panelId}", function () {
-            return $this->panel();
+        // ── Register ke Central Registry ─────────────
+        // Semua panel di-register ke Vuelament singleton.
+        // getCurrentPanel() di registry akan auto-detect panel yang aktif.
+        $registry = $this->app->make('vuelament');
+        $registry->registerPanel($panel);
+
+        // ── Backward-compatible individual binding ───
+        // Tetap bind 'vuelament.panel.{id}' untuk akses direct jika dibutuhkan.
+        $this->app->singleton("vuelament.panel.{$panelId}", function () use ($panel) {
+            return $panel;
         });
     }
 

@@ -2,6 +2,7 @@
 
 namespace ChristYoga123\Vuelament\Commands;
 
+use ChristYoga123\Vuelament\Vuelament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
@@ -11,18 +12,48 @@ class MakeUserCommand extends Command
                             {--name= : Name user}
                             {--email= : Email user}
                             {--password= : Password user}
-                            {--role=super_admin : Role yang diberikan (default: super_admin)}';
+                            {--role=super_admin : Role yang diberikan (default: super_admin)}
+                            {--panel= : Panel ID (default: dari config vuelament.default_panel)}';
 
     protected $description = 'Create user untuk akses panel Vuelament';
 
     public function handle(): int
     {
+        /** @var Vuelament $registry */
+        $registry = app('vuelament');
+
+        // ── Resolve panel ────────────────────────────
+        $panelId = $this->option('panel');
+
+        if ($panelId) {
+            // Validate panel ID exists
+            if (!$registry->hasPanel($panelId)) {
+                $this->error("Panel [{$panelId}] is not registered.");
+                $this->line('  Available panels: ' . implode(', ', $registry->getPanelIds()));
+                return self::FAILURE;
+            }
+            $registry->setCurrentPanel($panelId);
+        }
+
+        // Jika ada lebih dari 1 panel dan --panel tidak diberikan, tampilkan pilihan
+        $panels = $registry->getPanels();
+        if (!$panelId && count($panels) > 1) {
+            $panelId = $this->choice(
+                'Which panel should this user be created for?',
+                $registry->getPanelIds(),
+                $registry->getDefaultPanelId()
+            );
+            $registry->setCurrentPanel($panelId);
+        }
+
+        $panel = $registry->getCurrentPanel();
+
+        // ── Gather user data ─────────────────────────
         $name     = $this->option('name') ?: $this->ask('Name');
         $email    = $this->option('email') ?: $this->ask('Email');
         $password = $this->option('password') ?: $this->secret('Password');
         $role     = $this->option('role');
 
-        $panel    = app('vuelament.panel');
         $userModel = $panel->getUserModel()
             ?: config('auth.providers.users.model', \App\Models\User::class);
 
@@ -52,6 +83,7 @@ class MakeUserCommand extends Command
 
         $this->info("✅ User [{$email}] created successfully with role [{$role}].");
         $this->newLine();
+        $this->line("  Panel: {$panel->getId()}");
         $this->line("  Login: /" . $panel->getPath() . "/login");
 
         return self::SUCCESS;
@@ -71,3 +103,4 @@ class MakeUserCommand extends Command
         $user->assignRole($role);
     }
 }
+

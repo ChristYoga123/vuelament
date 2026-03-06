@@ -53,6 +53,11 @@ class VuelamentServiceProvider extends ServiceProvider
             __DIR__ . '/../resources/js/AppWrapper.vue' => resource_path('js/AppWrapper.vue'),
         ], 'vuelament-views');
 
+        // ── Blade Views (Inertia root) ──────
+        $this->publishes([
+            __DIR__ . '/../resources/views/app.blade.php' => resource_path('views/app.blade.php'),
+        ], 'vuelament-blade');
+
         // ── Stubs (optional, for customization) ─────
         $this->publishes([
             __DIR__ . '/../stubs' => base_path('stubs/vuelament'),

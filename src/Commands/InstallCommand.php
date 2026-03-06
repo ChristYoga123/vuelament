@@ -36,6 +36,14 @@ class InstallCommand extends Command
             ]);
         });
 
+        // ── Step 3: Publish Blade views (Inertia root) ──────
+        $this->task('Publishing Blade views...', function () {
+            $this->callSilently('vendor:publish', [
+                '--tag' => 'vuelament-blade',
+                '--force' => $this->option('force'),
+            ]);
+        });
+
         // ── Step 3: Generate AdminPanelProvider ─────────────
         $panelName = Str::studly($this->option('panel'));
         $panelId = $this->option('id') ?: Str::lower($panelName);

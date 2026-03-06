@@ -106,7 +106,7 @@ class InstallCommand extends Command
         $componentsJsonPath = base_path('components.json');
         if (!file_exists($componentsJsonPath)) {
             $this->task('Initializing Shadcn-Vue...', function () {
-                $this->runShell('npx -y shadcn-vue@latest init -y 2>&1');
+                $this->runShell('npx -y shadcn-vue@latest init --defaults --base-color neutral -y 2>&1');
             });
         } else {
             $this->line('  ⏭ Shadcn-Vue already initialized (components.json exists).');

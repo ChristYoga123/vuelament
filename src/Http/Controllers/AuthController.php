@@ -4,6 +4,7 @@ namespace ChristYoga123\Vuelament\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
 
 class AuthController
@@ -45,7 +46,8 @@ class AuthController
             $user = Auth::guard($guard)->user();
 
             // Cek akses panel
-            $hasAccess = true;
+            $hasAccess = App::environment('local');
+            
             if (method_exists($user, 'hasPanelAccess')) {
                 $hasAccess = $user->hasPanelAccess($panel);
             } elseif (method_exists($user, 'canAccessPanel')) {
@@ -64,7 +66,7 @@ class AuthController
         }
 
         return back()->withErrors([
-            'email' => 'Email atau password salah.',
+            'email' => 'Invalid email or password.',
         ])->onlyInput('email');
     }
 

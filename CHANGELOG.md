@@ -5,6 +5,15 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.8] - 2026-03-06
+
+### Changed
+
+- **Panel Access Simulator**: `hasPanelAccess()` authorization default check now falls back to `true` on the `local` environment allowing rapid development prototyping. On production, it securely falls back to `false` ensuring non-configured setups deny access.
+- **Localization**: Changed "Email atau password salah." to "Invalid email or password." in `AuthController`.
+
+---
+
 ## [1.2.7] - 2026-03-06
 
 ### Changed

@@ -1,0 +1,25 @@
+<?php
+
+namespace {{ namespace }};
+
+use ChristYoga123\Vuelament\Core\BasePage;
+
+class {{ name }} extends BasePage
+{
+    protected static string $slug = '{{ slug }}';
+    protected static string $title = '{{ title }}';
+    protected static string $view = '{{ view }}';
+    protected static string $icon = 'file';
+    protected static int $navigationSort = 0;
+    // protected static ?string $navigationGroup = null;
+
+    /**
+     * Data yang di-pass ke Vue component via Inertia
+     */
+    public static function getData(?\Illuminate\Database\Eloquent\Model $record = null): array
+    {
+        return [
+            //
+        ];
+    }
+}

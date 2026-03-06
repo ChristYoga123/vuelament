@@ -1,0 +1,71 @@
+<?php
+
+namespace {{ namespace }};
+
+use ChristYoga123\Vuelament\Core\BaseResource;
+use ChristYoga123\Vuelament\Core\PageSchema;
+use ChristYoga123\Vuelament\Components\Table\Table;
+use ChristYoga123\Vuelament\Components\Table\Column;
+use ChristYoga123\Vuelament\Components\Table\Actions\EditAction;
+use ChristYoga123\Vuelament\Components\Table\Actions\DeleteAction;
+use ChristYoga123\Vuelament\Components\Actions\ActionGroup;
+use ChristYoga123\Vuelament\Components\Actions\CreateAction;
+use ChristYoga123\Vuelament\Components\Actions\DeleteBulkAction;
+use ChristYoga123\Vuelament\Components\Form\TextInput;
+
+class {{ name }}Resource extends BaseResource
+{
+    protected static string $model = '{{ modelFqn }}';
+    protected static string $slug = '{{ slug }}';
+    protected static string $label = '{{ label }}';
+    protected static string $icon = 'circle';
+
+    public static function tableSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->components([
+                Table::make()
+                    ->columns([
+                        Column::make('id')->label('ID')->sortable(),
+                        Column::make('name')->label('Nama')->sortable()->searchable(),
+                        Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),
+                    ])
+                    ->actions([
+                        EditAction::make(),
+                        DeleteAction::make(),
+                    ])
+                    ->bulkActions([
+                        ActionGroup::make('Aksi Massal')
+                            ->icon('list')
+                            ->actions([
+                                DeleteBulkAction::make(),
+                            ]),
+                    ])
+                    ->filters([])
+                    ->searchable()
+                    ->paginated()
+                    ->selectable(),
+            ]);
+    }
+
+    public static function formSchema(): PageSchema
+    {
+        return PageSchema::make()
+            ->components([
+                TextInput::make('name')
+                    ->label('Nama')
+                    ->required()
+                    ->maxLength(255)
+                    ->rules(['string']),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index'  => Resources\List{{ plural }}::class,
+            'create' => Resources\Create{{ name }}::class,
+            'edit'   => Resources\Edit{{ name }}::class,
+        ];
+    }
+}

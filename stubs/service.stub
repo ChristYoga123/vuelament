@@ -1,0 +1,27 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ modelFqn }};
+
+class {{ name }}Service
+{
+    /**
+     * Business logic dipanggil via Action.
+     *
+     * Penggunaan di Resource:
+     *   Action::make('example')
+     *       ->action([{{ name }}Service::class, 'example'])
+     *
+     * Framework resolve instance via container:
+     *   $instance = app({{ name }}Service::class);
+     *   app()->call([$instance, 'example'], [
+     *       '{{ lcModel }}' => $record,
+     *       'data'       => $formData,
+     *   ]);
+     */
+    public function example({{ model }} ${{ lcModel }}, array $data = []): void
+    {
+        // TODO: implementasi business logic
+    }
+}

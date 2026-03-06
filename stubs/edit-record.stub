@@ -1,0 +1,18 @@
+<?php
+
+namespace {{ namespace }};
+
+use ChristYoga123\Vuelament\Core\Pages\EditRecord;
+use ChristYoga123\Vuelament\Components\Actions\DeleteAction;
+
+class {{ className }} extends EditRecord
+{
+    protected static ?string $resource = \{{ resourceClass }}::class;
+
+    public static function getHeaderActions(): array
+    {
+        return [
+            DeleteAction::make(),
+        ];
+    }
+}

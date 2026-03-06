@@ -1,0 +1,39 @@
+<script setup>
+import { computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+import DashboardLayout from '@/Layouts/DashboardLayout.vue'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+
+const props = defineProps({
+  page: { type: Object, default: () => ({}) },
+})
+</script>
+
+<template>
+  <DashboardLayout :title="page.title || '{{ title }}'">
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold tracking-tight">{{ page.title || '{{ title }}' }}</h1>
+      <p class="text-muted-foreground mt-1">Halaman custom {{ title }}.</p>
+    </div>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>{{ title }}</CardTitle>
+        <CardDescription>Edit konten halaman ini sesuai kebutuhan Anda.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p class="text-sm text-muted-foreground">
+          Halaman ini di-generate oleh <code class="rounded bg-muted px-1 py-0.5">php artisan vuelament:page {{ name }}</code>.
+          Anda bisa mengedit file Vue ini di <code class="rounded bg-muted px-1 py-0.5">resources/js/Pages/Vuelament/Pages/{{ viewPath }}.vue</code>
+          and class PHP-nya.
+        </p>
+      </CardContent>
+    </Card>
+  </DashboardLayout>
+</template>

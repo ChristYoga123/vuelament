@@ -1,0 +1,18 @@
+<?php
+
+namespace {{ namespace }};
+
+use ChristYoga123\Vuelament\Core\Pages\ListRecords;
+use ChristYoga123\Vuelament\Components\Actions\CreateAction;
+
+class {{ className }} extends ListRecords
+{
+    protected static ?string $resource = \{{ resourceClass }}::class;
+
+    public static function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
+        ];
+    }
+}

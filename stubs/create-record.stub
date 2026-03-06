@@ -1,0 +1,10 @@
+<?php
+
+namespace {{ namespace }};
+
+use ChristYoga123\Vuelament\Core\Pages\CreateRecord;
+
+class {{ className }} extends CreateRecord
+{
+    protected static ?string $resource = \{{ resourceClass }}::class;
+}

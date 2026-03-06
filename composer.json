@@ -1,0 +1,43 @@
+{
+  "name": "christyoga123/vuelament",
+  "description": "Lightning-fast Admin Dashboard & CRUD Generator for Laravel (VILT Stack)",
+  "type": "library",
+  "license": "MIT",
+  "homepage": "https://github.com/christyoga123/vuelament",
+  "keywords": [
+    "laravel",
+    "admin",
+    "dashboard",
+    "crud",
+    "vue",
+    "inertia",
+    "vilt",
+    "tailwind"
+  ],
+  "autoload": {
+    "psr-4": {
+      "ChristYoga123\\Vuelament\\": "src/"
+    }
+  },
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^11.0|^12.0",
+    "inertiajs/inertia-laravel": "^2.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^9.0|^10.0",
+    "phpunit/phpunit": "^11.0"
+  },
+  "suggest": {
+    "spatie/laravel-permission": "Required for role & permission management (^7.0)"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "ChristYoga123\\Vuelament\\VuelamentServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

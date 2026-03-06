@@ -28,7 +28,7 @@ export const formatCell = (row, col) => {
     }
   }
   if (col.badge) {
-    if (typeof val === 'boolean') return val ? 'Ya' : 'Tidak'
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No'
     return String(val)
   }
   return String(val)

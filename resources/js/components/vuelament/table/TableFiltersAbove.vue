@@ -1,19 +1,27 @@
 <script setup>
-import { inject } from 'vue'
-import { ChevronUp, SlidersHorizontal } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { inject } from "vue";
+import { ChevronUp, SlidersHorizontal } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const {
-  tableFilters, filterValues, filtersLayout,
-  filtersOpen, hasActiveFilters,
-  applyFilters, resetFilters,
-} = inject('tableState')
+  tableFilters,
+  filterValues,
+  filtersLayout,
+  filtersOpen,
+  hasActiveFilters,
+  applyFilters,
+  resetFilters,
+} = inject("tableState");
 </script>
 
 <template>
   <div
-    v-if="tableFilters.length > 0 && (filtersLayout === 'aboveContent' || filtersLayout === 'aboveContentCollapsible')"
+    v-if="
+      tableFilters.length > 0 &&
+      (filtersLayout === 'aboveContent' ||
+        filtersLayout === 'aboveContentCollapsible')
+    "
     class="border-b"
   >
     <button
@@ -28,13 +36,23 @@ const {
           v-if="hasActiveFilters"
           class="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold"
         >
-          {{ tableFilters.filter(f => {
-            const v = filterValues[f.name]
-            return v !== '' && v !== null && v !== undefined && v !== (f.default ?? '')
-          }).length }}
+          {{
+            tableFilters.filter((f) => {
+              const v = filterValues[f.name];
+              return (
+                v !== "" &&
+                v !== null &&
+                v !== undefined &&
+                v !== (f.default ?? "")
+              );
+            }).length
+          }}
         </span>
       </span>
-      <ChevronUp class="w-4 h-4 transition-transform" :class="{ 'rotate-180': !filtersOpen }" />
+      <ChevronUp
+        class="w-4 h-4 transition-transform"
+        :class="{ 'rotate-180': !filtersOpen }"
+      />
     </button>
 
     <div
@@ -51,8 +69,12 @@ const {
           @change="applyFilters()"
           class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-xs focus:border-ring focus:ring-ring/50 focus:ring-[3px] outline-none"
         >
-          <option value="">{{ filter.placeholder || 'Semua' }}</option>
-          <option v-for="opt in filter.options" :key="opt.value" :value="opt.value">
+          <option value="">{{ filter.placeholder || "All" }}</option>
+          <option
+            v-for="opt in filter.options"
+            :key="opt.value"
+            :value="opt.value"
+          >
             {{ opt.label }}
           </option>
         </select>
@@ -65,7 +87,12 @@ const {
         />
       </div>
       <div v-if="hasActiveFilters" class="flex items-end">
-        <Button variant="ghost" size="sm" @click="resetFilters()" class="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          @click="resetFilters()"
+          class="text-muted-foreground"
+        >
           Reset
         </Button>
       </div>

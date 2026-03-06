@@ -25,15 +25,15 @@ const {
             :key="opt"
             :value="opt === 'all' ? 1000000 : opt"
           >
-            {{ opt === 'all' || opt === 1000000 ? 'Semua' : opt }}
+            {{ opt === 'all' || opt === 1000000 ? 'All' : opt }}
           </option>
         </select>
-        <span class="text-sm text-muted-foreground">per halaman</span>
+        <span class="text-sm text-muted-foreground">per page</span>
       </div>
 
       <p class="text-sm text-muted-foreground hidden sm:block">
-        Menampilkan {{ resolvedData?.from || 0 }}-{{ resolvedData?.to || 0 }}
-        dari {{ resolvedData?.total || 0 }}
+        Showing {{ resolvedData?.from || 0 }}-{{ resolvedData?.to || 0 }}
+        of {{ resolvedData?.total || 0 }}
       </p>
     </div>
 

@@ -5,6 +5,14 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7] - 2026-03-06
+
+### Changed
+
+- **Localization**: Translated remaining hardcoded Indonesian texts in Vue components (e.g., table pagination, toast notifications, login auth, boolean flags in utils) into English for wider accessibility.
+
+---
+
 ## [1.2.5] - 2026-03-06
 
 ### Added

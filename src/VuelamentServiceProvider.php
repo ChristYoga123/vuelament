@@ -3,6 +3,8 @@
 namespace ChristYoga123\Vuelament;
 
 use Illuminate\Support\ServiceProvider;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Session;
 
 /**
  * VuelamentServiceProvider — auto-discovered by Laravel.
@@ -40,6 +42,15 @@ class VuelamentServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // ── Inertia Global Shares ───────────────────
+        Inertia::share([
+            'errors' => function () {
+                return Session::get('errors')
+                    ? Session::get('errors')->getBag('default')->getMessages()
+                    : (object) [];
+            },
+        ]);
+
         // ── Config ──────────────────────────
         $this->publishes([
             __DIR__ . '/../config/vuelament.php' => config_path('vuelament.php'),

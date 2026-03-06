@@ -5,6 +5,19 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2026-03-06
+
+### Added
+
+- **Inertia Error Sharing**: Added automatic global sharing of session errors to Inertia via `VuelamentServiceProvider`. This fixes an issue where validation/login errors were not displaying on the frontend since Vuelament does not mandate a `HandleInertiaRequests` middleware.
+- **Documentation**: Added documentation specifying how users can restrict panel access using the `hasPanelAccess()` method in their `User` model.
+
+### Changed
+
+- **Panel Authorization**: `AuthController` now returns `You cannot access this panel.` as the generic error when `hasPanelAccess` returns false, and prioritizes checking `hasPanelAccess` over `canAccessPanel`.
+
+---
+
 ## [1.2.4] - 2026-03-06
 
 ### Added

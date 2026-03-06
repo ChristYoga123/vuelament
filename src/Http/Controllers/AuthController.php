@@ -45,10 +45,17 @@ class AuthController
             $user = Auth::guard($guard)->user();
 
             // Cek akses panel
-            if (method_exists($user, 'canAccessPanel') && !$user->canAccessPanel($panel)) {
+            $hasAccess = true;
+            if (method_exists($user, 'hasPanelAccess')) {
+                $hasAccess = $user->hasPanelAccess($panel);
+            } elseif (method_exists($user, 'canAccessPanel')) {
+                $hasAccess = $user->canAccessPanel($panel);
+            }
+
+            if (!$hasAccess) {
                 Auth::guard($guard)->logout();
                 return back()->withErrors([
-                    'email' => 'Anda tidak memiliki akses ke panel ini.',
+                    'email' => 'You cannot access this panel.',
                 ])->onlyInput('email');
             }
 

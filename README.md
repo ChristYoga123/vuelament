@@ -510,10 +510,39 @@ php artisan vuelament:resource Invoice --panel=Sales
 
 Vuelament isolates backend and frontend files into separate silos:
 
-- **Backend**: `app/Vuelament/Sales/Invoice/InvoiceResource.php`
+**Backend**: `app/Vuelament/Sales/Invoice/InvoiceResource.php`
+
 - **Frontend**: `resources/js/Pages/Vuelament/Sales/Resource/Invoice/...`
 
 `AdminPanelProvider` and `SalesPanelProvider` have zero conflict.
+
+### Restricting Access via User Model
+
+By default, any authenticated user can access any panel. To restrict access (e.g., using roles), add a `hasPanelAccess` (or `canAccessPanel`) method your User model (`app/Models/User.php`):
+
+```php
+use ChristYoga123\Vuelament\Core\Panel;
+
+class User extends Authenticatable
+{
+    public function hasPanelAccess(Panel $panel): bool
+    {
+        // Example: Only let users with role 'admin' access the Admin panel
+        if ($panel->getId() === 'admin') {
+            return $this->role === 'admin';
+        }
+
+        // Example: Only let 'sales' role access the Sales panel
+        if ($panel->getId() === 'sales') {
+            return $this->role === 'sales';
+        }
+
+        return true; // Default access
+    }
+}
+```
+
+If a user tries to log in to a Panel they do not possess access to, Vuelament will gracefully prevent login and securely show a "You cannot access this panel" error.
 
 ---
 

@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-03-06
+
+### Fixed
+
+- **Shadcn-Vue import alias validation error**: `vuelament:install` now automatically scaffolds `jsconfig.json` with `@/*` path alias when neither `jsconfig.json` nor `tsconfig.json` exists. This prevents the `✖ Validating import alias` error when running `npx shadcn-vue@latest init`.
+
+---
+
 ## [1.0.0] - 2026-03-06
 
 ### Added

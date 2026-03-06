@@ -5,6 +5,32 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-03-06
+
+### Changed
+
+- **Documentation**: Updated `README.md` to recommend and document manual Shadcn-Vue installation as the best practice, bypassing the error-prone automated frontend installation.
+
+---
+
+## [1.2.1] - 2026-03-06
+
+### Added
+
+- **Fully automated `vuelament:install`**: The install command now handles the entire frontend setup automatically:
+  - Installs all required NPM dependencies (Inertia, Vue, Shadcn-Vue, etc.).
+  - Initializes Shadcn-Vue (`npx shadcn-vue@latest init`).
+  - Installs all required UI components (including Sidebar) with automatic TypeScript toggle workaround.
+  - Scaffolds `jsconfig.json` to prevent the `✖ Validating import alias` error.
+  - Users only need to run `php artisan vuelament:install` — no manual NPM or Shadcn-Vue commands needed.
+
+### Fixed
+
+- **Shadcn-Vue Sidebar install error**: Automatically toggles `typescript: true` in `components.json` before installing components (workaround for `[@vue/compiler-sfc] Failed to resolve import source "."` bug), then reverts to `false` after installation.
+- **Shadcn-Vue import alias validation error**: Automatically scaffolds `jsconfig.json` with `@/*` path alias when neither `jsconfig.json` nor `tsconfig.json` exists.
+
+---
+
 ## [1.2.0] - 2026-03-06
 
 ### Added
@@ -25,24 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Panel Registration**: `PanelServiceProvider::register()` now registers the panel to the central `Vuelament` registry, replacing the reliance on only individual singleton bindings.
 - **Global Setup**: `VuelamentServiceProvider::register()` now initializes the central registry singleton (`'vuelament'`) and dynamic panel binding (`'vuelament.panel'`).
-
----
-
-## [1.2.1] - 2026-03-06
-
-### Added
-
-- **Fully automated `vuelament:install`**: The install command now handles the entire frontend setup automatically:
-  - Installs all required NPM dependencies (Inertia, Vue, Shadcn-Vue, etc.).
-  - Initializes Shadcn-Vue (`npx shadcn-vue@latest init`).
-  - Installs all required UI components (including Sidebar) with automatic TypeScript toggle workaround.
-  - Scaffolds `jsconfig.json` to prevent the `✖ Validating import alias` error.
-  - Users only need to run `php artisan vuelament:install` — no manual NPM or Shadcn-Vue commands needed.
-
-### Fixed
-
-- **Shadcn-Vue Sidebar install error**: Automatically toggles `typescript: true` in `components.json` before installing components (workaround for `[@vue/compiler-sfc] Failed to resolve import source "."` bug), then reverts to `false` after installation.
-- **Shadcn-Vue import alias validation error**: Automatically scaffolds `jsconfig.json` with `@/*` path alias when neither `jsconfig.json` nor `tsconfig.json` exists.
 
 ---
 

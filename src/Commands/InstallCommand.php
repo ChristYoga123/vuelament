@@ -105,8 +105,17 @@ class InstallCommand extends Command
         // ── Step 9: Shadcn-Vue init ─────────────────────────
         $componentsJsonPath = base_path('components.json');
         if (!file_exists($componentsJsonPath)) {
-            $this->task('Initializing Shadcn-Vue...', function () {
+            $this->task('Initializing Shadcn-Vue...', function () use ($componentsJsonPath) {
                 $this->runShell('npx -y shadcn-vue@latest init --defaults --base-color neutral -y 2>&1');
+
+                // Fix registries field: shadcn-vue init creates [] (array) but add expects {} (object)
+                if (file_exists($componentsJsonPath)) {
+                    $config = json_decode(file_get_contents($componentsJsonPath), true);
+                    if (isset($config['registries']) && is_array($config['registries']) && array_is_list($config['registries'])) {
+                        $config['registries'] = (object) [];
+                        file_put_contents($componentsJsonPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+                    }
+                }
             });
         } else {
             $this->line('  ⏭ Shadcn-Vue already initialized (components.json exists).');

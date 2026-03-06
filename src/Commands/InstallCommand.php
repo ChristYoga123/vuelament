@@ -78,6 +78,17 @@ class InstallCommand extends Command
             $this->line('  ⏭ vite.config.js already configured.');
         }
 
+        // ── Step 7: Scaffold jsconfig.json (Shadcn fix) ─────
+        $jsconfigPath = base_path('jsconfig.json');
+        $tsconfigPath = base_path('tsconfig.json');
+        if (!file_exists($jsconfigPath) && !file_exists($tsconfigPath)) {
+            $this->task('Scaffolding jsconfig.json...', function () use ($jsconfigPath) {
+                $this->scaffoldJsConfig($jsconfigPath);
+            });
+        } else {
+            $this->line('  ⏭ jsconfig.json / tsconfig.json already exists.');
+        }
+
         // ── Summary ─────────────────────────────────────────
         $this->newLine();
         $this->info('✅ Vuelament installed successfully!');
@@ -224,6 +235,26 @@ export default defineConfig({
     }
 });
 JS;
+
+        file_put_contents($path, $content);
+    }
+
+    /**
+     * Scaffold jsconfig.json to fix Shadcn CLI alias validation error.
+     */
+    protected function scaffoldJsConfig(string $path): void
+    {
+        $content = <<<'JSON'
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["resources/js/*"]
+    }
+  },
+  "exclude": ["node_modules", "public"]
+}
+JSON;
 
         file_put_contents($path, $content);
     }

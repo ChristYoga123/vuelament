@@ -118,7 +118,7 @@ class InstallCommand extends Command
                 file_put_contents($componentsJsonPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 
                 // Install all required components
-                $components = 'alert-dialog avatar breadcrumb button card checkbox dialog dropdown-menu input label pagination popover scroll-area select separator sheet sidebar skeleton switch table textarea tooltip';
+                $components = 'alert-dialog avatar breadcrumb button card checkbox dialog dropdown-menu input label pagination popover radio-group scroll-area select separator sheet sidebar skeleton sonner switch table textarea tooltip';
                 $this->runShell("npx -y shadcn-vue@latest add {$components} -y 2>&1");
 
                 // Revert typescript setting

@@ -46,39 +46,24 @@ composer require christyoga123/vuelament
 php artisan vuelament:install
 ```
 
-This will:
+This will automatically:
 
 - Publish the config file (`config/vuelament.php`)
 - Publish Vue/JS components and layouts
-- Generate the `AdminPanelProvider`
-- Register it in `bootstrap/providers.php`
+- Generate the `AdminPanelProvider` and register it in `bootstrap/providers.php`
 - Scaffold `app.js` and `vite.config.js` for Inertia + Vue
+- Scaffold `jsconfig.json` (required by Shadcn-Vue)
+- Install all NPM dependencies
+- Initialize Shadcn-Vue and install all required UI components
 
-### 3. Install NPM Dependencies
-
-```bash
-npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill \
-  @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui \
-  class-variance-authority clsx tailwind-merge tw-animate-css
-```
-
-### 4. Set Up Shadcn-Vue UI Components
-
-```bash
-npx -y shadcn-vue@latest init
-npx -y shadcn-vue@latest add alert-dialog avatar breadcrumb button card \
-  checkbox dialog dropdown-menu input label pagination popover scroll-area \
-  select separator sheet sidebar skeleton switch table textarea tooltip
-```
-
-### 5. Run Migrations & Create Admin User
+### 3. Run Migrations & Create Admin User
 
 ```bash
 php artisan migrate
 php artisan vuelament:user
 ```
 
-### 6. Start Dev Server
+### 4. Start Dev Server
 
 ```bash
 npm run dev

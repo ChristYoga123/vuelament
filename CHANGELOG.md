@@ -5,6 +5,15 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-03-06
+
+### Changed
+
+- **Install Command**: Reverted the `vuelament:install` behavior to no longer run automatic `npm install` and `shadcn-vue` installations. Experience showed that automated UI component installation is too prone to failing silently depending on users' TypeScript and Node environments. The command now purely scaffolds the Vuelament PHP core, Vue stubs, jsconfig, panel configs, and Vite/App entry points. Users will be directed to manually run Shadcn-Vue installation.
+- **Documentation**: Updated `README.md` to reflect the new workflow where scaffolding is automated, but NPM dependencies and Shadcn initialization are done manually.
+
+---
+
 ## [1.2.2] - 2026-03-06
 
 ### Changed

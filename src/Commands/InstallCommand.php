@@ -97,71 +97,30 @@ class InstallCommand extends Command
             $this->line('  ⏭ jsconfig.json / tsconfig.json already exists.');
         }
 
-        // ── Step 8: Install NPM dependencies ────────────────
-        $this->task('Installing NPM dependencies...', function () {
-            $this->runShell('npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui class-variance-authority clsx tailwind-merge tw-animate-css 2>&1');
-        });
-
-        // ── Step 9: Shadcn-Vue init ─────────────────────────
-        $componentsJsonPath = base_path('components.json');
-        if (!file_exists($componentsJsonPath)) {
-            $this->task('Initializing Shadcn-Vue...', function () use ($componentsJsonPath) {
-                $this->runShell('npx -y shadcn-vue@latest init --defaults --base-color neutral -y 2>&1');
-
-                // Fix registries field: shadcn-vue init creates [] (array) but add expects {} (object)
-                if (file_exists($componentsJsonPath)) {
-                    $config = json_decode(file_get_contents($componentsJsonPath), true);
-                    if (isset($config['registries']) && is_array($config['registries']) && array_is_list($config['registries'])) {
-                        $config['registries'] = (object) [];
-                        file_put_contents($componentsJsonPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-                    }
-                }
-            });
-        } else {
-            $this->line('  ⏭ Shadcn-Vue already initialized (components.json exists).');
-        }
-
-        // ── Step 10: Toggle typescript & install components ──
-        // Workaround: Sidebar component fails with typescript:false.
-        // Temporarily set to true, install all components, then revert.
-        $componentsJsonPath = base_path('components.json');
-        if (file_exists($componentsJsonPath)) {
-            $this->task('Installing Shadcn-Vue components...', function () use ($componentsJsonPath) {
-                // Temporarily enable TypeScript (Sidebar workaround)
-                $json = file_get_contents($componentsJsonPath);
-                $config = json_decode($json, true);
-                $originalTs = $config['typescript'] ?? false;
-                $config['typescript'] = true;
-                file_put_contents($componentsJsonPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-
-                // Install all required components
-                $components = 'alert-dialog avatar breadcrumb button card checkbox dialog dropdown-menu input label pagination popover radio-group scroll-area select separator sheet sidebar skeleton sonner switch table textarea tooltip';
-                $this->runShell("npx -y shadcn-vue@latest add {$components} -y 2>&1");
-
-                // Revert typescript setting
-                $config['typescript'] = $originalTs;
-                file_put_contents($componentsJsonPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-            });
-        }
-
         // ── Summary ─────────────────────────────────────────
         $this->newLine();
-        $this->info('✅ Vuelament installed successfully!');
+        $this->info('✅ Vuelament base scaffolding completed!');
         $this->newLine();
 
-        $this->line('  Next steps:');
+        $this->line('  <fg=yellow>ACTION REQUIRED:</> You must manually install Shadcn-Vue components.');
         $this->newLine();
-        $this->line('  1. Run migrations:');
-        $this->line('     <fg=yellow>php artisan migrate</>');
+        $this->line('  1. Install NPM dependencies:');
+        $this->line('     <fg=cyan>npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui class-variance-authority clsx tailwind-merge tw-animate-css</>');
         $this->newLine();
-        $this->line('  2. Create admin user:');
-        $this->line('     <fg=yellow>php artisan vuelament:user</>');
+        $this->line('  2. Init Shadcn-Vue (ensure alias is @/components and @/lib/utils):');
+        $this->line('     <fg=cyan>npx shadcn-vue@latest init</>');
         $this->newLine();
-        $this->line('  3. Start dev server:');
-        $this->line('     <fg=yellow>npm run dev</>');
+        $this->line('  3. Install required components:');
+        $this->line('     <fg=cyan>npx shadcn-vue@latest add alert-dialog avatar breadcrumb button card checkbox dialog dropdown-menu input label pagination popover radio-group scroll-area select separator sheet sidebar skeleton sonner switch table textarea tooltip</>');
         $this->newLine();
-        $this->line("  Panel URL: <fg=cyan>/{$panelId}</>");
-        $this->line("  Login:     <fg=cyan>/{$panelId}/login</>");
+        $this->line('  4. Run migrations & create user:');
+        $this->line('     <fg=cyan>php artisan migrate && php artisan vuelament:user</>');
+        $this->newLine();
+        $this->line('  5. Start dev server:');
+        $this->line('     <fg=cyan>npm run dev</>');
+        $this->newLine();
+        $this->line("  Panel URL: <fg=green>/{$panelId}</>");
+        $this->line("  Login:     <fg=green>/{$panelId}/login</>");
 
         return self::SUCCESS;
     }

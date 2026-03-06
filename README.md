@@ -42,34 +42,15 @@ Due to frequent issues with automated Shadcn-Vue installations and Tailwind CSS 
 composer require christyoga123/vuelament
 ```
 
-### 2. Publish Configuration & Base Views
+### 2. Scaffold Configuration & Base Layouts
 
-Publish Vuelament configuration and base Vue/Blade files manually:
-
-```bash
-php artisan vendor:publish --tag=vuelament-config
-php artisan vendor:publish --tag=vuelament-views
-php artisan vendor:publish --tag=vuelament-blade
-```
-
-### 3. Generate Panel Provider
-
-Create the default `Admin` panel provider:
+Run the install command to automatically publish configurations, generate the panel provider, register it, and scaffold Vite and Inertia configurations.
 
 ```bash
-php artisan vuelament:panel Admin --id=admin
+php artisan vuelament:install
 ```
 
-Then, **register** this provider in your `bootstrap/providers.php` file:
-
-```php
-return [
-    App\Providers\AppServiceProvider::class,
-    App\Vuelament\Providers\AdminPanelProvider::class, // <-- Add this
-];
-```
-
-### 4. Install NPM Dependencies
+### 3. Install NPM Dependencies
 
 Install Inertia, Vue, Tailwind plugins, and other essential Vuelament dependencies:
 
@@ -77,7 +58,7 @@ Install Inertia, Vue, Tailwind plugins, and other essential Vuelament dependenci
 npm install @inertiajs/vue3 @vitejs/plugin-vue @vueuse/core @vueup/vue-quill @vuepic/vue-datepicker lucide-vue-next vue-sonner reka-ui class-variance-authority clsx tailwind-merge tw-animate-css
 ```
 
-### 5. Setup Shadcn-Vue (Manual Initialization)
+### 4. Setup Shadcn-Vue (Manual Initialization)
 
 Run the Shadcn-Vue initialization wizard:
 
@@ -110,21 +91,7 @@ Choose your preferred settings. Make sure to match this `components.json` layout
 }
 ```
 
-_Note: If you have a `jsconfig.json` alias error, you may need to add this root `jsconfig.json` file to your project manually:_
-
-```json
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["resources/js/*"]
-    }
-  },
-  "exclude": ["node_modules", "public"]
-}
-```
-
-### 6. Install Shadcn-Vue Required Components
+### 5. Install Shadcn-Vue Required Components
 
 Vuelament relies on several key components. Install them in one go:
 
@@ -134,62 +101,7 @@ npx shadcn-vue@latest add alert-dialog avatar breadcrumb button card checkbox di
 
 _Tip: If you encounter an error trying to pull the `sidebar` component (due to strict typescript rules), temporarily change `"typescript": true` inside `components.json`, run the add command again, and revert back to `false`._
 
-### 7. Configure Vite & App.js
-
-Configure `vite.config.js` with the Vue plugin:
-
-```javascript
-import { defineConfig } from "vite";
-import { fileURLToPath, URL } from "node:url";
-import laravel from "laravel-vite-plugin";
-import tailwindcss from "@tailwindcss/vite";
-import vuePlugin from "@vitejs/plugin-vue";
-
-export default defineConfig({
-  plugins: [
-    laravel({
-      input: ["resources/css/app.css", "resources/js/app.js"],
-      refresh: true,
-    }),
-    tailwindcss(),
-    vuePlugin(),
-  ],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./resources/js", import.meta.url)),
-    },
-  },
-});
-```
-
-And set up Inertia in `resources/js/app.js`:
-
-```javascript
-import "./bootstrap";
-import { createApp, h } from "vue";
-import { createInertiaApp } from "@inertiajs/vue3";
-import AppWrapper from "./AppWrapper.vue";
-import "../css/app.css";
-
-createInertiaApp({
-  resolve: (name) => {
-    const pages = import.meta.glob("./Pages/**/*.vue", { eager: true });
-    return pages[`./Pages/${name}.vue`];
-  },
-  setup({ el, App, props, plugin }) {
-    createApp({
-      render: () =>
-        h(AppWrapper, null, {
-          default: () => h(App, props),
-        }),
-    })
-      .use(plugin)
-      .mount(el);
-  },
-});
-```
-
-### 8. Run Migrations & Create Admin
+### 6. Run Migrations & Create Admin
 
 Finally, finish the setup by running your migrations, creating an initial user, and starting your dev server:
 

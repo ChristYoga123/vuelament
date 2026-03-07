@@ -51,6 +51,14 @@ class VuelamentServiceProvider extends ServiceProvider
                 }
                 return (object) [];
             },
+            'flash' => function () {
+                return [
+                    'success' => Session::get('success'),
+                    'error'   => Session::get('error'),
+                    'warning' => Session::get('warning'),
+                    'info'    => Session::get('info'),
+                ];
+            },
         ]);
 
         // ── Config ──────────────────────────

@@ -178,3 +178,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Manage Mode Rendering**: Fixed an issue where `ManageRecords` simple mode did not pass the `formSchema` to the frontend, causing empty modal forms.
 - **Inertia Redirects**: Fixed `MethodNotAllowedHttpException` by ensuring all mutation methods (store, update, destroy, bulk actions) safely return a `303 See Other` HTTP status code instead of a `302 Found`, properly instructing Inertia to issue a `GET` request on redirection.
+
+## [1.3.4] - 2026-03-07
+
+### Fixed
+
+- **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.

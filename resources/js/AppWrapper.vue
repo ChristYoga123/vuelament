@@ -1,38 +1,35 @@
 <script setup>
-import { watch, onMounted } from "vue";
-import { usePage, router } from "@inertiajs/vue3";
-import { Toaster } from "@/components/ui/sonner";
-import { toast } from "vue-sonner";
+import { onMounted } from 'vue'
+import { usePage, router } from '@inertiajs/vue3'
+import { Toaster } from '@/components/ui/sonner'
+import { toast } from 'vue-sonner'
 
-const page = usePage();
+const page = usePage()
 
 const showToast = () => {
-  const f = page.props.flash || {};
-  if (f.success) toast.success("Success", { description: f.success });
-  if (f.error) toast.error("Error", { description: f.error });
-  if (f.warning) toast.warning("Warning", { description: f.warning });
-  if (f.info) toast.info("Info", { description: f.info });
-};
+  const f = page.props.flash || {}
+  if (f.success) toast.success('Success', { description: f.success })
+  if (f.error) toast.error('Error', { description: f.error })
+  if (f.warning) toast.warning('Warning', { description: f.warning })
+  if (f.info) toast.info('Info', { description: f.info })
+}
 
 const hasFlash = () => {
-  const f = page.props.flash || {};
-  return !!(f.success || f.error || f.warning || f.info);
-};
+  const f = page.props.flash || {}
+  return !!(f.success || f.error || f.warning || f.info)
+}
 
-// Ce flash saat initial page load
 onMounted(() => {
   if (hasFlash()) {
-    setTimeout(() => showToast(), 200);
+    setTimeout(() => showToast(), 200)
   }
-});
+})
 
-// Watch setiap kali Inertia selesai request (navigasi, form submit, dsb)
-// router.on('finish') dipanggil SETIAP kali Inertia request selesai diproses.
-router.on("finish", () => {
+router.on('finish', () => {
   if (hasFlash()) {
-    setTimeout(() => showToast(), 50);
+    setTimeout(() => showToast(), 50)
   }
-});
+})
 </script>
 
 <template>

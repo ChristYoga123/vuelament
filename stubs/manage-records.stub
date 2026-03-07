@@ -3,8 +3,16 @@
 namespace {{ namespace }};
 
 use ChristYoga123\Vuelament\Core\Pages\ManageRecords;
+use ChristYoga123\Vuelament\Components\Actions\CreateAction;
 
 class {{ className }} extends ManageRecords
 {
     protected static ?string $resource = \{{ resourceClass }}::class;
+
+    public static function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
+        ];
+    }
 }

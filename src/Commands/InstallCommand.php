@@ -97,6 +97,16 @@ class InstallCommand extends Command
             $this->line('  ⏭ jsconfig.json / tsconfig.json already exists.');
         }
 
+        // ── Step 8: Inject Sonner CSS styles ─────────────────
+        $appCssPath = resource_path('css/app.css');
+        if (file_exists($appCssPath) && !str_contains(file_get_contents($appCssPath), 'data-sonner-toaster')) {
+            $this->task('Injecting Sonner/Toast CSS styles...', function () use ($appCssPath) {
+                $this->injectSonnerCss($appCssPath);
+            });
+        } else {
+            $this->line('  ⏭ Sonner CSS already present in app.css.');
+        }
+
         // ── Summary ─────────────────────────────────────────
         $this->newLine();
         $this->info('✅ Vuelament base scaffolding completed!');
@@ -275,6 +285,23 @@ JSON;
         $this->line("  {$description}");
         $callback();
         $this->line("    <fg=green>✓ Done.</>");
+    }
+
+    /**
+     * Inject Sonner/Toast CSS styles into the project's app.css.
+     *
+     * Tailwind CSS v4 Preflight resets inline styles that vue-sonner depends on.
+     * These overrides ensure toasts render as floating styled cards.
+     */
+    protected function injectSonnerCss(string $path): void
+    {
+        $stubPath = __DIR__ . '/../../stubs/sonner.css';
+        if (!file_exists($stubPath)) {
+            return;
+        }
+
+        $css = file_get_contents($stubPath);
+        file_put_contents($path, file_get_contents($path) . "\n" . $css);
     }
 
     /**

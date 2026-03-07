@@ -161,3 +161,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.1] - 2026-03-07
 ### Fixed
 - Fixed `index` method in `ResourceController` incorrectly calling `tableSchema()` when using the new builder structure.
+
+## [1.3.2] - 2026-03-07
+### Fixed
+- Fixed remaining `tableSchema()` calls inside `ResourceController.php` related to `executeAction`, `executeBulkAction`, and `applySearch`.

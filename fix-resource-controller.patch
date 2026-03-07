@@ -1,0 +1,36 @@
+--- src/Http/Traits/ResourceController.php
++++ src/Http/Traits/ResourceController.php
+@@ -484,8 +484,18 @@
+         $model    = $resource::getModel();
+         $record   = $model::withTrashed()->findOrFail($id);
+         
+-        $tableSchema = $resource::tableSchema();
+-        $tableComponent = collect($tableSchema->getComponents())
++        if (method_exists($resource, 'table')) {
++            $tableComponent = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
++        } else {
++            $pageSchema = $resource::tableSchema();
++            $tableComponent = collect($pageSchema->getComponents())
+-            ->firstWhere(fn($c) => $c instanceof \ChristYoga123\Vuelament\Components\Table\Table);
++                ->firstWhere(fn($c) => $c instanceof \ChristYoga123\Vuelament\Components\Table\Table);
++        }
+ 
+         if (!$tableComponent) {
+             abort(404, 'Table component not found');
+@@ -563,9 +573,15 @@
+         $model    = $resource::getModel();
+         $ids      = $request->input('ids', []);
+ 
+-        $tableSchema = $resource::tableSchema()->toArray();
+-        
+-        $tableComponent = collect($tableSchema['components'] ?? [])->firstWhere('type', 'table');
++        if (method_exists($resource, 'table')) {
++            $tableObj = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
++            $tableComponent = $tableObj->toArray();
++        } else {
++            $tableSchema = $resource::tableSchema()->toArray();
++            $tableComponent = collect($tableSchema['components'] ?? [])->firstWhere('type', 'table');
++        }
+ 
+         if (!$tableComponent) {
+             abort(404, 'Table schema not found.');

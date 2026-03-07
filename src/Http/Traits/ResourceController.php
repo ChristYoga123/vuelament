@@ -483,10 +483,14 @@ trait ResourceController
         $actionName = $request->input('action');
         $actionData = $request->input('data', []);
 
-        // Find the action from Table component inside PageSchema
-        $tableSchema = $resource::tableSchema();
-        $tableComponent = collect($tableSchema->getComponents())
-            ->first(fn($c) => $c instanceof \ChristYoga123\Vuelament\Components\Table\Table);
+        // Find the action from Table component
+        if (method_exists($resource, 'table')) {
+            $tableComponent = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
+        } else {
+            $tableSchema = $resource::tableSchema();
+            $tableComponent = collect($tableSchema->getComponents())
+                ->first(fn($c) => $c instanceof \ChristYoga123\Vuelament\Components\Table\Table);
+        }
 
         if (!$tableComponent) {
             return back()->with('error', 'Table not found in schema.');
@@ -563,9 +567,13 @@ trait ResourceController
 
     protected function applySearch($query, string $search, string $resource)
     {
-        $tableSchema = $resource::tableSchema()->toArray();
+        if (method_exists($resource, 'table')) {
+            $tableComponent = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make())->toArray('index');
+        } else {
+            $tableSchema = $resource::tableSchema()->toArray();
+            $tableComponent = collect($tableSchema['components'] ?? [])->firstWhere('type', 'table');
+        }
         
-        $tableComponent = collect($tableSchema['components'] ?? [])->firstWhere('type', 'table');
         $searchableColumns = collect($tableComponent['columns'] ?? [])
             ->filter(fn($col) => ($col['searchable'] ?? false) === true)
             ->pluck('name')

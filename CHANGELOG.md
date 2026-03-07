@@ -5,6 +5,21 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.9] - 2026-03-07
+
+### Added
+
+- **Manage Mode Vue Page**: Added `Manage.vue` component that handles simple mode resources for managing standard CRUD inside a modal.
+
+### Fixed
+
+- **Resource Generator (`--simple` flag)**: Fixed a bug where creating a resource using the `--simple` flag failed due to missing string replacements in the `resource.stub` file.
+- **Resource Generator (`--simple` flag)**: Fixed a bug where the generated `Manage[Model]` page class did not properly append the `CreateAction` logic.
+- **Manage Mode Rendering**: Fixed an issue where the `ResourceController` forced rendering `Index.vue` even when in simple/manage mode, preventing `Manage.vue` from loading.
+- **Table Components**: Fixed `Table` and `TableRowActions` components to correctly emit `@createAction` and `@editAction` events instead of forcing router navigation when `isManageMode` is true.
+
+---
+
 ## [1.2.8] - 2026-03-06
 
 ### Changed

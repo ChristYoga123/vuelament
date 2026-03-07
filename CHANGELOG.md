@@ -184,3 +184,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
+
+## [1.3.5] - 2026-03-07
+
+### Changed
+
+- **Resource Generator**: Updated `vuelament:resource` command and stub to define the resource `$model` property using a class reference (e.g., `protected static ?string $model = User::class;`) instead of a fully-qualified string namespace.

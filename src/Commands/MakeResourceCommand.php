@@ -292,7 +292,7 @@ PHP;
         }
 
         // Build imports
-        $imports = "use ChristYoga123\\Vuelament\\Core\\BaseResource;
+        $imports = "use {$modelFqn};\nuse ChristYoga123\\Vuelament\\Core\\BaseResource;
 use ChristYoga123\\Vuelament\\Components\\Form\\Form;
 use ChristYoga123\\Vuelament\\Components\\Form\\TextInput;
 use ChristYoga123\\Vuelament\\Components\\Form\\Textarea;
@@ -315,84 +315,33 @@ use ChristYoga123\\Vuelament\\Components\\Table\\Filters\\SelectFilter;";
         }
 
         // Build table actions
-        $tableActions = "                        EditAction::make(),
-                        DeleteAction::make(),";
+        $tableActions = "                EditAction::make(),
+                DeleteAction::make(),";
         if ($hasSoftDeletes) {
             $tableActions .= "
-                        RestoreAction::make(),
-                        ForceDeleteAction::make(),";
+                RestoreAction::make(),
+                ForceDeleteAction::make(),";
         }
 
         // Build filters
         if ($hasSoftDeletes) {
             $filters = "
-                    ->filters([
-                        SelectFilter::make('trashed')
-                            ->label('Status')
-                            ->options([
-                                ''          => 'Tanpa Trashed',
-                                'with'      => 'Dengan Trashed',
-                                'only'      => 'Hanya Trashed',
-                            ]),
-                    ])";
+            ->filters([
+                SelectFilter::make('trashed')
+                    ->label('Status')
+                    ->options([
+                        ''          => 'Tanpa Trashed',
+                        'with'      => 'Dengan Trashed',
+                        'only'      => 'Hanya Trashed',
+                    ]),
+            ])";
         } else {
             $filters = "
-                    ->filters([])";
+            ->filters([])";
         }
 
         // Build softDeletes property
-        $softDeleteProp = $hasSoftDeletes ? "
-    protected static bool \$softDeletes = true;" : '';
-
-        return <<<PHP
-<?php
-
-namespace {$namespace};
-
-{$imports}
-
-class {$name}Resource extends BaseResource
-{
-    protected static string \$model = '{$modelFqn}';
-    protected static string \$slug = '{$slug}';
-    protected static string \$label = '{$label}';
-    protected static string \$icon = 'circle';{$softDeleteProp}
-
-    // ── Navigation ───────────────────────────────────────
-    protected static int \$navigationSort = 0;
-    // protected static ?string \$navigationGroup = 'Master Data';
-
-    public static function table(Table \$table): Table
-    {
-        return \$table
-            ->columns([
-{\$tableColumns}
-            ])
-            ->actions([
-{\$tableActions}
-            ])
-            ->bulkActions([
-                ActionGroup::make('Aksi Massal')
-                    ->icon('list')
-                    ->actions([
-                        DeleteBulkAction::make(),
-                    ]),
-            ]){\$filters}
-            ->searchable()
-            ->paginated()
-            ->selectable();
-    }
-
-    public static function form(Form \$form): Form
-    {
-        return \$form
-            ->schema([
-{\$formComponents}
-            ]);
-    }
-
-    public static function getPages(): array
-    {
+        $softDeleteProp = $hasSoftDeletes ? "\n    protected static bool \$softDeletes = true;" : '';
 
         if ($isSimple) {
             $pagesStr = "        return [
@@ -415,8 +364,8 @@ namespace {$namespace};
 
 class {$name}Resource extends BaseResource
 {
-    protected static string \$model = '{$modelFqn}';
-    protected static string \$slug = '{$slug}';
+    protected static ?string \$model = {$model}::class;
+    protected static ?string \$slug = '{$slug}';
     protected static string \$label = '{$label}';
     protected static string \$icon = 'circle';{$softDeleteProp}
 
@@ -424,34 +373,31 @@ class {$name}Resource extends BaseResource
     protected static int \$navigationSort = 0;
     // protected static ?string \$navigationGroup = 'Master Data';
 
-    public static function tableSchema(): PageSchema
+    public static function table(Table \$table): Table
     {
-        return PageSchema::make()
-            ->components([
-                Table::make()
-                    ->columns([
+        return \$table
+            ->columns([
 {$tableColumns}
-                    ])
-                    ->actions([
+            ])
+            ->actions([
 {$tableActions}
-                    ])
-                    ->bulkActions([
-                        ActionGroup::make('Aksi Massal')
-                            ->icon('list')
-                            ->actions([
-                                DeleteBulkAction::make(),
-                            ]),
-                    ]){$filters}
-                    ->searchable()
-                    ->paginated()
-                    ->selectable(),
-            ]);
+            ])
+            ->bulkActions([
+                ActionGroup::make('Aksi Massal')
+                    ->icon('list')
+                    ->actions([
+                        DeleteBulkAction::make(),
+                    ]),
+            ]){$filters}
+            ->searchable()
+            ->paginated()
+            ->selectable();
     }
 
-    public static function formSchema(): PageSchema
+    public static function form(Form \$form): Form
     {
-        return PageSchema::make()
-            ->components([
+        return \$form
+            ->schema([
 {$formComponents}
             ]);
     }
@@ -459,13 +405,6 @@ class {$name}Resource extends BaseResource
     public static function getPages(): array
     {
 {$pagesStr}
-    }
-
-    public static function rules(string \$action, mixed \$id = null): array
-    {
-        return [
-{$rules}
-        ];
     }
 }
 PHP;

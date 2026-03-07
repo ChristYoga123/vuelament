@@ -11,10 +11,11 @@ use ChristYoga123\Vuelament\Components\Actions\ActionGroup;
 use ChristYoga123\Vuelament\Components\Actions\DeleteBulkAction;
 use ChristYoga123\Vuelament\Components\Form\Form;
 use ChristYoga123\Vuelament\Components\Form\TextInput;
+use {{ modelFqn }};
 
 class {{ name }}Resource extends BaseResource
 {
-    protected static string $model = '{{ modelFqn }}';
+    protected static ?string $model = {{ model }}::class;
     protected static string $slug = '{{ slug }}';
     protected static string $label = '{{ label }}';
     protected static string $icon = 'circle';

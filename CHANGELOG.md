@@ -151,3 +151,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Integrated Laravel native Authentication and Authorization endpoints into panel scopes.
+
+## [1.3.0] - 2026-03-07
+### Changed
+- Refactored `BaseResource` to use `Table` and `Form` builders instead of `PageSchema`.
+- Updated `MakeResourceCommand` logic to generate components based on the new builder configuration.
+- Changed default string to 'Bulk Actions'.

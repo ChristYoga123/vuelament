@@ -157,3 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored `BaseResource` to use `Table` and `Form` builders instead of `PageSchema`.
 - Updated `MakeResourceCommand` logic to generate components based on the new builder configuration.
 - Changed default string to 'Bulk Actions'.
+
+## [1.3.1] - 2026-03-07
+### Fixed
+- Fixed `index` method in `ResourceController` incorrectly calling `tableSchema()` when using the new builder structure.

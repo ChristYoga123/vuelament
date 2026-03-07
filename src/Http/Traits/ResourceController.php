@@ -32,14 +32,16 @@ trait ResourceController
         $resource = static::$resource;
         $model       = $resource::getModel();
         $query       = $resource::getQuery();
-        $pageSchema  = $resource::tableSchema();
-
-        // Cari komponen Table di dalam schema
-        $tableComponent = null;
-        foreach ($pageSchema->getComponents() as $comp) {
-            if ($comp instanceof \ChristYoga123\Vuelament\Components\Table\Table) {
-                $tableComponent = $comp;
-                break;
+        if (method_exists($resource, 'table')) {
+            $tableComponent = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
+        } else {
+            $pageSchema  = $resource::tableSchema();
+            $tableComponent = null;
+            foreach ($pageSchema->getComponents() as $comp) {
+                if ($comp instanceof \ChristYoga123\Vuelament\Components\Table\Table) {
+                    $tableComponent = $comp;
+                    break;
+                }
             }
         }
 
@@ -138,11 +140,11 @@ trait ResourceController
         }
 
         if (method_exists($resource, 'table')) {
-            $table = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
+            // Kita sudah peroleh $tableComponent di atas
             $tableSchema = [
                 'type' => 'page',
                 'title' => $resource::getLabel(),
-                'components' => [$table->toArray('index')],
+                'components' => [$tableComponent->toArray('index')],
             ];
         } else {
             // Backward compatibility

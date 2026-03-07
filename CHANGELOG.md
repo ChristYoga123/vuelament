@@ -185,6 +185,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
 
+## [1.3.7] - 2026-03-08
+
+### Fixed
+
+- **Manage Modal Validation Error**: Fixed a bug where the create/edit modal in `Manage.vue` would briefly flash a white border and close when encountering a 4xx validation error. Added `preserveState: true` to Inertia router calls so Vue component state (modal open/close) is preserved during redirect-back on validation errors.
+
+## [1.3.6] - 2026-03-08
+
+### Fixed
+
+- **Toast Notifications**: Replaced unreliable `watch(flash)` with `router.on('finish')` in `AppWrapper.vue` to reliably trigger Sonner toast notifications after any Inertia request completes.
+- **Manage Records Stub**: Added missing `CreateAction` header action to `manage-records.stub`.
+
+### Added
+
+- **Sonner CSS Auto-Injection**: The `vuelament:install` command now automatically injects required Sonner/Toast CSS styles into `app.css`, fixing Tailwind CSS v4 Preflight compatibility issues where toasts rendered as unstyled inline text.
+
 ## [1.3.5] - 2026-03-07
 
 ### Changed

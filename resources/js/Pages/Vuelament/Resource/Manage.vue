@@ -92,8 +92,10 @@ const submit = () => {
   router[method](route, formData.value, {
     forceFormData: hasFiles(),
     preserveScroll: true,
+    preserveState: true,
     onSuccess: () => {
         isModalOpen.value = false
+        resetForm()
     },
     onFinish: () => { submitting.value = false },
   })

@@ -153,15 +153,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Integrated Laravel native Authentication and Authorization endpoints into panel scopes.
 
 ## [1.3.0] - 2026-03-07
+
 ### Changed
+
 - Refactored `BaseResource` to use `Table` and `Form` builders instead of `PageSchema`.
 - Updated `MakeResourceCommand` logic to generate components based on the new builder configuration.
 - Changed default string to 'Bulk Actions'.
 
 ## [1.3.1] - 2026-03-07
+
 ### Fixed
+
 - Fixed `index` method in `ResourceController` incorrectly calling `tableSchema()` when using the new builder structure.
 
 ## [1.3.2] - 2026-03-07
+
 ### Fixed
+
 - Fixed remaining `tableSchema()` calls inside `ResourceController.php` related to `executeAction`, `executeBulkAction`, and `applySearch`.
+
+## [1.3.3] - 2026-03-07
+
+### Fixed
+
+- **Manage Mode Rendering**: Fixed an issue where `ManageRecords` simple mode did not pass the `formSchema` to the frontend, causing empty modal forms.
+- **Inertia Redirects**: Fixed `MethodNotAllowedHttpException` by ensuring all mutation methods (store, update, destroy, bulk actions) safely return a `303 See Other` HTTP status code instead of a `302 Found`, properly instructing Inertia to issue a `GET` request on redirection.

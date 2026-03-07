@@ -159,6 +159,20 @@ trait ResourceController
             $view = $pageClass::getView() ?: $view;
         }
 
+        $formSchema = null;
+        if ($view === 'Vuelament/Resource/Manage' || ($pageClass && is_subclass_of($pageClass, \ChristYoga123\Vuelament\Core\Pages\ManageRecords::class))) {
+            if (method_exists($resource, 'form')) {
+                $form = $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
+                $formSchema = [
+                    'type' => 'page',
+                    'title' => 'Manage ' . $resource::getLabel(),
+                    'components' => $form->toArray('manage'),
+                ];
+            } else {
+                $formSchema = method_exists($resource, 'formSchema') ? $resource::formSchema()->toArray('manage') : null;
+            }
+        }
+
         return Inertia::render($view, [
             'resource'    => [
                 'slug'        => $resource::getSlug(),
@@ -167,6 +181,7 @@ trait ResourceController
                 'icon'        => $resource::getIcon(),
             ],
             'tableSchema'   => $tableSchema,
+            'formSchema'    => $formSchema,
             'headerActions' => $this->resolveHeaderActions($resource, 'index'),
             'data'          => $data,
             'filters'       => $request->only(['search', 'filters', 'sort', 'direction', 'per_page']),
@@ -285,7 +300,7 @@ trait ResourceController
         $resource::afterCreate($record, $data);
 
         return redirect()
-            ->route("{$panelId}.{$resource::getSlug()}.index")
+            ->route("{$panelId}.{$resource::getSlug()}.index", [], 303)
             ->with('success', $resource::getLabel() . ' created successfully.');
     }
 
@@ -361,7 +376,7 @@ trait ResourceController
         $resource::afterSave($record, $data);
 
         return redirect()
-            ->route("{$panelId}.{$resource::getSlug()}.index")
+            ->route("{$panelId}.{$resource::getSlug()}.index", [], 303)
             ->with('success', $resource::getLabel() . ' updated successfully.');
     }
 
@@ -382,7 +397,7 @@ trait ResourceController
 
         $record->update([$column => $value]);
 
-        return back();
+        return back(303);
     }
 
     // ── Destroy ──────────────────────────────────────────
@@ -397,7 +412,7 @@ trait ResourceController
             $record->delete();
         });
 
-        return back()->with('success', $resource::getLabel() . ' deleted successfully.');
+        return back(303)->with('success', $resource::getLabel() . ' deleted successfully.');
     }
 
     // ── Bulk Destroy ─────────────────────────────────────
@@ -411,7 +426,7 @@ trait ResourceController
             $model::whereIn('id', $ids)->delete();
         });
 
-        return back()->with('success', count($ids) . ' records deleted successfully.');
+        return back(303)->with('success', count($ids) . ' records deleted successfully.');
     }
 
     // ── Bulk Restore (soft delete) ──────────────────────
@@ -425,7 +440,7 @@ trait ResourceController
             $model::withTrashed()->whereIn('id', $ids)->restore();
         });
 
-        return back()->with('success', count($ids) . ' records restored successfully.');
+        return back(303)->with('success', count($ids) . ' records restored successfully.');
     }
 
     // ── Bulk Force Delete ───────────────────────────────
@@ -439,7 +454,7 @@ trait ResourceController
             $model::withTrashed()->whereIn('id', $ids)->forceDelete();
         });
 
-        return back()->with('success', count($ids) . ' records permanently deleted successfully.');
+        return back(303)->with('success', count($ids) . ' records permanently deleted successfully.');
     }
 
     // ── Restore (soft delete) ────────────────────────────
@@ -454,7 +469,7 @@ trait ResourceController
             $record->restore();
         });
 
-        return back()->with('success', $resource::getLabel() . ' restored successfully.');
+        return back(303)->with('success', $resource::getLabel() . ' restored successfully.');
     }
 
     // ── Force Delete ─────────────────────────────────────
@@ -469,7 +484,7 @@ trait ResourceController
             $record->forceDelete();
         });
 
-        return back()->with('success', $resource::getLabel() . ' permanently deleted successfully.');
+        return back(303)->with('success', $resource::getLabel() . ' permanently deleted successfully.');
     }
 
     // ── Execute Row Action ───────────────────────────────
@@ -493,14 +508,14 @@ trait ResourceController
         }
 
         if (!$tableComponent) {
-            return back()->with('error', 'Table not found in schema.');
+            return back(303)->with('error', 'Table not found in schema.');
         }
 
         $action = collect($tableComponent->getActions())
             ->first(fn($a) => $a->getName() === $actionName);
 
         if (!$action) {
-            return back()->with('error', "Action [{$actionName}] not found.");
+            return back(303)->with('error', "Action [{$actionName}] not found.");
         }
 
         // Validate form schema if present
@@ -522,10 +537,10 @@ trait ResourceController
             $this->executeWithTransaction(function () use ($action, $record, $actionData) {
                 $action->execute($record, $actionData);
             });
-            return back()->with('success', $action->toArray()['label'] . ' executed successfully.');
+            return back(303)->with('success', $action->toArray()['label'] . ' executed successfully.');
         }
 
-        return back();
+        return back(303);
     }
 
     // ── Resolve page-level header actions ────────────────

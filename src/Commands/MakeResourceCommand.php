@@ -293,7 +293,7 @@ PHP;
 
         // Build imports
         $imports = "use ChristYoga123\\Vuelament\\Core\\BaseResource;
-use ChristYoga123\\Vuelament\\Core\\PageSchema;
+use ChristYoga123\\Vuelament\\Components\\Form\\Form;
 use ChristYoga123\\Vuelament\\Components\\Form\\TextInput;
 use ChristYoga123\\Vuelament\\Components\\Form\\Textarea;
 use ChristYoga123\\Vuelament\\Components\\Form\\Select;
@@ -362,35 +362,32 @@ class {$name}Resource extends BaseResource
     protected static int \$navigationSort = 0;
     // protected static ?string \$navigationGroup = 'Master Data';
 
-    public static function tableSchema(): PageSchema
+    public static function table(Table \$table): Table
     {
-        return PageSchema::make()
-            ->components([
-                Table::make()
-                    ->columns([
-{$tableColumns}
-                    ])
+        return \$table
+            ->columns([
+{\$tableColumns}
+            ])
+            ->actions([
+{\$tableActions}
+            ])
+            ->bulkActions([
+                ActionGroup::make('Aksi Massal')
+                    ->icon('list')
                     ->actions([
-{$tableActions}
-                    ])
-                    ->bulkActions([
-                        ActionGroup::make('Aksi Massal')
-                            ->icon('list')
-                            ->actions([
-                                DeleteBulkAction::make(),
-                            ]),
-                    ]){$filters}
-                    ->searchable()
-                    ->paginated()
-                    ->selectable(),
-            ]);
+                        DeleteBulkAction::make(),
+                    ]),
+            ]){\$filters}
+            ->searchable()
+            ->paginated()
+            ->selectable();
     }
 
-    public static function formSchema(): PageSchema
+    public static function form(Form \$form): Form
     {
-        return PageSchema::make()
-            ->components([
-{$formComponents}
+        return \$form
+            ->schema([
+{\$formComponents}
             ]);
     }
 

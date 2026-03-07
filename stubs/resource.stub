@@ -3,14 +3,13 @@
 namespace {{ namespace }};
 
 use ChristYoga123\Vuelament\Core\BaseResource;
-use ChristYoga123\Vuelament\Core\PageSchema;
 use ChristYoga123\Vuelament\Components\Table\Table;
 use ChristYoga123\Vuelament\Components\Table\Column;
 use ChristYoga123\Vuelament\Components\Table\Actions\EditAction;
 use ChristYoga123\Vuelament\Components\Table\Actions\DeleteAction;
 use ChristYoga123\Vuelament\Components\Actions\ActionGroup;
-use ChristYoga123\Vuelament\Components\Actions\CreateAction;
 use ChristYoga123\Vuelament\Components\Actions\DeleteBulkAction;
+use ChristYoga123\Vuelament\Components\Form\Form;
 use ChristYoga123\Vuelament\Components\Form\TextInput;
 
 class {{ name }}Resource extends BaseResource
@@ -20,43 +19,34 @@ class {{ name }}Resource extends BaseResource
     protected static string $label = '{{ label }}';
     protected static string $icon = 'circle';
 
-    public static function tableSchema(): PageSchema
+    public static function table(Table $table): Table
     {
-        return PageSchema::make()
-            ->components([
-                Table::make()
-                    ->columns([
-                        Column::make('id')->label('ID')->sortable(),
-                        Column::make('name')->label('Nama')->sortable()->searchable(),
-                        Column::make('created_at')->label('Dibuat')->dateFormat('d/m/Y')->sortable(),
-                    ])
+        return $table
+            ->columns([
+                //
+            ])
+            ->actions([
+                EditAction::make(),
+                DeleteAction::make(),
+            ])
+            ->bulkActions([
+                ActionGroup::make('Bulk Actions')
+                    ->icon('list')
                     ->actions([
-                        EditAction::make(),
-                        DeleteAction::make(),
-                    ])
-                    ->bulkActions([
-                        ActionGroup::make('Aksi Massal')
-                            ->icon('list')
-                            ->actions([
-                                DeleteBulkAction::make(),
-                            ]),
-                    ])
-                    ->filters([])
-                    ->searchable()
-                    ->paginated()
-                    ->selectable(),
-            ]);
+                        DeleteBulkAction::make(),
+                    ]),
+            ])
+            ->filters([])
+            ->searchable()
+            ->paginated()
+            ->selectable();
     }
 
-    public static function formSchema(): PageSchema
+    public static function form(Form $form): Form
     {
-        return PageSchema::make()
-            ->components([
-                TextInput::make('name')
-                    ->label('Nama')
-                    ->required()
-                    ->maxLength(255)
-                    ->rules(['string']),
+        return $form
+            ->schema([
+                //
             ]);
     }
 

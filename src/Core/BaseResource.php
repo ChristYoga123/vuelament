@@ -2,6 +2,9 @@
 
 namespace ChristYoga123\Vuelament\Core;
 
+use ChristYoga123\Vuelament\Components\Table\Table;
+use ChristYoga123\Vuelament\Components\Form\Form;
+
 abstract class BaseResource
 {
     protected static string $model = '';
@@ -21,19 +24,14 @@ abstract class BaseResource
 
     // ── Schema (override di resource class) ──────────────
 
-    public static function tableSchema(): PageSchema
+    public static function table(Table $table): Table
     {
-        return PageSchema::make()->title(static::$label);
+        return $table;
     }
 
-    public static function formSchema(): PageSchema
+    public static function form(Form $form): Form
     {
-        return PageSchema::make()->title('Create ' . static::$label);
-    }
-
-    public static function editSchema(): PageSchema
-    {
-        return static::formSchema()->title('Edit ' . static::$label);
+        return $form;
     }
 
     /**

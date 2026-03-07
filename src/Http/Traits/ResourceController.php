@@ -137,7 +137,17 @@ trait ResourceController
             });
         }
 
-        $tableSchema = $pageSchema->toArray('index');
+        if (method_exists($resource, 'table')) {
+            $table = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
+            $tableSchema = [
+                'type' => 'page',
+                'title' => $resource::getLabel(),
+                'components' => [$table->toArray('index')],
+            ];
+        } else {
+            // Backward compatibility
+            $tableSchema = $resource::tableSchema()->toArray('index');
+        }
         $panel = app('vuelament.panel');
 
         $pages = $resource::getPages();
@@ -169,7 +179,18 @@ trait ResourceController
     public function create()
     {
         $resource   = static::$resource;
-        $formSchema = $resource::formSchema()->toArray('create');
+        
+        if (method_exists($resource, 'form')) {
+            $form = $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
+            $formSchema = [
+                'type' => 'page',
+                'title' => 'Create ' . $resource::getLabel(),
+                'components' => $form->toArray('create'),
+            ];
+        } else {
+            // Backward compatibility
+            $formSchema = $resource::formSchema()->toArray('create');
+        }
         $panel = app('vuelament.panel');
 
         $pages = $resource::getPages();
@@ -240,12 +261,16 @@ trait ResourceController
         $model    = $resource::getModel();
         $panelId  = app('vuelament.panel')->getId();
 
+        $formSchemaObj = method_exists($resource, 'form') 
+            ? $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make()) 
+            : $resource::formSchema();
+
         // Auto-extract validation rules dari form components
-        $rules = $this->extractRulesFromSchema($resource::formSchema(), null, 'create');
+        $rules = $this->extractRulesFromSchema($formSchemaObj, null, 'create');
         $data  = $rules ? $request->validate($rules) : $request->all();
 
         // Check if there's any state dehydrator
-        $data = $this->mutateFormDataBeforeSave($data, $resource::formSchema(), 'create');
+        $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'create');
 
         // Hook: before create
         $data = $resource::mutateFormDataBeforeCreate($data);
@@ -269,7 +294,17 @@ trait ResourceController
         $resource   = static::$resource;
         $model      = $resource::getModel();
         $record     = $model::findOrFail($id);
-        $formSchema = $resource::editSchema()->toArray('edit');
+        if (method_exists($resource, 'form')) {
+            $form = $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
+            $formSchema = [
+                'type' => 'page',
+                'title' => 'Edit ' . $resource::getLabel(),
+                'components' => $form->toArray('edit'),
+            ];
+        } else {
+            // Backward compatibility
+            $formSchema = method_exists($resource, 'editSchema') ? $resource::editSchema()->toArray('edit') : $resource::formSchema()->toArray('edit');
+        }
         $panel = app('vuelament.panel');
 
         $pages = $resource::getPages();
@@ -302,12 +337,16 @@ trait ResourceController
         $record   = $model::findOrFail($id);
         $panelId  = app('vuelament.panel')->getId();
 
+        $formSchemaObj = method_exists($resource, 'form') 
+            ? $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make()) 
+            : (method_exists($resource, 'editSchema') ? $resource::editSchema() : $resource::formSchema());
+
         // Auto-extract validation rules dari form components (pass record ID untuk unique ignore)
-        $rules = $this->extractRulesFromSchema($resource::editSchema(), $id, 'edit');
+        $rules = $this->extractRulesFromSchema($formSchemaObj, $id, 'edit');
         $data  = $rules ? $request->validate($rules) : $request->all();
 
         // Check if there's any state dehydrator
-        $data = $this->mutateFormDataBeforeSave($data, $resource::editSchema(), 'edit');
+        $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'edit');
 
         // Hook: before save
         $data = $resource::mutateFormDataBeforeSave($data);
@@ -586,7 +625,7 @@ trait ResourceController
         }
     }
 
-    protected function mutateFormDataBeforeSave(array $data, \ChristYoga123\Vuelament\Core\PageSchema $schema, string $operation): array
+    protected function mutateFormDataBeforeSave(array $data, mixed $schema, string $operation): array
     {
         $flatComponents = [];
         $this->flattenComponents($schema->getComponents(), $flatComponents);

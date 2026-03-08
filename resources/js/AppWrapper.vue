@@ -6,7 +6,15 @@ import { toast } from 'vue-sonner'
 
 const page = usePage()
 
-const showToast = () => {
+const TOAST_TYPE_MAP = {
+  success: toast.success,
+  error: toast.error,
+  danger: toast.error,
+  warning: toast.warning,
+  info: toast.info,
+}
+
+const showFlashToasts = () => {
   const f = page.props.flash || {}
   if (f.success) toast.success('Success', { description: f.success })
   if (f.error) toast.error('Error', { description: f.error })
@@ -14,25 +22,39 @@ const showToast = () => {
   if (f.info) toast.info('Info', { description: f.info })
 }
 
+const showNotifications = () => {
+  const items = page.props.notifications || []
+  items.forEach((n) => {
+    const fn = TOAST_TYPE_MAP[n.type] || toast.info
+    fn(n.title || '', { description: n.body || '' })
+  })
+}
+
 const hasFlash = () => {
   const f = page.props.flash || {}
   return !!(f.success || f.error || f.warning || f.info)
 }
 
+const hasNotifications = () => {
+  const items = page.props.notifications || []
+  return items.length > 0
+}
+
+const showAll = () => {
+  if (hasFlash()) showFlashToasts()
+  if (hasNotifications()) showNotifications()
+}
+
 onMounted(() => {
-  if (hasFlash()) {
-    setTimeout(() => showToast(), 200)
-  }
+  setTimeout(() => showAll(), 200)
 })
 
 router.on('finish', () => {
-  if (hasFlash()) {
-    setTimeout(() => showToast(), 50)
-  }
+  setTimeout(() => showAll(), 50)
 })
 </script>
 
 <template>
   <slot />
-  <Toaster position="top-right" richColors />
+  <Toaster position="top-right" richColors :visibleToasts="2" :duration="4000" />
 </template>

@@ -59,6 +59,9 @@ class VuelamentServiceProvider extends ServiceProvider
                     'info'    => Session::get('info'),
                 ];
             },
+            'notifications' => function () {
+                return Session::get('_vuelament_notifications', []);
+            },
         ]);
 
         // ── Config ──────────────────────────

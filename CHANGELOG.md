@@ -185,6 +185,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
 
+## [1.4.0] - 2026-03-08
+
+### Added
+
+- **Notification Component**: New `Notification::make()` fluent PHP API for sending toast notifications from backend services and business logic. Supports `->success()`, `->info()`, `->danger()`, `->warning()` types with `->title()` and `->body()` methods. Call `->send()` to flash to session.
+- **Toast Stacking**: Toasts now stack when multiple arrive quickly. Maximum 2 visible at a time; older toasts fade out automatically. Duration set to 4 seconds.
+- **Structured Notifications via Inertia**: `VuelamentServiceProvider` now shares a `notifications` array prop alongside `flash`, enabling multiple notifications per request.
+
 ## [1.3.7] - 2026-03-08
 
 ### Fixed

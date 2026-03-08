@@ -435,7 +435,12 @@ trait ResourceController
     {
         $resource = static::$resource;
         $model    = $resource::getModel();
-        $ids      = $request->input('ids', []);
+
+        if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
+            return back(303)->with('error', 'This resource does not support soft deletes.');
+        }
+
+        $ids = $request->input('ids', []);
         $this->executeWithTransaction(function () use ($model, $ids) {
             $model::withTrashed()->whereIn('id', $ids)->restore();
         });
@@ -449,7 +454,12 @@ trait ResourceController
     {
         $resource = static::$resource;
         $model    = $resource::getModel();
-        $ids      = $request->input('ids', []);
+
+        if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
+            return back(303)->with('error', 'This resource does not support soft deletes.');
+        }
+
+        $ids = $request->input('ids', []);
         $this->executeWithTransaction(function () use ($model, $ids) {
             $model::withTrashed()->whereIn('id', $ids)->forceDelete();
         });
@@ -463,8 +473,13 @@ trait ResourceController
     {
         $resource = static::$resource;
         $model    = $resource::getModel();
-        $record   = $model::withTrashed()->findOrFail($id);
-        
+
+        if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
+            return back(303)->with('error', 'This resource does not support soft deletes.');
+        }
+
+        $record = $model::withTrashed()->findOrFail($id);
+
         $this->executeWithTransaction(function () use ($record) {
             $record->restore();
         });
@@ -478,8 +493,13 @@ trait ResourceController
     {
         $resource = static::$resource;
         $model    = $resource::getModel();
-        $record   = $model::withTrashed()->findOrFail($id);
-        
+
+        if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
+            return back(303)->with('error', 'This resource does not support soft deletes.');
+        }
+
+        $record = $model::withTrashed()->findOrFail($id);
+
         $this->executeWithTransaction(function () use ($record) {
             $record->forceDelete();
         });
@@ -493,7 +513,8 @@ trait ResourceController
     {
         $resource = static::$resource;
         $model    = $resource::getModel();
-        $record   = $model::withTrashed()->findOrFail($id);
+        $usesSoftDeletes = in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model));
+        $record   = $usesSoftDeletes ? $model::withTrashed()->findOrFail($id) : $model::findOrFail($id);
         
         $actionName = $request->input('action');
         $actionData = $request->input('data', []);
@@ -537,7 +558,13 @@ trait ResourceController
             $this->executeWithTransaction(function () use ($action, $record, $actionData) {
                 $action->execute($record, $actionData);
             });
-            return back(303)->with('success', $action->toArray()['label'] . ' executed successfully.');
+
+            $hasCustomNotification = !empty(session()->get('_vuelament_notifications', []));
+            if (!$hasCustomNotification) {
+                return back(303)->with('success', $action->toArray()['label'] . ' executed successfully.');
+            }
+
+            return back(303);
         }
 
         return back(303);

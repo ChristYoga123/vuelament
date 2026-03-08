@@ -193,6 +193,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Toast Stacking**: Toasts now stack when multiple arrive quickly. Maximum 2 visible at a time; older toasts fade out automatically. Duration set to 4 seconds.
 - **Structured Notifications via Inertia**: `VuelamentServiceProvider` now shares a `notifications` array prop alongside `flash`, enabling multiple notifications per request.
 
+### Fixed
+
+- **SoftDeletes Guard**: `executeAction()` no longer unconditionally calls `withTrashed()`. Now checks if the model uses `SoftDeletes` trait first, preventing `BadMethodCallException` on models without soft deletes.
+- **SoftDelete Route Guards**: `restore()`, `forceDelete()`, `bulkRestore()`, and `bulkForceDelete()` now return a friendly error instead of crashing when the model does not use `SoftDeletes`.
+- **Custom Notification Priority**: When an action uses `Notification::make()->send()`, the default success flash message is suppressed to avoid duplicate toasts.
+
 ## [1.3.7] - 2026-03-08
 
 ### Fixed

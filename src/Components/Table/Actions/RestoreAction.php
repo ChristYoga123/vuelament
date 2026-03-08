@@ -10,5 +10,5 @@ class RestoreAction extends BaseTableAction
     protected ?string $color = 'success';
     protected bool $requiresConfirmation = true;
     protected ?string $confirmationTitle = 'Restore Data';
-    protected ?string $confirmationMessage = 'Apakah Anda yakin ingin merestore data ini?';
+    protected ?string $confirmationMessage = 'Are you sure you want to restore this record?';
 }

@@ -3,20 +3,20 @@
 namespace ChristYoga123\Vuelament\Core;
 
 /**
- * Panel — konfigurasi panel Vuelament (seperti Filament PanelProvider)
+ * Panel — Vuelament panel configuration (like Filament PanelProvider)
  *
- * Contoh penggunaan di PanelProvider:
+ * Example usage in PanelProvider:
  *
  *   Panel::make()
  *     ->id('admin')
  *     ->path('admin')
  *     ->login()
  *     ->register()
- *     // Cara 1: Auto-discover resources dari directory
+ *     // Option 1: Auto-discover resources from directory
  *     ->discoverResources(app_path('Vuelament/Resources'), 'App\\Vuelament\\Resources')
- *     // Cara 2: Manual register
+ *     // Option 2: Manual register
  *     ->resources([UserResource::class, RoleResource::class])
- *     // Cara 3: Custom navigation (override auto-navigation)
+ *     // Option 3: Custom navigation (override auto-navigation)
  *     ->navigation([
  *         NavigationGroup::make('Master Data')->items([
  *             ...UserResource::getNavigationItems(),
@@ -85,9 +85,9 @@ class Panel
     public function widgets(array $v): static { $this->widgets = array_merge($this->widgets, $v); return $this; }
 
     /**
-     * Auto-discover resource classes dari directory
+     * Auto-discover resource classes from directory
      *
-     * Contoh: ->discoverResources(app_path('Vuelament/Resources'), 'App\\Vuelament\\Resources')
+     * Example: ->discoverResources(app_path('Vuelament/Resources'), 'App\\Vuelament\\Resources')
      */
     public function discoverResources(string $directory, string $namespace): static
     {
@@ -101,7 +101,7 @@ class Panel
                 continue;
             }
 
-            // Normalisasi pemisah path untuk OS Windows vs Unix
+            // Normalize path separator for Windows vs Unix
             $normalizedDir = str_replace('\\', '/', $directory);
             $normalizedPath = str_replace('\\', '/', $file->getPathname());
             $relativePath = str_replace($normalizedDir . '/', '', $normalizedPath);
@@ -121,9 +121,9 @@ class Panel
     }
 
     /**
-     * Auto-discover custom page classes dari directory
+     * Auto-discover custom page classes from directory
      *
-     * Contoh: ->discoverPages(app_path('Vuelament/Pages'), 'App\\Vuelament\\Pages')
+     * Example: ->discoverPages(app_path('Vuelament/Pages'), 'App\\Vuelament\\Pages')
      */
     public function discoverPages(string $directory, string $namespace): static
     {
@@ -137,7 +137,7 @@ class Panel
                 continue;
             }
 
-            // Normalisasi pemisah path untuk OS Windows vs Unix
+            // Normalize path separator for Windows vs Unix
             $normalizedDir = str_replace('\\', '/', $directory);
             $normalizedPath = str_replace('\\', '/', $file->getPathname());
             $relativePath = str_replace($normalizedDir . '/', '', $normalizedPath);
@@ -145,7 +145,7 @@ class Panel
             $className = $namespace . '\\' . $classPath;
 
             if (class_exists($className) && is_subclass_of($className, BasePage::class)) {
-                // Jangan jadikan global page jika melekat ke resource tertentu
+                // Don't make global page if attached to specific resource
                 if ($className::getResource()) {
                     continue;
                 }
@@ -184,11 +184,11 @@ class Panel
     // ── Navigation ───────────────────────────────────────
 
     /**
-     * Set custom navigation. Kalau di-set, ini OVERRIDE auto-navigation dari resources.
+     * Set custom navigation. When set, this OVERRIDES auto-navigation from resources.
      *
-     * Bisa mix NavigationGroup, NavigationItem, dan spread Resource::getNavigationItems()
+     * Can mix NavigationGroup, NavigationItem, and spread Resource::getNavigationItems()
      *
-     * Contoh:
+     * Example:
      *   ->navigation([
      *       NavigationGroup::make('Master')
      *           ->icon('database')
@@ -196,10 +196,10 @@ class Panel
      *               ...UserResource::getNavigationItems(),
      *               ...RoleResource::getNavigationItems(),
      *           ]),
-     *       NavigationGroup::make('Pengaturan')
+     *       NavigationGroup::make('Settings')
      *           ->items([
      *               NavigationItem::make('Settings')->url('/admin/settings'),
-     *               NavigationItem::make('Laporan')->route('admin.reports.index'),
+     *               NavigationItem::make('Reports')->route('admin.reports.index'),
      *           ]),
      *   ])
      */
@@ -246,8 +246,8 @@ class Panel
     }
 
     /**
-     * Build navigation dari custom navigation() array
-     * Supports NavigationGroup dan NavigationItem di top-level
+     * Build navigation from custom navigation() array
+     * Supports NavigationGroup and NavigationItem at top-level
      */
     protected function buildCustomNavigation(): array
     {
@@ -282,8 +282,8 @@ class Panel
 
     /**
      * Prefix relative URL with panel path
-     * URL absolute (mulai / atau http) dibiarkan
-     * URL relative (misal 'users') jadi '/admin/users'
+     * Absolute URLs (starting with / or http) are left unchanged
+     * Relative URLs (e.g. 'users') become '/admin/users'
      */
     protected function prefixItemUrl(array $item): array
     {
@@ -295,7 +295,7 @@ class Panel
     }
 
     /**
-     * Auto-build navigation dari registered resources
+     * Auto-build navigation from registered resources
      * Group by $navigationGroup, sort by $navigationSort
      */
     protected function buildAutoNavigation(): array

@@ -2,11 +2,11 @@
 /**
  * Table — reusable table component (full-featured)
  *
- * Cukup panggil <Table /> di custom page Vue dan tabel langsung
- * ter-render lengkap dengan search, sort, pagination, filters,
- * column toggle, checkboxes, bulk actions, row actions, confirm dialog.
+ * Simply use <Table /> in a custom Vue page and the table renders
+ * with search, sort, pagination, filters, column toggle, checkboxes,
+ * bulk actions, row actions, and confirm dialog out of the box.
  *
- * Setara dengan {{ $this->table }} di Filament/Livewire.
+ * Equivalent to {{ $this->table }} in Filament/Livewire.
  */
 import { provide } from 'vue'
 import { Link } from '@inertiajs/vue3'

@@ -7,14 +7,14 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 /**
- * ResourceController trait — the engine yang menghubungkan BaseResource ke Inertia + Eloquent
+ * ResourceController trait — connects BaseResource to Inertia + Eloquent
  *
- * Cara pakai:
+ * Usage:
  *   class UserController extends Controller {
  *       use ResourceController;
  *       protected static string $resource = UserResource::class;
  *       
- *       // (Opsional) override breadcrumb default jika dibutuhkan:
+ *       // (Optional) override default breadcrumbs if needed:
  *       // public function getBreadcrumbs(string $operation, mixed $record = null): array { ... }
  *   }
  */
@@ -392,7 +392,7 @@ trait ResourceController
         $value = $request->input('value');
 
         if (!$column) {
-            abort(400, 'Name kolom diperlukan.');
+            abort(400, 'Column name is required.');
         }
 
         $record->update([$column => $value]);

@@ -64,8 +64,8 @@ abstract class BaseAction
     public function modalCloseByClickingAway(?bool $v = true): static { $this->modalCloseByClickingAway = $v; return $this; }
 
     public function requiresConfirmation(
-        string $title = 'Konfirmasi',
-        string $message = 'Apakah Anda yakin?'
+        string $title = 'Confirmation',
+        string $message = 'Are you sure?'
     ): static {
         $this->requiresConfirmation = true;
         $this->confirmationTitle = $title;
@@ -92,7 +92,7 @@ abstract class BaseAction
             'confirmationMessage'  => $this->confirmationMessage,
             'modalHeading'         => $this->modalHeading ?? $this->confirmationTitle ?? $this->label,
             'modalDescription'     => $this->modalDescription ?? $this->confirmationMessage,
-            'modalSubmitActionLabel'=> $this->modalSubmitActionLabel ?? 'Lanjutkan',
+            'modalSubmitActionLabel'=> $this->modalSubmitActionLabel ?? 'Confirm',
             'modalCancelActionLabel'=> $this->modalCancelActionLabel ?? 'Cancel',
             'modalSubmitAction'    => $this->modalSubmitAction,
             'modalCancelAction'    => $this->modalCancelAction,

@@ -313,7 +313,7 @@ export function useTableState(props) {
       confirmDialog.value = {
         isOpen: true,
         title: action.confirmationTitle || action.label,
-        description: action.confirmationMessage || 'Apakah Anda yakin?',
+        description: action.confirmationMessage || 'Are you sure?',
         onConfirm: () => performCustomAction(action, row, {}),
       }
     } else {

@@ -3,10 +3,10 @@
 namespace ChristYoga123\Vuelament\Components\Actions;
 
 /**
- * ActionGroup — kelompokkan beberapa action dalam satu dropdown
+ * ActionGroup — group multiple actions into a single dropdown
  *
- * Contoh:
- *   ActionGroup::make('Aksi Massal')
+ * Example:
+ *   ActionGroup::make('Bulk Actions')
  *     ->icon('list')
  *     ->actions([
  *         DeleteBulkAction::make(),
@@ -21,12 +21,12 @@ class ActionGroup
     protected ?string $color = null;
     protected array $actions = [];
 
-    public function __construct(string $label = 'Aksi')
+    public function __construct(string $label = 'Actions')
     {
         $this->label = $label;
     }
 
-    public static function make(string $label = 'Aksi'): static
+    public static function make(string $label = 'Actions'): static
     {
         return new static($label);
     }

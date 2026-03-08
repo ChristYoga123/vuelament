@@ -8,12 +8,12 @@ use Illuminate\Support\Str;
 
 class MakeResourceCommand extends Command
 {
-    protected $signature = 'vuelament:resource {name : Name resource (contoh: Product)}
-                            {--model= : Name model (default: sama with nama resource)}
-                            {--panel=Admin : Name panel tujuan (default: Admin)}
+    protected $signature = 'vuelament:resource {name : Name resource (example: Product)}
+                            {--model= : Name model (default: same as resource name)}
+                            {--panel=Admin : Target panel name (default: Admin)}
                             {--simple : Generate ManageXxx (single mode — create/edit in modal)}
-                            {--generate : Auto-generate fields dari database/migration}
-                            {--force : Overwrite jika sudah ada}';
+                            {--generate : Auto-generate fields from database/migration}
+                            {--force : Overwrite if already exists}';
 
     protected $description = 'Generate Vuelament resource module (panel-first, module-based)';
 
@@ -32,12 +32,12 @@ class MakeResourceCommand extends Command
         if ($generate) {
             $columns = $this->introspectModel($model);
             if (empty($columns)) {
-                $this->warn("  ⚠ Tabel tidak ditemukan, generate fields default.");
+                $this->warn("  ⚠ Table not found, generating default fields.");
             } else {
-                $this->info("  📋 Ditemukan " . count($columns) . " kolom dari tabel.");
+                $this->info("  📋 Found " . count($columns) . " columns from table.");
             }
             if ($hasSoftDeletes) {
-                $this->info("  🗑️  SoftDeletes terdeteksi — menambahkan restore/force-delete.");
+                $this->info("  🗑️  SoftDeletes detected — adding restore/force-delete.");
             }
         }
 
@@ -216,7 +216,7 @@ class MakeResourceCommand extends Command
         $path = app_path("Vuelament/{$pathPrefix}{$name}/{$name}Resource.php");
 
         if (file_exists($path) && !$this->option('force')) {
-            $this->error("Resource [{$name}Resource] sudah ada! Gunakan --force untuk overwrite.");
+            $this->error("Resource [{$name}Resource] already exists! Use --force to overwrite.");
             return;
         }
 
@@ -330,9 +330,9 @@ use ChristYoga123\\Vuelament\\Components\\Table\\Filters\\SelectFilter;";
                 SelectFilter::make('trashed')
                     ->label('Status')
                     ->options([
-                        ''          => 'Tanpa Trashed',
-                        'with'      => 'Dengan Trashed',
-                        'only'      => 'Hanya Trashed',
+                        ''          => 'Without Trashed',
+                        'with'      => 'With Trashed',
+                        'only'      => 'Only Trashed',
                     ]),
             ])";
         } else {
@@ -383,7 +383,7 @@ class {$name}Resource extends BaseResource
 {$tableActions}
             ])
             ->bulkActions([
-                ActionGroup::make('Aksi Massal')
+                ActionGroup::make('Bulk Actions')
                     ->icon('list')
                     ->actions([
                         DeleteBulkAction::make(),
@@ -435,14 +435,14 @@ use App\\Models\\{$name};
 class {$name}Service
 {
     /**
-     * Business logic dipanggil via Action.
+     * Business logic called via Action.
      *
-     * Contoh penggunaan di Resource:
+     * Example usage in Resource:
      *   Action::make('publish')
      *       ->form([TextInput::make('title')])
      *       ->action([{$name}Service::class, 'publish'])
      *
-     * Framework akan memanggil:
+     * Framework will call:
      *   app()->call([{$name}Service::class, 'publish'], [
      *       '{$this->lcfirst($name)}' => \$record,
      *       'data' => \$formData,

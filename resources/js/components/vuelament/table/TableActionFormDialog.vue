@@ -112,7 +112,7 @@ const {
             "
           >
             <Loader2 v-if="isSubmittingCustomAction" class="w-4 h-4 animate-spin" />
-            {{ actionFormDialog.action?.modalSubmitActionLabel || 'Lanjutkan' }}
+            {{ actionFormDialog.action?.modalSubmitActionLabel || 'Confirm' }}
           </Button>
         </component>
       </form>

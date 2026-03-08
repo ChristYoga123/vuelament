@@ -5,38 +5,38 @@ namespace ChristYoga123\Vuelament\Traits;
 use ChristYoga123\Vuelament\Core\Panel;
 
 /**
- * HasPanelAccess — trait untuk User model
+ * HasPanelAccess — trait for User model
  *
- * Tambahkan trait ini ke model User untuk mengontrol akses ke panel.
- * Override canAccessPanel() untuk custom logic.
+ * Add this trait to the User model to control panel access.
+ * Override canAccessPanel() for custom logic.
  *
- * Default: user harus punya role yang sama dengan panel ID.
- * Contoh: panel id 'admin' → user harus punya role 'admin' atau 'super_admin'
+ * Default: user must have role matching panel ID.
+ * Example: panel id 'admin' → user must have role 'admin' or 'super_admin'
  */
 trait HasPanelAccess
 {
     /**
-     * Apakah user bisa akses panel ini?
+     * Can the user access this panel?
      *
      * Default logic:
-     * - Cek apakah user punya role 'super_admin' (selalu bisa akses semua panel)
-     * - Atau punya role yang sama dengan panel ID
+     * - Check if user has role 'super_admin' (can always access all panels)
+     * - Or has role matching panel ID
      *
-     * Override method ini untuk custom logic.
+     * Override this method for custom logic.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        // Super admin bisa akses semua panel
+        // Super admin can access all panels
         if (method_exists($this, 'hasRole') && $this->hasRole('super_admin')) {
             return true;
         }
 
-        // Cek role sesuai panel ID (contoh: panel 'admin' → role 'admin')
+        // Check role matching panel ID (example: panel 'admin' → role 'admin')
         if (method_exists($this, 'hasRole')) {
             return $this->hasRole($panel->getId());
         }
 
-        // Kalau tidak pakai spatie/permission, default allow HANYA jika di environment local
+        // If not using spatie/permission, default allow ONLY if in local environment
         return app()->environment('local');
     }
 }

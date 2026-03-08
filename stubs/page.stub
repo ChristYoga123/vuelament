@@ -14,7 +14,7 @@ class {{ name }} extends BasePage
     // protected static ?string $navigationGroup = null;
 
     /**
-     * Data yang di-pass ke Vue component via Inertia
+     * Data passed to the Vue component via Inertia
      */
     public static function getData(?\Illuminate\Database\Eloquent\Model $record = null): array
     {

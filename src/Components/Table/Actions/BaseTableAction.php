@@ -3,9 +3,9 @@
 namespace ChristYoga123\Vuelament\Components\Table\Actions;
 
 /**
- * BaseTableAction — base class untuk row-level table actions
- * Dipisahkan dari BaseAction (page-level) karena konteksnya berbeda:
- * row action menerima record/id dari baris tabel
+ * BaseTableAction — base class for row-level table actions
+ * Separated from BaseAction (page-level) because the context differs:
+ * row actions receive a record/id from the table row
  */
 abstract class BaseTableAction
 {
@@ -94,8 +94,8 @@ abstract class BaseTableAction
     }
 
     public function requiresConfirmation(
-        string $title = 'Konfirmasi',
-        string $message = 'Apakah Anda yakin?'
+        string $title = 'Confirmation',
+        string $message = 'Are you sure?'
     ): static {
         $this->requiresConfirmation = true;
         $this->confirmationTitle = $title;
@@ -111,7 +111,7 @@ abstract class BaseTableAction
             'label'                => $this->label,
             'icon'                 => $this->icon,
             'color'                => $this->color,
-            'url'                  => $this->evaluateUrl(null), // Evaluasi static/argument-less URL untuk config
+            'url'                  => $this->evaluateUrl(null),
             'shouldOpenInNewTab'   => $this->shouldOpenInNewTab,
             'endpoint'             => $this->endpoint,
             'method'               => $this->method,
@@ -123,7 +123,7 @@ abstract class BaseTableAction
             'confirmationMessage'  => $this->confirmationMessage,
             'modalHeading'         => $this->modalHeading ?? $this->confirmationTitle ?? $this->label,
             'modalDescription'     => $this->modalDescription ?? $this->confirmationMessage,
-            'modalSubmitActionLabel'=> $this->modalSubmitActionLabel ?? 'Lanjutkan',
+            'modalSubmitActionLabel'=> $this->modalSubmitActionLabel ?? 'Confirm',
             'modalCancelActionLabel'=> $this->modalCancelActionLabel ?? 'Cancel',
             'modalSubmitAction'    => $this->modalSubmitAction,
             'modalCancelAction'    => $this->modalCancelAction,

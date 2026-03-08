@@ -25,7 +25,7 @@ class PageController
             }
         }
 
-        // Resolve table schema dan data (dengan search, sort, pagination, filter)
+        // Resolve table schema and data (with search, sort, pagination, filter)
         $tableSchemaRaw = null;
         $tableData      = null;
         $tablePageSchema = $pageClass::table();
@@ -33,7 +33,7 @@ class PageController
         if ($tablePageSchema) {
             $tableSchemaRaw = $tablePageSchema->toArray('index');
 
-            // Cari Table component dan jalankan query penuh
+            // Find Table component and run full query
             foreach ($tablePageSchema->getComponents() as $comp) {
                 if ($comp instanceof Table && $comp->getQueryClosure()) {
                     $query = call_user_func($comp->getQueryClosure());
@@ -121,7 +121,7 @@ class PageController
 
         $customBreadcrumbs = $pageClass::getBreadcrumbs();
         if (!empty($customBreadcrumbs)) {
-            // Evaluasi [url => label]
+            // Evaluate [url => label]
             $bcArray = [];
             foreach ($customBreadcrumbs as $url => $label) {
                 $bcArray[] = [
@@ -144,7 +144,7 @@ class PageController
     }
 
     /**
-     * Apply search ke query berdasarkan kolom yang memiliki searchable = true
+     * Apply search to query based on columns that have searchable = true
      */
     protected function applySearch($query, string $search, Table $tableComponent)
     {

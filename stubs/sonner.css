@@ -193,3 +193,10 @@
     opacity: 0;
     pointer-events: none;
 }
+
+/* ── Interactive Elements ─────────────────────────────────────────── */
+
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+    cursor: pointer;
+}

@@ -123,7 +123,7 @@ const {
         <DropdownMenuTrigger as-child>
           <Button variant="outline" size="sm" class="gap-2">
             <Columns3 class="w-4 h-4" />
-            <span class="hidden sm:inline">Kolom</span>
+            <span class="hidden sm:inline">Columns</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-48 p-2 space-y-1">

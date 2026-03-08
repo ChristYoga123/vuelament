@@ -3,12 +3,12 @@
 namespace ChristYoga123\Vuelament\Core;
 
 /**
- * BasePage — base class untuk custom page di Vuelament
+ * BasePage — base class for custom page in Vuelament
  *
- * Extend class ini untuk membuat custom page.
- * Mirip Filament Page — punya slug, title, navigation, dan Vue component.
+ * Extend this class to create custom page.
+ * Similar to Filament Page — has slug, title, navigation, and Vue component.
  *
- * Contoh:
+ * Example:
  *   class Settings extends BasePage
  *   {
  *       protected static string $slug = 'settings';
@@ -49,7 +49,7 @@ abstract class BasePage
     public static function getBreadcrumbs(): array     { return []; }
 
     /**
-     * Daftarkan routing file (terutama kalau dipanggil di Resource::getPages())
+     * Register routing file (especially when called from Resource::getPages())
      */
     public static function route(string $route): PageRegistration
     {
@@ -57,12 +57,12 @@ abstract class BasePage
     }
 
     /**
-     * Dapatkan URL page berdasarkan panel aktif dan parameternya
+     * Get page URL based on active panel and its parameters
      */
     public static function getUrl(array $parameters = []): string
     {
         $panel = app('vuelament.panel')->getId();
-        // Coba temukan rute dengan nama page ini sebagai custom global page
+        // Try to find route with this page name as custom global page
         $routeNames = ["{$panel}." . static::getSlug(), "{$panel}.page." . static::getSlug()];
         
         foreach ($routeNames as $routeName) {
@@ -75,7 +75,7 @@ abstract class BasePage
         if (isset($parameters['resource'])) {
             $resource = $parameters['resource'];
             unset($parameters['resource']);
-            // Mengambil short name dari namespace class sebagai fallback pageName
+            // Get short name from class namespace as fallback pageName
             $pageName = class_basename(static::class); 
             $routeName = "{$panel}.{$resource}.page.{$pageName}";
             if (\Illuminate\Support\Facades\Route::has($routeName)) {
@@ -116,8 +116,8 @@ abstract class BasePage
     }
 
     /**
-     * Data yang di-pass ke Inertia render
-     * Override di subclass untuk inject data
+     * Data passed to Inertia render
+     * Override in subclass to inject data
      */
     public static function getData(?\Illuminate\Database\Eloquent\Model $record = null): array
     {
@@ -125,7 +125,7 @@ abstract class BasePage
     }
 
     /**
-     * Mengembalikan schema Table, mirp seperti Filament's table()
+     * Return Table schema, similar to Filament's table()
      */
     public static function table(): ?PageSchema
     {
@@ -133,7 +133,7 @@ abstract class BasePage
     }
 
     /**
-     * Mengembalikan schema Form, mirip seperti Filament's form()
+     * Return Form schema, similar to Filament's form()
      */
     public static function form(): ?PageSchema
     {
@@ -141,18 +141,18 @@ abstract class BasePage
     }
 
     /**
-     * Return NavigationItem[] — bisa di-spread ke navigation()
+     * Return NavigationItem[] — can be spread to navigation()
      *
-     * Contoh:
+     * Example:
      *   ->navigation([
-     *       NavigationGroup::make('Pengaturan')->items([
+     *       NavigationGroup::make('Settings')->items([
      *           ...SettingsPage::getNavigationItems(),
      *       ]),
      *   ])
      */
     public static function getNavigationItems(): array
     {
-        // Save slug relatif saja — Panel akan prepend path di buildCustomNavigation()
+        // Save relative slug only — Panel will prepend path in buildCustomNavigation()
         return [
             NavigationItem::make(static::getNavigationLabel())
                 ->icon(static::getIcon())

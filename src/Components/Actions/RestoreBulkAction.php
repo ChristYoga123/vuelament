@@ -10,5 +10,5 @@ class RestoreBulkAction extends BaseAction
     protected ?string $color = 'success';
     protected bool $requiresConfirmation = true;
     protected ?string $confirmationTitle = 'Restore Data';
-    protected ?string $confirmationMessage = 'Apakah Anda yakin ingin merestore data yang dipilih?';
+    protected ?string $confirmationMessage = 'Are you sure you want to restore the selected records?';
 }

@@ -185,6 +185,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
 
+## [1.4.1] - 2026-03-08
+
+### Changed
+
+- **Cursor Pointer**: All interactive elements (buttons, action triggers) now display `cursor: pointer` via a global CSS rule injected during installation.
+- **Localization**: Translated all remaining Indonesian text in PHP classes, Vue components, stubs, and docblocks to English for wider accessibility. Affected files include `ActionGroup`, `BaseAction`, `BaseTableAction`, `RestoreAction`, `RestoreBulkAction`, `ResourceController`, `MakeResourceCommand`, `MakePageCommand`, `PageController`, `BasePage`, `Panel`, `NavigationGroup`, `HasPanelAccess`, `BaseForm`, table composables, and all stubs.
+
 ## [1.4.0] - 2026-03-08
 
 ### Added

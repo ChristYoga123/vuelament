@@ -28,22 +28,22 @@ class {{ name }}PanelProvider extends PanelServiceProvider
             ])
 
             // ── Resources ────────────────────────────────
-            // Opsi 1: Manual register
+            // Option 1: Manual register
             // ->resources([
             //     \App\Vuelament\Resources\UserResource::class,
             // ])
-            // Opsi 2: Auto-discover dari directory
+            // Option 2: Auto-discover from directory
             ->discoverResources(app_path('Vuelament/{{ name }}'), 'App\\Vuelament\\{{ name }}')
 
             // ── Custom Pages ─────────────────────────────
-            // Opsi 1: Manual register
+            // Option 1: Manual register
             // ->pages([
             //     \App\Vuelament\Pages\Settings::class,
             // ])
-            // Opsi 2: Auto-discover dari directory
+            // Option 2: Auto-discover from directory
             // ->discoverPages(app_path('Vuelament/Pages'), 'App\\Vuelament\\Pages')
 
-            // ── Navigation (opsional, override auto-navigation) ──
+            // ── Navigation (optional, override auto-navigation) ──
             // ->navigation([
             //     NavigationGroup::make('Master Data')
             //         ->icon('database')

@@ -5,7 +5,7 @@ namespace ChristYoga123\Vuelament\Core;
 /**
  * NavigationGroup — kelompokkan menu navigasi
  *
- * Contoh:
+ * Example:
  *   NavigationGroup::make('Master Data')
  *     ->icon('database')
  *     ->items([

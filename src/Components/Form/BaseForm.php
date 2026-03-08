@@ -53,7 +53,7 @@ abstract class BaseForm extends BaseComponent
     public function getDehydrateStateUsing(): ?\Closure { return $this->dehydrateStateUsing; }
 
     /**
-     * Tambahkan custom validation rules
+     * Add custom validation rules
      */
     public function rules(array $rules): static { $this->customRules = $rules; return $this; }
 
@@ -108,7 +108,7 @@ abstract class BaseForm extends BaseComponent
     }
 
     /**
-     * Build validation rules otomatis dari properti komponen
+     * Build validation rules automatically from component properties
      */
     public function getValidationRules(mixed $recordId = null, string $operation = 'create', ?string $tableFallback = null): array
     {

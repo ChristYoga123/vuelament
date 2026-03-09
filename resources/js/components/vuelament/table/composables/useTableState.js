@@ -1,4 +1,4 @@
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
 
 export function useTableState(props) {
@@ -102,6 +102,10 @@ export function useTableState(props) {
     searchTimeout = setTimeout(() => {
       navigateWithParams({ search: val || undefined })
     }, 500)
+  })
+
+  onUnmounted(() => {
+    clearTimeout(searchTimeout)
   })
 
   // ── Sort ─────────────────────────────────────────────
@@ -352,7 +356,7 @@ export function useTableState(props) {
     router.post(
       `/${panelPath.value}/${pageSlug.value}/${row.id}/action`,
       { action: action.name, data },
-      { preserveScroll: true },
+      { preserveScroll: true, preserveState: true },
     )
   }
 
@@ -363,17 +367,20 @@ export function useTableState(props) {
       router.delete(`${base}/bulk-destroy`, {
         data: { ids: selectedIds.value },
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => { selectedIds.value = [] },
       })
     } else if (action.type === 'RestoreBulkAction') {
       router.post(`${base}/bulk-restore`, { ids: selectedIds.value }, {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => { selectedIds.value = [] },
       })
     } else if (action.type === 'ForceDeleteBulkAction') {
       router.delete(`${base}/bulk-force-delete`, {
         data: { ids: selectedIds.value },
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => { selectedIds.value = [] },
       })
     }

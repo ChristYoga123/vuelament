@@ -37,18 +37,22 @@ const hasFiles = () => {
 // Submit
 const submitting = ref(false)
 const submit = () => {
+  if (submitting.value) return
   submitting.value = true
-  // Use POST with _method spoofing for file uploads
   if (hasFiles()) {
     router.post(`/${panelPath.value}/${props.resource.slug}/${props.record.id}`, {
       _method: 'PUT',
       ...formData.value,
     }, {
       forceFormData: true,
+      preserveState: true,
+      preserveScroll: true,
       onFinish: () => { submitting.value = false },
     })
   } else {
     router.put(`/${panelPath.value}/${props.resource.slug}/${props.record.id}`, formData.value, {
+      preserveState: true,
+      preserveScroll: true,
       onFinish: () => { submitting.value = false },
     })
   }

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'vue-sonner'
@@ -49,8 +49,12 @@ onMounted(() => {
   setTimeout(() => showAll(), 200)
 })
 
-router.on('finish', () => {
+const removeFinishListener = router.on('finish', () => {
   setTimeout(() => showAll(), 50)
+})
+
+onUnmounted(() => {
+  removeFinishListener()
 })
 </script>
 

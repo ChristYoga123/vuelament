@@ -334,7 +334,7 @@ const resetRepeaterDragState = () => {
 
 <template>
   <component :is="applyAutoLayout ? 'div' : TransparentWrapper" :class="[applyAutoLayout ? 'grid grid-cols-1 md:grid-cols-2 gap-4 w-full' : '']">
-    <template v-for="comp in components" :key="comp.name || comp.type + Math.random()">
+    <template v-for="(comp, compIdx) in components" :key="comp.name || `${comp.type}-${compIdx}`">
     
     <!-- Nested Layout Components -->
     <div v-if="comp.type === 'Grid' && isVisible(comp)" :class="[getGridClass(comp.columns), applyAutoLayout ? getAutoColSpan(comp) : '']">

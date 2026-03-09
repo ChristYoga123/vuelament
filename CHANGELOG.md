@@ -185,6 +185,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
 
+## [1.5.0] - 2026-03-08
+
+### Security
+
+- **SQL Injection Prevention**: Sort parameter now validated against allowed sortable columns; `direction` restricted to `asc`/`desc` only.
+- **Arbitrary Column Update**: `updateColumn()` now validates column name against registered toggle columns only, preventing unauthorized column writes.
+- **Mass Assignment Protection**: Replaced unsafe `$request->all()` fallback with `$request->only($fieldNames)`, extracting only form-defined fields.
+
+### Fixed
+
+- **Form State Preservation**: Added `preserveState: true` to Create.vue, Edit.vue, and custom action submissions so user input is preserved on validation errors.
+- **FormRenderer Key Performance**: Replaced `Math.random()` in `:key` binding with deterministic index-based keys, preventing full DOM recreation on every render.
+- **Memory Leaks**: `router.on('finish')` listener cleaned up on unmount in AppWrapper; search debounce timeout cleared in useTableState.
+- **Action Error Handling**: `executeAction()` now wraps callback in try/catch, returning flash error instead of 500 page.
+- **Table State Preservation**: Added `preserveState: true` to custom actions, bulk actions, and delete/restore operations.
+- **DoS Prevention**: `per_page` parameter capped to maximum 100 records.
+
 ## [1.4.1] - 2026-03-08
 
 ### Changed

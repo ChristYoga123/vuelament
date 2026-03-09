@@ -79,13 +79,22 @@ trait ResourceController
             $query = $resource::applyFilters($query, $filters);
         }
 
-        // Apply sort
-        $sortField = $request->input('sort', 'id');
-        $sortDir   = $request->input('direction', 'desc');
+        // Apply sort (validate against allowed sortable columns to prevent SQL injection)
+        $allowedSortColumns = collect($tableComponent ? $tableComponent->getColumns() : [])
+            ->filter(fn($col) => $col->toArray()['sortable'] ?? false)
+            ->map(fn($col) => $col->getName())
+            ->toArray();
+
+        $sortField = in_array($request->input('sort'), $allowedSortColumns, true)
+            ? $request->input('sort')
+            : 'id';
+        $sortDir = in_array(strtolower($request->input('direction', 'desc')), ['asc', 'desc'], true)
+            ? $request->input('direction', 'desc')
+            : 'desc';
         $query->orderBy($sortField, $sortDir);
 
-        // Paginate
-        $perPage = $request->input('per_page', 10);
+        // Paginate (cap per_page to prevent DoS)
+        $perPage = min(max((int) $request->input('per_page', 10), 1), 100);
         $data    = $query->paginate($perPage)->withQueryString();
 
         // Evaluate Table Actions per record
@@ -282,9 +291,10 @@ trait ResourceController
             ? $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make()) 
             : $resource::formSchema();
 
-        // Auto-extract validation rules dari form components
         $rules = $this->extractRulesFromSchema($formSchemaObj, null, 'create');
-        $data  = $rules ? $request->validate($rules) : $request->all();
+        $data  = $rules
+            ? $request->validate($rules)
+            : $request->only($this->extractFieldNames($formSchemaObj));
 
         // Check if there's any state dehydrator
         $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'create');
@@ -358,9 +368,10 @@ trait ResourceController
             ? $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make()) 
             : (method_exists($resource, 'editSchema') ? $resource::editSchema() : $resource::formSchema());
 
-        // Auto-extract validation rules dari form components (pass record ID untuk unique ignore)
         $rules = $this->extractRulesFromSchema($formSchemaObj, $id, 'edit');
-        $data  = $rules ? $request->validate($rules) : $request->all();
+        $data  = $rules
+            ? $request->validate($rules)
+            : $request->only($this->extractFieldNames($formSchemaObj));
 
         // Check if there's any state dehydrator
         $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'edit');
@@ -395,7 +406,22 @@ trait ResourceController
             abort(400, 'Column name is required.');
         }
 
-        $record->update([$column => $value]);
+        $tableComponent = method_exists($resource, 'table')
+            ? $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make())
+            : null;
+
+        $allowedColumns = collect($tableComponent?->getColumns() ?? [])
+            ->filter(fn($col) => ($col->toArray()['type'] ?? '') === 'toggle')
+            ->map(fn($col) => $col->getName())
+            ->toArray();
+
+        if (!in_array($column, $allowedColumns, true)) {
+            abort(403, 'Column is not editable.');
+        }
+
+        $this->executeWithTransaction(function () use ($record, $column, $value) {
+            $record->update([$column => $value]);
+        });
 
         return back(303);
     }
@@ -555,9 +581,14 @@ trait ResourceController
         }
 
         if (method_exists($action, 'execute')) {
-            $this->executeWithTransaction(function () use ($action, $record, $actionData) {
-                $action->execute($record, $actionData);
-            });
+            try {
+                $this->executeWithTransaction(function () use ($action, $record, $actionData) {
+                    $action->execute($record, $actionData);
+                });
+            } catch (\Throwable $e) {
+                report($e);
+                return back(303)->with('error', 'Action failed: ' . $e->getMessage());
+            }
 
             $hasCustomNotification = !empty(session()->get('_vuelament_notifications', []));
             if (!$hasCustomNotification) {
@@ -728,5 +759,17 @@ trait ResourceController
                 $this->flattenComponents($component->getComponents(), $flat);
             }
         }
+    }
+
+    protected function extractFieldNames(mixed $schema): array
+    {
+        $flat = [];
+        $this->flattenComponents($schema->getComponents(), $flat);
+
+        return collect($flat)
+            ->map(fn($c) => $c->getName())
+            ->filter()
+            ->values()
+            ->toArray();
     }
 }

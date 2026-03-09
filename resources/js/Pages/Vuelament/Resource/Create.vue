@@ -39,9 +39,12 @@ const hasFiles = () => {
 // Submit
 const submitting = ref(false)
 const submit = () => {
+  if (submitting.value) return
   submitting.value = true
   router.post(`/${panelPath.value}/${props.resource.slug}`, formData.value, {
     forceFormData: hasFiles(),
+    preserveState: true,
+    preserveScroll: true,
     onFinish: () => { submitting.value = false },
   })
 }

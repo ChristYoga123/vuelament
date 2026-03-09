@@ -32,18 +32,7 @@ trait ResourceController
         $resource = static::$resource;
         $model       = $resource::getModel();
         $query       = $resource::getQuery();
-        if (method_exists($resource, 'table')) {
-            $tableComponent = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
-        } else {
-            $pageSchema  = $resource::tableSchema();
-            $tableComponent = null;
-            foreach ($pageSchema->getComponents() as $comp) {
-                if ($comp instanceof \ChristYoga123\Vuelament\Components\Table\Table) {
-                    $tableComponent = $comp;
-                    break;
-                }
-            }
-        }
+        $tableComponent = $this->resolveTable($resource);
 
         // Jalankan custom query dari Table jika disediakan
         if ($tableComponent && $tableComponent->getQueryClosure()) {
@@ -205,17 +194,16 @@ trait ResourceController
     public function create()
     {
         $resource   = static::$resource;
-        
+        $formSchemaObj = $this->resolveFormSchema($resource, 'create');
+
         if (method_exists($resource, 'form')) {
-            $form = $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
             $formSchema = [
                 'type' => 'page',
                 'title' => 'Create ' . $resource::getLabel(),
-                'components' => $form->toArray('create'),
+                'components' => $formSchemaObj->toArray('create'),
             ];
         } else {
-            // Backward compatibility
-            $formSchema = $resource::formSchema()->toArray('create');
+            $formSchema = $formSchemaObj->toArray('create');
         }
         $panel = app('vuelament.panel');
 
@@ -287,19 +275,14 @@ trait ResourceController
         $model    = $resource::getModel();
         $panelId  = app('vuelament.panel')->getId();
 
-        $formSchemaObj = method_exists($resource, 'form') 
-            ? $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make()) 
-            : $resource::formSchema();
+        $formSchemaObj = $this->resolveFormSchema($resource, 'create');
 
         $rules = $this->extractRulesFromSchema($formSchemaObj, null, 'create');
         $data  = $rules
             ? $request->validate($rules)
             : $request->only($this->extractFieldNames($formSchemaObj));
 
-        // Check if there's any state dehydrator
         $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'create');
-
-        // Hook: before create
         $data = $resource::mutateFormDataBeforeCreate($data);
 
         $record = $this->executeWithTransaction(function () use ($model, $data) {
@@ -321,16 +304,16 @@ trait ResourceController
         $resource   = static::$resource;
         $model      = $resource::getModel();
         $record     = $model::findOrFail($id);
+        $formSchemaObj = $this->resolveFormSchema($resource, 'edit', $id);
+
         if (method_exists($resource, 'form')) {
-            $form = $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
             $formSchema = [
                 'type' => 'page',
                 'title' => 'Edit ' . $resource::getLabel(),
-                'components' => $form->toArray('edit'),
+                'components' => $formSchemaObj->toArray('edit'),
             ];
         } else {
-            // Backward compatibility
-            $formSchema = method_exists($resource, 'editSchema') ? $resource::editSchema()->toArray('edit') : $resource::formSchema()->toArray('edit');
+            $formSchema = $formSchemaObj->toArray('edit');
         }
         $panel = app('vuelament.panel');
 
@@ -364,19 +347,14 @@ trait ResourceController
         $record   = $model::findOrFail($id);
         $panelId  = app('vuelament.panel')->getId();
 
-        $formSchemaObj = method_exists($resource, 'form') 
-            ? $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make()) 
-            : (method_exists($resource, 'editSchema') ? $resource::editSchema() : $resource::formSchema());
+        $formSchemaObj = $this->resolveFormSchema($resource, 'edit', $id);
 
         $rules = $this->extractRulesFromSchema($formSchemaObj, $id, 'edit');
         $data  = $rules
             ? $request->validate($rules)
             : $request->only($this->extractFieldNames($formSchemaObj));
 
-        // Check if there's any state dehydrator
         $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'edit');
-
-        // Hook: before save
         $data = $resource::mutateFormDataBeforeSave($data);
 
         $this->executeWithTransaction(function () use ($record, $data) {
@@ -406,9 +384,7 @@ trait ResourceController
             abort(400, 'Column name is required.');
         }
 
-        $tableComponent = method_exists($resource, 'table')
-            ? $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make())
-            : null;
+        $tableComponent = $this->resolveTable($resource);
 
         $allowedColumns = collect($tableComponent?->getColumns() ?? [])
             ->filter(fn($col) => ($col->toArray()['type'] ?? '') === 'toggle')
@@ -545,14 +521,7 @@ trait ResourceController
         $actionName = $request->input('action');
         $actionData = $request->input('data', []);
 
-        // Find the action from Table component
-        if (method_exists($resource, 'table')) {
-            $tableComponent = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
-        } else {
-            $tableSchema = $resource::tableSchema();
-            $tableComponent = collect($tableSchema->getComponents())
-                ->first(fn($c) => $c instanceof \ChristYoga123\Vuelament\Components\Table\Table);
-        }
+        $tableComponent = $this->resolveTable($resource);
 
         if (!$tableComponent) {
             return back(303)->with('error', 'Table not found in schema.');
@@ -629,6 +598,35 @@ trait ResourceController
 
     // ── Private helpers ──────────────────────────────────
 
+    protected function resolveTable(string $resource): ?\ChristYoga123\Vuelament\Components\Table\Table
+    {
+        if (method_exists($resource, 'table')) {
+            return $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make());
+        }
+
+        $schema = $resource::tableSchema();
+        foreach ($schema->getComponents() as $comp) {
+            if ($comp instanceof \ChristYoga123\Vuelament\Components\Table\Table) {
+                return $comp;
+            }
+        }
+
+        return null;
+    }
+
+    protected function resolveFormSchema(string $resource, string $operation = 'create', mixed $recordId = null): mixed
+    {
+        if (method_exists($resource, 'form')) {
+            return $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
+        }
+
+        if ($operation === 'edit' && method_exists($resource, 'editSchema')) {
+            return $resource::editSchema();
+        }
+
+        return $resource::formSchema();
+    }
+
     protected function executeWithTransaction(\Closure $callback)
     {
         if (app('vuelament.panel')->hasDatabaseTransactions()) {
@@ -640,14 +638,10 @@ trait ResourceController
 
     protected function applySearch($query, string $search, string $resource)
     {
-        if (method_exists($resource, 'table')) {
-            $tableComponent = $resource::table(\ChristYoga123\Vuelament\Components\Table\Table::make())->toArray('index');
-        } else {
-            $tableSchema = $resource::tableSchema()->toArray();
-            $tableComponent = collect($tableSchema['components'] ?? [])->firstWhere('type', 'table');
-        }
-        
-        $searchableColumns = collect($tableComponent['columns'] ?? [])
+        $table = $this->resolveTable($resource);
+        $tableArr = $table ? $table->toArray('index') : [];
+
+        $searchableColumns = collect($tableArr['columns'] ?? [])
             ->filter(fn($col) => ($col['searchable'] ?? false) === true)
             ->pluck('name')
             ->toArray();

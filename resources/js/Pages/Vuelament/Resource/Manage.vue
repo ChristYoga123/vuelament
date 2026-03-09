@@ -34,7 +34,7 @@ const editId = ref(null)
 
 // Form data
 const formData = ref({})
-const errors = computed(() => page.props.errors || {})
+const formErrors = ref({})
 const components = computed(() => props.formSchema?.components || [])
 
 // Check if form has files
@@ -44,10 +44,9 @@ const hasFiles = () => {
   )
 }
 
-// Reset form
 const resetForm = () => {
   formData.value = {}
-  Object.keys(errors.value).forEach(key => delete errors.value[key])
+  formErrors.value = {}
 }
 
 // Open Create Modal
@@ -82,7 +81,9 @@ const openEditModal = (row) => {
 // Submit
 const submitting = ref(false)
 const submit = () => {
+  if (submitting.value) return
   submitting.value = true
+  formErrors.value = {}
   const route = modalMode.value === 'create' 
         ? `/${panelPath.value}/${props.resource.slug}`
         : `/${panelPath.value}/${props.resource.slug}/${editId.value}`
@@ -96,6 +97,9 @@ const submit = () => {
     onSuccess: () => {
         isModalOpen.value = false
         resetForm()
+    },
+    onError: (errs) => {
+        formErrors.value = { ...errs }
     },
     onFinish: () => { submitting.value = false },
   })
@@ -124,7 +128,7 @@ const provideEditModalFn = openEditModal
         </DialogHeader>
 
         <form @submit.prevent="submit" class="space-y-4 py-4">
-          <FormRenderer :components="components" :formData="formData" :errors="errors" />
+          <FormRenderer :components="components" :formData="formData" :errors="formErrors" />
 
           <DialogFooter class="pt-4">
             <Button type="button" variant="outline" @click="isModalOpen = false" :disabled="submitting">

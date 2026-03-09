@@ -69,11 +69,14 @@ const logout = () => {
   router.post(`/${panel.value.path || 'admin'}/logout`)
 }
 
-// Resolve Lucide icon component dari string name (misal 'users' → Users, 'layout-dashboard' → LayoutDashboard)
+const iconCache = new Map()
 const resolveIcon = (name) => {
   if (!name) return Circle
+  if (iconCache.has(name)) return iconCache.get(name)
   const pascalCase = name.replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase())
-  return icons[pascalCase] || Circle
+  const icon = icons[pascalCase] || Circle
+  iconCache.set(name, icon)
+  return icon
 }
 
 // Dark mode

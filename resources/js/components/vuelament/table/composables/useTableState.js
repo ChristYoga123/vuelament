@@ -1,5 +1,6 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
+import { toast } from 'vue-sonner'
 
 export function useTableState(props) {
   const page = usePage()
@@ -226,6 +227,10 @@ export function useTableState(props) {
     onConfirm: () => {},
   })
 
+  const onActionError = () => {
+    toast.error('Error', { description: 'Operation failed. Please try again.' })
+  }
+
   const deleteRecord = (id, action = null) => {
     confirmDialog.value = {
       isOpen: true,
@@ -236,6 +241,8 @@ export function useTableState(props) {
       onConfirm: () => {
         router.delete(`/${panelPath.value}/${pageSlug.value}/${id}`, {
           preserveScroll: true,
+          preserveState: true,
+          onError: onActionError,
         })
       },
     }
@@ -253,7 +260,7 @@ export function useTableState(props) {
         router.post(
           `/${panelPath.value}/${pageSlug.value}/${id}/restore`,
           {},
-          { preserveScroll: true },
+          { preserveScroll: true, preserveState: true, onError: onActionError },
         )
       },
     }
@@ -270,7 +277,7 @@ export function useTableState(props) {
       onConfirm: () => {
         router.delete(
           `/${panelPath.value}/${pageSlug.value}/${id}/force`,
-          { preserveScroll: true },
+          { preserveScroll: true, preserveState: true, onError: onActionError },
         )
       },
     }
@@ -336,7 +343,6 @@ export function useTableState(props) {
         preserveScroll: true,
         preserveState: true,
         onError: (errors) => {
-          isSubmittingCustomAction.value = false
           const mapped = {}
           for (const key in errors) {
             mapped[key.replace('data.', '')] = errors[key]
@@ -344,9 +350,11 @@ export function useTableState(props) {
           actionFormErrors.value = mapped
         },
         onSuccess: () => {
-          isSubmittingCustomAction.value = false
           actionFormDialog.value.isOpen = false
           actionFormErrors.value = {}
+        },
+        onFinish: () => {
+          isSubmittingCustomAction.value = false
         },
       },
     )
@@ -356,7 +364,7 @@ export function useTableState(props) {
     router.post(
       `/${panelPath.value}/${pageSlug.value}/${row.id}/action`,
       { action: action.name, data },
-      { preserveScroll: true, preserveState: true },
+      { preserveScroll: true, preserveState: true, onError: onActionError },
     )
   }
 
@@ -369,12 +377,14 @@ export function useTableState(props) {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => { selectedIds.value = [] },
+        onError: onActionError,
       })
     } else if (action.type === 'RestoreBulkAction') {
       router.post(`${base}/bulk-restore`, { ids: selectedIds.value }, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => { selectedIds.value = [] },
+        onError: onActionError,
       })
     } else if (action.type === 'ForceDeleteBulkAction') {
       router.delete(`${base}/bulk-force-delete`, {
@@ -382,6 +392,7 @@ export function useTableState(props) {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => { selectedIds.value = [] },
+        onError: onActionError,
       })
     }
   }

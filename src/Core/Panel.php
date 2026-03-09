@@ -42,7 +42,7 @@ class Panel
     protected array $widgets = [];
     protected array $navigation = [];
     protected array $plugins = [];
-    protected bool $databaseTransactions = false;
+    protected bool $databaseTransactions = true;
     protected array $middleware = ['web'];
     protected array $authMiddleware = [\ChristYoga123\Vuelament\Http\Middleware\Authenticate::class];
     protected array $guestMiddleware = [\ChristYoga123\Vuelament\Http\Middleware\RedirectIfAuthenticated::class];

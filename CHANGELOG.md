@@ -185,6 +185,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
 
+## [1.5.1] - 2026-03-08
+
+### Changed
+
+- **DB Transactions enabled by default**: `databaseTransactions` now defaults to `true` on Panel, ensuring data integrity across all CRUD operations.
+
+### Improved
+
+- **DRY Backend**: Extracted `resolveTable()` and `resolveFormSchema()` helper methods, eliminating 7 duplicated table/form resolution patterns in ResourceController.
+- **Icon Memoization**: `resolveIcon()` in DashboardLayout now caches resolved icon components, avoiding repeated regex + lookup on every render.
+- **Error Handling**: All destructive table operations (delete, restore, force-delete, bulk actions, custom actions) now have `onError` callbacks that show a toast notification instead of failing silently.
+- **Manage Modal Errors**: Replaced direct computed `errors` mutation with local `formErrors` ref + proper `onError`/`onSuccess` callbacks. Added double-submit guard.
+- **File Size Validation**: FormRenderer now validates file size client-side before processing. Configurable via `maxSize` prop (defaults to 10MB).
+- **Interval Cleanup**: `setInterval` timers for non-image file progress simulation are now tracked and cleared on component unmount.
+
 ## [1.5.0] - 2026-03-08
 
 ### Security

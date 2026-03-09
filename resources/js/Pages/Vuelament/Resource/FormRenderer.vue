@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, toRef, onMounted } from 'vue'
+import { ref, computed, toRef, onMounted, onUnmounted } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -63,6 +63,7 @@ const isTruthy = (val) => {
 const filePreviews = ref({})
 const fileProgress = ref({})
 const dragOver = ref({})
+const activeIntervals = []
 
 // Reorder state
 const reorderDragIndex = ref(null)
@@ -111,8 +112,19 @@ const handleFileDrop = (event, comp) => {
   processFiles(files, comp)
 }
 
+const MAX_FILE_SIZE_KB = 10240 // 10 MB default
+
 const processFiles = (files, comp) => {
-  const fileList = Array.from(files)
+  const maxBytes = (comp.maxSize || MAX_FILE_SIZE_KB) * 1024
+  const fileList = Array.from(files).filter(file => {
+    if (file.size > maxBytes) {
+      alert(`File "${file.name}" exceeds the maximum size of ${comp.maxSize || MAX_FILE_SIZE_KB} KB.`)
+      return false
+    }
+    return true
+  })
+
+  if (!fileList.length) return
 
   if (comp.multiple) {
     const existing = props.formData[comp.name] || []
@@ -121,7 +133,6 @@ const processFiles = (files, comp) => {
     props.formData[comp.name] = fileList[0]
   }
 
-  // Generate previews
   fileList.forEach(file => {
     if (file.type.startsWith('image/')) {
       const reader = new FileReader()
@@ -143,7 +154,6 @@ const processFiles = (files, comp) => {
       }
       reader.readAsDataURL(file)
     } else {
-      // Simulate progress for non-image files
       fileProgress.value[comp.name] = 0
       let progress = 0
       const interval = setInterval(() => {
@@ -154,6 +164,7 @@ const processFiles = (files, comp) => {
           setTimeout(() => { fileProgress.value[comp.name] = null }, 500)
         }
       }, 100)
+      activeIntervals.push(interval)
     }
   })
 }
@@ -259,9 +270,13 @@ const initRepeaterDefaults = (components) => {
   walk(components)
 }
 
-// Run on mount
 onMounted(() => {
   initRepeaterDefaults(props.components)
+})
+
+onUnmounted(() => {
+  activeIntervals.forEach(id => clearInterval(id))
+  activeIntervals.length = 0
 })
 
 const repeaterRemove = (fieldName, index) => {

@@ -5,13 +5,14 @@ namespace ChristYoga123\Vuelament\Commands;
 use ChristYoga123\Vuelament\Vuelament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class MakeUserCommand extends Command
 {
     protected $signature = 'vuelament:user
                             {--name= : Name user}
                             {--email= : Email user}
-                            {--password= : Password user}
+                            {--password= : Password user (WARNING: akan tersimpan di shell history! Biarkan kosong agar ditanya secara interaktif)}
                             {--role=super_admin : Role yang diberikan (default: super_admin)}
                             {--panel= : Panel ID (default: dari config vuelament.default_panel)}';
 
@@ -49,13 +50,30 @@ class MakeUserCommand extends Command
         $panel = $registry->getCurrentPanel();
 
         // ── Gather user data ─────────────────────────
-        $name     = $this->option('name') ?: $this->ask('Name');
-        $email    = $this->option('email') ?: $this->ask('Email');
+        $name  = $this->option('name')  ?: $this->ask('Name');
+        $email = $this->option('email') ?: $this->ask('Email');
+        $role  = $this->option('role');
+
+        // [FIX] Warn jika password diberikan via CLI argument
+        // karena akan tersimpan di shell history (bash_history, zsh_history, dll.)
+        if ($this->option('password')) {
+            $this->warn('  ⚠  WARNING: Passing --password via CLI argument is insecure.');
+            $this->warn('     The password may be stored in your shell history (~/.bash_history, ~/.zsh_history).');
+            $this->warn('     Consider removing it from history after this command.');
+
+            Log::warning('Vuelament: vuelament:user was called with --password argument. Password may be stored in shell history.');
+        }
+
         $password = $this->option('password') ?: $this->secret('Password');
-        $role     = $this->option('role');
 
         $userModel = $panel->getUserModel()
             ?: config('auth.providers.users.model', \App\Models\User::class);
+
+        // Validasi email
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->error("Email [{$email}] tidak valid.");
+            return self::FAILURE;
+        }
 
         // Cek apakah email sudah ada
         $user = $userModel::where('email', $email)->first();
@@ -64,6 +82,7 @@ class MakeUserCommand extends Command
             $this->warn("User [{$email}] sudah ada.");
 
             if ($this->confirm('Assign role and update password?', true)) {
+                // [FIX] Sudah pakai Hash::make — konsisten dengan register()
                 $user->update(['password' => Hash::make($password)]);
                 $this->assignRole($user, $role);
                 $this->info("✅ User [{$email}] di-update and role [{$role}] di-assign.");
@@ -103,4 +122,3 @@ class MakeUserCommand extends Command
         $user->assignRole($role);
     }
 }
-

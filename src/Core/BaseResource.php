@@ -42,6 +42,27 @@ abstract class BaseResource
         return [];
     }
 
+    // ── Authorization Hooks ──────────────────────────────
+    //
+    // Override method ini di resource class untuk implementasi
+    // fine-grained access control per resource/record.
+    //
+    // Contoh:
+    //   public static function canCreate(): bool
+    //   {
+    //       return auth()->user()->hasRole('admin');
+    //   }
+
+    public static function canViewAny(): bool   { return true; }
+    public static function canCreate(): bool    { return true; }
+    public static function canView($record): bool       { return true; }
+    public static function canEdit($record): bool       { return true; }
+    public static function canDelete($record): bool     { return true; }
+    public static function canForceDelete($record): bool { return static::canDelete($record); }
+    public static function canRestore($record): bool    { return true; }
+
+    // ── Query ────────────────────────────────────────────
+
     public static function getQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return static::getModel()::query();

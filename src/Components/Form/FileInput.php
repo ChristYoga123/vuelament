@@ -15,16 +15,37 @@ class FileInput extends BaseForm
     protected bool|\Closure $reorderable = false;
 
     public function multiple(bool|\Closure $v = true): static { $this->multiple = $v; return $this; }
-    public function acceptedFileTypes(array $v): static { $this->acceptedFileTypes = $v; return $this; }
     public function maxSize(int $v): static { $this->maxSize = $v; return $this; }
     public function maxFiles(int $v): static { $this->maxFiles = $v; return $this; }
     public function directory(string $v): static { $this->directory = $v; return $this; }
     public function reorderable(bool|\Closure $v = true): static { $this->reorderable = $v; return $this; }
 
+    public function acceptedFileTypes(array $v): static
+    {
+        // [FIX] Filter out SVG — can contain embedded JavaScript (stored XSS)
+        $this->acceptedFileTypes = array_filter(
+            $v,
+            fn($mime) => $mime !== 'image/svg+xml'
+        );
+
+        return $this;
+    }
+
     public function image(): static
     {
         $this->image = true;
-        $this->acceptedFileTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+
+        // [FIX] SVG dihapus dari daftar — SVG bisa mengandung <script> / JS event handlers
+        // yang menyebabkan Stored XSS jika file disajikan inline di browser.
+        // Gunakan acceptedFileTypes(['image/svg+xml']) secara eksplisit jika memang diperlukan
+        // dan pastikan file disajikan dengan header Content-Disposition: attachment.
+        $this->acceptedFileTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+        ];
+
         return $this;
     }
 
@@ -34,11 +55,24 @@ class FileInput extends BaseForm
         return $this->image();
     }
 
+    /**
+     * Izinkan SVG secara eksplisit.
+     * PERINGATAN: SVG dapat mengandung JavaScript. Pastikan file disajikan
+     * dengan header Content-Disposition: attachment, BUKAN inline.
+     */
+    public function allowSvg(): static
+    {
+        $this->acceptedFileTypes[] = 'image/svg+xml';
+        $this->acceptedFileTypes   = array_unique($this->acceptedFileTypes);
+
+        return $this;
+    }
+
     protected function schema(string $operation = 'create'): array
     {
         return [
             'multiple'          => $this->evaluate($this->multiple, $operation),
-            'acceptedFileTypes' => $this->acceptedFileTypes,
+            'acceptedFileTypes' => array_values($this->acceptedFileTypes),
             'maxSize'           => $this->maxSize,
             'maxFiles'          => $this->maxFiles,
             'directory'         => $this->directory,

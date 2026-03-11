@@ -46,24 +46,39 @@ class PageController
                             $query = $this->applySearch($query, $search, $comp);
                         }
 
-                        // Apply sort
+                        // [FIX] Sort — validate column against allowlist to prevent info disclosure
                         $sortField = $request->input('sort');
                         $sortDir   = $request->input('direction', 'desc');
+
                         if ($sortField) {
-                            $query->orderBy($sortField, $sortDir);
+                            $allowedSortColumns = collect($comp->getColumns())
+                                ->filter(fn($col) => $col->toArray()['sortable'] ?? false)
+                                ->map(fn($col) => $col->getName())
+                                ->toArray();
+
+                            // Only apply sort if column is in allowlist
+                            if (in_array($sortField, $allowedSortColumns, true)) {
+                                // [FIX] Validate direction
+                                $safeDir = in_array(strtolower($sortDir), ['asc', 'desc'], true)
+                                    ? strtolower($sortDir)
+                                    : 'desc';
+
+                                $query->orderBy($sortField, $safeDir);
+                            }
                         }
 
                         // Paginate atau get all
                         $tableArray = $comp->toArray();
                         if ($tableArray['paginated'] ?? true) {
-                            $perPage   = $request->input('per_page', $tableArray['perPage'] ?? 10);
+                            // [FIX] Cap per_page 1–100 untuk cegah DoS (sama seperti ResourceController)
+                            $perPage   = min(max((int) $request->input('per_page', $tableArray['perPage'] ?? 10), 1), 100);
                             $tableData = $query->paginate($perPage)->withQueryString();
-                            
+
                             $tableData->getCollection()->transform(function ($r) use ($comp) {
                                 $vActions = [];
                                 foreach ($comp->getActions() as $action) {
                                     $vActions[$action->getName()] = [
-                                        'url' => $action->evaluateUrl($r),
+                                        'url'               => $action->evaluateUrl($r),
                                         'shouldOpenInNewTab' => $action->toArray()['shouldOpenInNewTab'] ?? false,
                                     ];
                                 }
@@ -76,7 +91,7 @@ class PageController
                                 $vActions = [];
                                 foreach ($comp->getActions() as $action) {
                                     $vActions[$action->getName()] = [
-                                        'url' => $action->evaluateUrl($r),
+                                        'url'               => $action->evaluateUrl($r),
                                         'shouldOpenInNewTab' => $action->toArray()['shouldOpenInNewTab'] ?? false,
                                     ];
                                 }
@@ -99,7 +114,7 @@ class PageController
             $pageClass::getData($record),
             [
                 'panel' => $panel->toArray(),
-                'auth'  => ['user' => $request->user()],
+                'auth'  => ['user' => $this->safeAuthUser($request)],  // [FIX] only safe fields
                 'page'  => [
                     'title'       => $pageClass::getTitle(),
                     'slug'        => $pageClass::getSlug(),
@@ -121,26 +136,50 @@ class PageController
 
         $customBreadcrumbs = $pageClass::getBreadcrumbs();
         if (!empty($customBreadcrumbs)) {
-            // Evaluate [url => label]
             $bcArray = [];
             foreach ($customBreadcrumbs as $url => $label) {
                 $bcArray[] = [
-                    'url' => is_numeric($url) ? null : $url,
+                    'url'   => is_numeric($url) ? null : $url,
                     'label' => $label,
                 ];
             }
             $data['breadcrumbs'] = $bcArray;
         } else {
-            // Default Vuelament
-            $data['breadcrumbs'] = [
+            $data['breadcrumbs'] = array_values(array_filter([
                 ['label' => 'Dashboard', 'url' => '/' . $panel->getPath()],
-                $resourceClass ? ['label' => $resourceClass::getLabel(), 'url' => $resourceClass::getUrl('index')] : null,
+                $resourceClass
+                    ? ['label' => $resourceClass::getLabel(), 'url' => $resourceClass::getUrl('index')]
+                    : null,
                 ['label' => $pageClass::getTitle(), 'url' => null],
-            ];
-            $data['breadcrumbs'] = array_values(array_filter($data['breadcrumbs']));
+            ]));
         }
 
         return Inertia::render($pageClass::getView(), $data);
+    }
+
+    /**
+     * [FIX] Return hanya field aman dari user model ke Inertia.
+     * Cegah seluruh model (beserta field sensitif) terekspos ke frontend.
+     */
+    protected function safeAuthUser(Request $request): ?array
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        if (method_exists($user, 'toInertiaArray')) {
+            return $user->toInertiaArray();
+        }
+
+        return array_filter([
+            'id'                => $user->getKey(),
+            'name'              => $user->getAttribute('name'),
+            'email'             => $user->getAttribute('email'),
+            'avatar'            => $user->getAttribute('avatar'),
+            'profile_photo_url' => $user->getAttribute('profile_photo_url'),
+        ], fn($v) => $v !== null);
     }
 
     /**
@@ -148,7 +187,7 @@ class PageController
      */
     protected function applySearch($query, string $search, Table $tableComponent)
     {
-        $tableArray = $tableComponent->toArray();
+        $tableArray        = $tableComponent->toArray();
         $searchableColumns = collect($tableArray['columns'] ?? [])
             ->filter(fn($col) => ($col['searchable'] ?? false) === true)
             ->pluck('name')
@@ -157,7 +196,7 @@ class PageController
         if (!empty($searchableColumns)) {
             $query->where(function ($q) use ($searchableColumns, $search) {
                 foreach ($searchableColumns as $col) {
-                    $q->orWhere($col, 'like', "%{$search}%");
+                    $q->orWhere($col, 'like', '%' . $search . '%');
                 }
             });
         }

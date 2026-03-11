@@ -9,32 +9,66 @@ use Inertia\Inertia;
 /**
  * ResourceController trait — connects BaseResource to Inertia + Eloquent
  *
+ * [FIX] getResourceClass() menggantikan static::$resource langsung
+ *       agar aman di Octane (tidak ada static property race condition).
+ *
  * Usage:
  *   class UserController extends Controller {
  *       use ResourceController;
  *       protected static string $resource = UserResource::class;
- *       
- *       // (Optional) override default breadcrumbs if needed:
- *       // public function getBreadcrumbs(string $operation, mixed $record = null): array { ... }
  *   }
  */
 trait ResourceController
 {
     /**
-     * Override di controller untuk menentukan resource class
+     * [FIX] Gunakan method ini (bukan static::$resource langsung) di semua method.
+     * ResourceRouteController meng-override ini dengan instance property.
+     * Controller biasa tetap menggunakan static::$resource via late-static binding.
      */
-    // protected static string $resource = SomeResource::class;
+    protected function getResourceClass(): string
+    {
+        return static::$resource;
+    }
+
+    /**
+     * [FIX] Return hanya field aman dari user model ke Inertia.
+     * Cegah seluruh model (beserta field sensitif) terekspos ke frontend.
+     */
+    protected function safeAuthUser(): ?array
+    {
+        $user = request()->user();
+        if (!$user) {
+            return null;
+        }
+
+        if (method_exists($user, 'toInertiaArray')) {
+            return $user->toInertiaArray();
+        }
+
+        return array_filter([
+            'id'                => $user->getKey(),
+            'name'              => $user->getAttribute('name'),
+            'email'             => $user->getAttribute('email'),
+            'avatar'            => $user->getAttribute('avatar'),
+            'profile_photo_url' => $user->getAttribute('profile_photo_url'),
+        ], fn($v) => $v !== null);
+    }
 
     // ── Index (list + table) ─────────────────────────────
 
     public function index(Request $request)
     {
-        $resource = static::$resource;
-        $model       = $resource::getModel();
-        $query       = $resource::getQuery();
+        $resource = $this->getResourceClass();
+
+        // [FIX] Authorization check
+        if (!$resource::canViewAny()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $query          = $resource::getQuery();
         $tableComponent = $this->resolveTable($resource);
 
-        // Jalankan custom query dari Table jika disediakan
+        // Custom query dari Table jika disediakan
         if ($tableComponent && $tableComponent->getQueryClosure()) {
             $customQuery = call_user_func($tableComponent->getQueryClosure(), $query);
             if ($customQuery instanceof \Illuminate\Database\Eloquent\Builder ||
@@ -68,7 +102,7 @@ trait ResourceController
             $query = $resource::applyFilters($query, $filters);
         }
 
-        // Apply sort (validate against allowed sortable columns to prevent SQL injection)
+        // [FIX] Sort — validate against allowed sortable columns to prevent info disclosure
         $allowedSortColumns = collect($tableComponent ? $tableComponent->getColumns() : [])
             ->filter(fn($col) => $col->toArray()['sortable'] ?? false)
             ->map(fn($col) => $col->getName())
@@ -77,16 +111,18 @@ trait ResourceController
         $sortField = in_array($request->input('sort'), $allowedSortColumns, true)
             ? $request->input('sort')
             : 'id';
+
         $sortDir = in_array(strtolower($request->input('direction', 'desc')), ['asc', 'desc'], true)
             ? $request->input('direction', 'desc')
             : 'desc';
+
         $query->orderBy($sortField, $sortDir);
 
-        // Paginate (cap per_page to prevent DoS)
+        // [FIX] Paginate — cap per_page 1–100 untuk cegah DoS
         $perPage = min(max((int) $request->input('per_page', 10), 1), 100);
         $data    = $query->paginate($perPage)->withQueryString();
 
-        // Evaluate Table Actions per record
+        // Evaluate Table Actions & Columns per record
         if ($tableComponent) {
             $tableColumns = $tableComponent->getColumns();
             $data->getCollection()->transform(function ($record) use ($tableComponent, $tableColumns) {
@@ -97,82 +133,78 @@ trait ResourceController
                     ];
                 }
                 $record->setAttribute('_v_actions', $vActions);
-                
+
                 $vColumns = [];
                 foreach ($tableColumns as $col) {
                     $val = $record->{$col->getName()};
+
                     if ($col->getGetStateUsing()) {
-                        $params = [
-                            'record' => $record,
-                            'state' => $val,
-                        ];
+                        $params = ['record' => $record, 'state' => $val];
                         if (is_object($record)) {
                             $params[get_class($record)] = $record;
                         }
                         $val = app()->call($col->getGetStateUsing(), $params);
-                        // Set evaluated state back to literal record to match component bindings
                         $record->{$col->getName()} = $val;
                     }
-                    
+
                     $formatted = $val;
                     if ($col->getFormatStateUsing()) {
-                        $params = [
-                            'record' => $record,
-                            'state' => $val,
-                        ];
+                        $params = ['record' => $record, 'state' => $val];
                         if (is_object($record)) {
                             $params[get_class($record)] = $record;
                         }
                         $formatted = app()->call($col->getFormatStateUsing(), $params);
                     }
-                    
+
                     $vColumns[$col->getName()] = [
                         'formatted' => $formatted,
-                        'color' => $col->evaluateColor($record, $val),
+                        'color'     => $col->evaluateColor($record, $val),
                     ];
                 }
                 $record->setAttribute('_v_columns', $vColumns);
-                
+
                 return $record;
             });
         }
 
         if (method_exists($resource, 'table')) {
-            // Kita sudah peroleh $tableComponent di atas
             $tableSchema = [
-                'type' => 'page',
-                'title' => $resource::getLabel(),
+                'type'       => 'page',
+                'title'      => $resource::getLabel(),
                 'components' => [$tableComponent->toArray('index')],
             ];
         } else {
-            // Backward compatibility
             $tableSchema = $resource::tableSchema()->toArray('index');
         }
+
         $panel = app('vuelament.panel');
 
-        $pages = $resource::getPages();
+        $pages     = $resource::getPages();
         $pageClass = $pages['index'] ?? null;
-        $view = 'Vuelament/Resource/Index';
+        $view      = 'Vuelament/Resource/Index';
         if ($pageClass && method_exists($pageClass, 'getView')) {
             $view = $pageClass::getView() ?: $view;
         }
 
         $formSchema = null;
-        if ($view === 'Vuelament/Resource/Manage' || ($pageClass && is_subclass_of($pageClass, \ChristYoga123\Vuelament\Core\Pages\ManageRecords::class))) {
+        if ($view === 'Vuelament/Resource/Manage' ||
+            ($pageClass && is_subclass_of($pageClass, \ChristYoga123\Vuelament\Core\Pages\ManageRecords::class))) {
             if (method_exists($resource, 'form')) {
-                $form = $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
+                $form       = $resource::form(\ChristYoga123\Vuelament\Components\Form\Form::make());
                 $formSchema = [
-                    'type' => 'page',
-                    'title' => 'Manage ' . $resource::getLabel(),
+                    'type'       => 'page',
+                    'title'      => 'Manage ' . $resource::getLabel(),
                     'components' => $form->toArray('manage'),
                 ];
             } else {
-                $formSchema = method_exists($resource, 'formSchema') ? $resource::formSchema()->toArray('manage') : null;
+                $formSchema = method_exists($resource, 'formSchema')
+                    ? $resource::formSchema()->toArray('manage')
+                    : null;
             }
         }
 
         return Inertia::render($view, [
-            'resource'    => [
+            'resource'      => [
                 'slug'        => $resource::getSlug(),
                 'label'       => $resource::getLabel(),
                 'description' => $resource::getDescription(),
@@ -184,7 +216,7 @@ trait ResourceController
             'data'          => $data,
             'filters'       => $request->only(['search', 'filters', 'sort', 'direction', 'per_page']),
             'panel'         => $panel->toArray(),
-            'auth'          => ['user' => $request->user()],
+            'auth'          => ['user' => $this->safeAuthUser()],  // [FIX] only safe fields
             'breadcrumbs'   => $this->formatBreadcrumbs($this->getBreadcrumbs('index')),
         ]);
     }
@@ -193,87 +225,59 @@ trait ResourceController
 
     public function create()
     {
-        $resource   = static::$resource;
+        $resource = $this->getResourceClass();
+
+        // [FIX] Authorization check
+        if (!$resource::canCreate()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $formSchemaObj = $this->resolveFormSchema($resource, 'create');
 
         if (method_exists($resource, 'form')) {
             $formSchema = [
-                'type' => 'page',
-                'title' => 'Create ' . $resource::getLabel(),
+                'type'       => 'page',
+                'title'      => 'Create ' . $resource::getLabel(),
                 'components' => $formSchemaObj->toArray('create'),
             ];
         } else {
             $formSchema = $formSchemaObj->toArray('create');
         }
-        $panel = app('vuelament.panel');
 
-        $pages = $resource::getPages();
+        $panel     = app('vuelament.panel');
+        $pages     = $resource::getPages();
         $pageClass = $pages['create'] ?? null;
-        $view = 'Vuelament/Resource/Create';
+        $view      = 'Vuelament/Resource/Create';
         if ($pageClass && method_exists($pageClass, 'getView')) {
             $view = $pageClass::getView() ?: $view;
         }
 
         return Inertia::render($view, [
-            'resource'   => [
+            'resource'      => [
                 'slug'  => $resource::getSlug(),
                 'label' => $resource::getLabel(),
             ],
             'formSchema'    => $formSchema,
             'headerActions' => $this->resolveHeaderActions($resource, 'create'),
             'panel'         => $panel->toArray(),
-            'auth'          => ['user' => request()->user()],
+            'auth'          => ['user' => $this->safeAuthUser()],  // [FIX]
             'breadcrumbs'   => $this->formatBreadcrumbs($this->getBreadcrumbs('create')),
         ]);
-    }
-
-    // ── Getters / Configurations ─────────────────────────
-
-    /**
-     * Helper untuk menghasilkan susunan breadcrumb kustom layaknya Filament.
-     * Mengembalikan struktur array yang berisi URL sebagai key dan Label sebagai value.
-     */
-    public function getBreadcrumbs(string $operation, mixed $record = null): array
-    {
-        $resource = static::$resource;
-        $panel = app('vuelament.panel');
-        $base = [
-            '/' . $panel->getPath() => 'Dashboard',
-        ];
-
-        if ($operation === 'index') {
-            $base[null] = $resource::getLabel();
-        } else {
-            $base[$resource::getUrl('index')] = $resource::getLabel();
-            if ($operation === 'create') {
-                $base[null] = 'Create';
-            } elseif ($operation === 'edit') {
-                $base[null] = 'Edit';
-            }
-        }
-
-        return $base;
-    }
-
-    protected function formatBreadcrumbs(array $breadcrumbs): array
-    {
-        $bcArray = [];
-        foreach ($breadcrumbs as $url => $label) {
-            $bcArray[] = [
-                'url' => is_numeric($url) || empty($url) ? null : $url,
-                'label' => $label,
-            ];
-        }
-        return array_values(array_filter($bcArray));
     }
 
     // ── Store ────────────────────────────────────────────
 
     public function store(Request $request)
     {
-        $resource = static::$resource;
-        $model    = $resource::getModel();
-        $panelId  = app('vuelament.panel')->getId();
+        $resource = $this->getResourceClass();
+
+        // [FIX] Authorization check
+        if (!$resource::canCreate()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $model   = $resource::getModel();
+        $panelId = app('vuelament.panel')->getId();
 
         $formSchemaObj = $this->resolveFormSchema($resource, 'create');
 
@@ -282,14 +286,13 @@ trait ResourceController
             ? $request->validate($rules)
             : $request->only($this->extractFieldNames($formSchemaObj));
 
-        $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'create');
-        $data = $resource::mutateFormDataBeforeCreate($data);
+        $data   = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'create');
+        $data   = $resource::mutateFormDataBeforeCreate($data);
 
         $record = $this->executeWithTransaction(function () use ($model, $data) {
             return $model::create($data);
         });
 
-        // Hook: after create
         $resource::afterCreate($record, $data);
 
         return redirect()
@@ -301,31 +304,37 @@ trait ResourceController
 
     public function edit(string|int $id)
     {
-        $resource   = static::$resource;
-        $model      = $resource::getModel();
-        $record     = $model::findOrFail($id);
+        $resource = $this->getResourceClass();
+        $model    = $resource::getModel();
+        $record   = $model::findOrFail($id);
+
+        // [FIX] Authorization check
+        if (!$resource::canView($record)) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $formSchemaObj = $this->resolveFormSchema($resource, 'edit', $id);
 
         if (method_exists($resource, 'form')) {
             $formSchema = [
-                'type' => 'page',
-                'title' => 'Edit ' . $resource::getLabel(),
+                'type'       => 'page',
+                'title'      => 'Edit ' . $resource::getLabel(),
                 'components' => $formSchemaObj->toArray('edit'),
             ];
         } else {
             $formSchema = $formSchemaObj->toArray('edit');
         }
-        $panel = app('vuelament.panel');
 
-        $pages = $resource::getPages();
+        $panel     = app('vuelament.panel');
+        $pages     = $resource::getPages();
         $pageClass = $pages['edit'] ?? null;
-        $view = 'Vuelament/Resource/Edit';
+        $view      = 'Vuelament/Resource/Edit';
         if ($pageClass && method_exists($pageClass, 'getView')) {
             $view = $pageClass::getView() ?: $view;
         }
 
         return Inertia::render($view, [
-            'resource'   => [
+            'resource'      => [
                 'slug'  => $resource::getSlug(),
                 'label' => $resource::getLabel(),
             ],
@@ -333,7 +342,7 @@ trait ResourceController
             'headerActions' => $this->resolveHeaderActions($resource, 'edit'),
             'record'        => $record,
             'panel'         => $panel->toArray(),
-            'auth'          => ['user' => request()->user()],
+            'auth'          => ['user' => $this->safeAuthUser()],  // [FIX]
             'breadcrumbs'   => $this->formatBreadcrumbs($this->getBreadcrumbs('edit', $record)),
         ]);
     }
@@ -342,11 +351,16 @@ trait ResourceController
 
     public function update(Request $request, string|int $id)
     {
-        $resource = static::$resource;
+        $resource = $this->getResourceClass();
         $model    = $resource::getModel();
         $record   = $model::findOrFail($id);
-        $panelId  = app('vuelament.panel')->getId();
 
+        // [FIX] Authorization check
+        if (!$resource::canEdit($record)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $panelId       = app('vuelament.panel')->getId();
         $formSchemaObj = $this->resolveFormSchema($resource, 'edit', $id);
 
         $rules = $this->extractRulesFromSchema($formSchemaObj, $id, 'edit');
@@ -361,7 +375,6 @@ trait ResourceController
             $record->update($data);
         });
 
-        // Hook: after save
         $resource::afterSave($record, $data);
 
         return redirect()
@@ -373,12 +386,17 @@ trait ResourceController
 
     public function updateColumn(Request $request, string|int $id)
     {
-        $resource = static::$resource;
-        $model = $resource::getModel();
-        $record = $model::findOrFail($id);
+        $resource = $this->getResourceClass();
+        $model    = $resource::getModel();
+        $record   = $model::findOrFail($id);
+
+        // [FIX] Authorization check
+        if (!$resource::canEdit($record)) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $column = $request->input('column');
-        $value = $request->input('value');
+        $value  = $request->input('value');
 
         if (!$column) {
             abort(400, 'Column name is required.');
@@ -386,8 +404,10 @@ trait ResourceController
 
         $tableComponent = $this->resolveTable($resource);
 
+        // [FIX] Whitelist: hanya kolom bertipe 'toggle' yang boleh di-update
         $allowedColumns = collect($tableComponent?->getColumns() ?? [])
-            ->filter(fn($col) => ($col->toArray()['type'] ?? '') === 'toggle')
+            ->filter(fn($col) => ($col->toArray()['type'] ?? '') === 'toggle'
+                || ($col->toArray()['isToggle'] ?? false) === true)
             ->map(fn($col) => $col->getName())
             ->toArray();
 
@@ -406,10 +426,15 @@ trait ResourceController
 
     public function destroy(string|int $id)
     {
-        $resource = static::$resource;
+        $resource = $this->getResourceClass();
         $model    = $resource::getModel();
         $record   = $model::findOrFail($id);
-        
+
+        // [FIX] Authorization check
+        if (!$resource::canDelete($record)) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $this->executeWithTransaction(function () use ($record) {
             $record->delete();
         });
@@ -421,9 +446,22 @@ trait ResourceController
 
     public function bulkDestroy(Request $request)
     {
-        $resource = static::$resource;
-        $model    = $resource::getModel();
-        $ids      = $request->input('ids', []);
+        // [FIX] Validasi IDs: harus array integer, maks 500 item
+        $request->validate([
+            'ids'   => 'required|array|max:500',
+            'ids.*' => 'integer|min:1',
+        ]);
+
+        $resource = $this->getResourceClass();
+
+        // [FIX] Authorization check
+        if (!$resource::canDelete(null)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $model = $resource::getModel();
+        $ids   = $request->input('ids', []);
+
         $this->executeWithTransaction(function () use ($model, $ids) {
             $model::whereIn('id', $ids)->delete();
         });
@@ -435,14 +473,26 @@ trait ResourceController
 
     public function bulkRestore(Request $request)
     {
-        $resource = static::$resource;
+        // [FIX] Validasi IDs
+        $request->validate([
+            'ids'   => 'required|array|max:500',
+            'ids.*' => 'integer|min:1',
+        ]);
+
+        $resource = $this->getResourceClass();
         $model    = $resource::getModel();
 
         if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
             return back(303)->with('error', 'This resource does not support soft deletes.');
         }
 
+        // [FIX] Authorization check
+        if (!$resource::canRestore(null)) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $ids = $request->input('ids', []);
+
         $this->executeWithTransaction(function () use ($model, $ids) {
             $model::withTrashed()->whereIn('id', $ids)->restore();
         });
@@ -454,14 +504,26 @@ trait ResourceController
 
     public function bulkForceDelete(Request $request)
     {
-        $resource = static::$resource;
+        // [FIX] Validasi IDs
+        $request->validate([
+            'ids'   => 'required|array|max:500',
+            'ids.*' => 'integer|min:1',
+        ]);
+
+        $resource = $this->getResourceClass();
         $model    = $resource::getModel();
 
         if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
             return back(303)->with('error', 'This resource does not support soft deletes.');
         }
 
+        // [FIX] Authorization check
+        if (!$resource::canForceDelete(null)) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $ids = $request->input('ids', []);
+
         $this->executeWithTransaction(function () use ($model, $ids) {
             $model::withTrashed()->whereIn('id', $ids)->forceDelete();
         });
@@ -473,7 +535,7 @@ trait ResourceController
 
     public function restore(string|int $id)
     {
-        $resource = static::$resource;
+        $resource = $this->getResourceClass();
         $model    = $resource::getModel();
 
         if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
@@ -481,6 +543,11 @@ trait ResourceController
         }
 
         $record = $model::withTrashed()->findOrFail($id);
+
+        // [FIX] Authorization check
+        if (!$resource::canRestore($record)) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $this->executeWithTransaction(function () use ($record) {
             $record->restore();
@@ -493,7 +560,7 @@ trait ResourceController
 
     public function forceDelete(string|int $id)
     {
-        $resource = static::$resource;
+        $resource = $this->getResourceClass();
         $model    = $resource::getModel();
 
         if (!in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model))) {
@@ -501,6 +568,11 @@ trait ResourceController
         }
 
         $record = $model::withTrashed()->findOrFail($id);
+
+        // [FIX] Authorization check
+        if (!$resource::canForceDelete($record)) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $this->executeWithTransaction(function () use ($record) {
             $record->forceDelete();
@@ -513,11 +585,11 @@ trait ResourceController
 
     public function executeAction(Request $request, string|int $id)
     {
-        $resource = static::$resource;
-        $model    = $resource::getModel();
+        $resource        = $this->getResourceClass();
+        $model           = $resource::getModel();
         $usesSoftDeletes = in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model));
-        $record   = $usesSoftDeletes ? $model::withTrashed()->findOrFail($id) : $model::findOrFail($id);
-        
+        $record          = $usesSoftDeletes ? $model::withTrashed()->findOrFail($id) : $model::findOrFail($id);
+
         $actionName = $request->input('action');
         $actionData = $request->input('data', []);
 
@@ -535,16 +607,16 @@ trait ResourceController
         }
 
         // Validate form schema if present
-        if ($action instanceof \ChristYoga123\Vuelament\Components\Table\Actions\Action && !empty($action->getFormComponents())) {
+        if ($action instanceof \ChristYoga123\Vuelament\Components\Table\Actions\Action &&
+            !empty($action->getFormComponents())) {
             $rules = [];
             $this->collectRulesFromComponents($action->getFormComponents(), $rules, null, 'create');
             if ($rules) {
-                // Apply data.* to match the payload shape 'data.field'
                 $mappedRules = [];
                 foreach ($rules as $field => $fieldRules) {
                     $mappedRules["data.{$field}"] = $fieldRules;
                 }
-                $validated = $request->validate(['data' => 'array'] + $mappedRules);
+                $validated  = $request->validate(['data' => 'array'] + $mappedRules);
                 $actionData = $validated['data'] ?? [];
             }
         }
@@ -570,21 +642,47 @@ trait ResourceController
         return back(303);
     }
 
+    // ── Getters / Configurations ─────────────────────────
+
+    public function getBreadcrumbs(string $operation, mixed $record = null): array
+    {
+        $resource = $this->getResourceClass();
+        $panel    = app('vuelament.panel');
+        $base     = ['/' . $panel->getPath() => 'Dashboard'];
+
+        if ($operation === 'index') {
+            $base[null] = $resource::getLabel();
+        } else {
+            $base[$resource::getUrl('index')] = $resource::getLabel();
+            if ($operation === 'create') {
+                $base[null] = 'Create';
+            } elseif ($operation === 'edit') {
+                $base[null] = 'Edit';
+            }
+        }
+
+        return $base;
+    }
+
+    protected function formatBreadcrumbs(array $breadcrumbs): array
+    {
+        $bcArray = [];
+        foreach ($breadcrumbs as $url => $label) {
+            $bcArray[] = [
+                'url'   => is_numeric($url) || empty($url) ? null : $url,
+                'label' => $label,
+            ];
+        }
+        return array_values(array_filter($bcArray));
+    }
+
     // ── Resolve page-level header actions ────────────────
 
-    /**
-     * Resolve header actions dari page class Resource.
-     * Membaca getPages() Resource, mencari page class untuk operation tertentu,
-     * dan memanggil getHeaderActions() jika tersedia.
-     *
-     * Contoh: ListUsers::getHeaderActions() → [CreateAction::make()]
-     */
     protected function resolveHeaderActions(string $resource, string $operation): array
     {
-        $pages = $resource::getPages();
+        $pages     = $resource::getPages();
         $pageClass = $pages[$operation] ?? null;
 
-        // Pastikan itu class string (bukan PageRegistration untuk custom pages)
         if (!$pageClass || !is_string($pageClass) || !class_exists($pageClass)) {
             return [];
         }
@@ -627,7 +725,7 @@ trait ResourceController
         return $resource::formSchema();
     }
 
-    protected function executeWithTransaction(\Closure $callback)
+    protected function executeWithTransaction(\Closure $callback): mixed
     {
         if (app('vuelament.panel')->hasDatabaseTransactions()) {
             return \Illuminate\Support\Facades\DB::transaction($callback);
@@ -638,7 +736,7 @@ trait ResourceController
 
     protected function applySearch($query, string $search, string $resource)
     {
-        $table = $this->resolveTable($resource);
+        $table    = $this->resolveTable($resource);
         $tableArr = $table ? $table->toArray('index') : [];
 
         $searchableColumns = collect($tableArr['columns'] ?? [])
@@ -649,7 +747,7 @@ trait ResourceController
         if (!empty($searchableColumns)) {
             $query->where(function ($q) use ($searchableColumns, $search) {
                 foreach ($searchableColumns as $col) {
-                    $q->orWhere($col, 'like', "%{$search}%");
+                    $q->orWhere($col, 'like', '%' . $search . '%');
                 }
             });
         }
@@ -658,46 +756,50 @@ trait ResourceController
     }
 
     /**
-     * Extract validation rules otomatis dari PageSchema -> form components
-     * Mendukung layout nesting (Section, Grid, Card)
-     *
-     * @param mixed $recordId ID record saat edit (untuk unique ignore)
-     *
-     * Contoh hasil:
-     *   ['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email,5']]
+     * Extract validation rules from PageSchema -> form components.
+     * [FIX] Menggunakan getResourceClass() bukan static::$resource
      */
     protected function extractRulesFromSchema($pageSchema, mixed $recordId = null, string $operation = 'create'): array
     {
-        $resource = static::$resource;
-        $model = new ($resource::getModel());
+        $resource  = $this->getResourceClass();
+        $model     = new ($resource::getModel());
         $tableName = $model->getTable();
-        
-        $rules = [];
+
+        $rules      = [];
         $components = $pageSchema->getComponents();
         $this->collectRulesFromComponents($components, $rules, $recordId, $operation, $tableName);
+
         return $rules;
     }
 
-    protected function collectRulesFromComponents(array $components, array &$rules, mixed $recordId = null, string $operation = 'create', ?string $tableName = null): void
-    {
+    protected function collectRulesFromComponents(
+        array   $components,
+        array   &$rules,
+        mixed   $recordId  = null,
+        string  $operation = 'create',
+        ?string $tableName = null
+    ): void {
         foreach ($components as $component) {
-            // Jika ini form field -> extract rules
             if ($component instanceof BaseForm && $component->getName()) {
                 $fieldRules = $component->getValidationRules($recordId, $operation, $tableName);
                 if (!empty($fieldRules)) {
                     $rules[$component->getName()] = $fieldRules;
                 }
 
-                // Jika Repeater -> tambahkan juga nested rules (items.*.field)
                 if ($component instanceof \ChristYoga123\Vuelament\Components\Form\Repeater) {
                     $nestedRules = $component->getNestedValidationRules($recordId, $operation, $tableName);
-                    $rules = array_merge($rules, $nestedRules);
+                    $rules       = array_merge($rules, $nestedRules);
                 }
             }
 
-            // Jika layout (Grid, Section, Card) -> rekursi ke children
             if (method_exists($component, 'getComponents') && !$component instanceof BaseForm) {
-                $this->collectRulesFromComponents($component->getComponents(), $rules, $recordId, $operation, $tableName);
+                $this->collectRulesFromComponents(
+                    $component->getComponents(),
+                    $rules,
+                    $recordId,
+                    $operation,
+                    $tableName
+                );
             }
         }
     }
@@ -710,19 +812,17 @@ trait ResourceController
         foreach ($flatComponents as $component) {
             if ($component instanceof BaseForm && $component->getName()) {
                 $name = $component->getName();
-                
+
                 if (!array_key_exists($name, $data)) {
-                    // Check if saved but not present in data (e.g. unchecked toggle)
                     if ($component instanceof \ChristYoga123\Vuelament\Components\Form\Toggle) {
                         $data[$name] = false;
                     } else {
                         continue;
                     }
                 }
-                
+
                 $state = $data[$name];
 
-                // Check dehydrated / saved (skip saving if false)
                 $isDehydrated = $component->getIsDehydrated();
                 if ($isDehydrated instanceof \Closure) {
                     $isDehydrated = app()->call($isDehydrated, ['state' => $state, 'operation' => $operation]);
@@ -732,7 +832,6 @@ trait ResourceController
                     continue;
                 }
 
-                // Check dehydrateStateUsing
                 $dehydrator = $component->getDehydrateStateUsing();
                 if ($dehydrator instanceof \Closure) {
                     $data[$name] = app()->call($dehydrator, ['state' => $state, 'operation' => $operation]);

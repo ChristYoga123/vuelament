@@ -69,13 +69,17 @@ abstract class PanelServiceProvider extends ServiceProvider
             Route::middleware($panel->getGuestMiddleware())->group(function () use ($panel, $panelId) {
 
                 if ($panel->hasLogin()) {
-                    Route::get('login',  [AuthController::class, 'showLogin'])->name("{$panelId}.login");
-                    Route::post('login', [AuthController::class, 'login']);
+                    Route::get('login', [AuthController::class, 'showLogin'])->name("{$panelId}.login");
+                    // [FIX] Throttle: maks 6 percobaan per menit per IP
+                    Route::post('login', [AuthController::class, 'login'])
+                        ->middleware('throttle:6,1');
                 }
 
                 if ($panel->hasRegister()) {
-                    Route::get('register',  [AuthController::class, 'showRegister'])->name("{$panelId}.register");
-                    Route::post('register', [AuthController::class, 'register']);
+                    Route::get('register', [AuthController::class, 'showRegister'])->name("{$panelId}.register");
+                    // [FIX] Throttle: maks 5 percobaan per menit per IP
+                    Route::post('register', [AuthController::class, 'register'])
+                        ->middleware('throttle:5,1');
                 }
             });
 

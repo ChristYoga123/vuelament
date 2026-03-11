@@ -19,13 +19,23 @@ class Authenticate
 
         $user = Auth::guard($guard)->user();
 
-        // Cek canAccessPanel jika method ada di model User
-        if (method_exists($user, 'canAccessPanel') && !$user->canAccessPanel($panel)) {
+        // [FIX] Cek hasPanelAccess DULU, lalu canAccessPanel
+        // Konsisten dengan AuthController::resolveUserAccess()
+        $blocked = false;
+
+        if (method_exists($user, 'hasPanelAccess')) {
+            $blocked = !$user->hasPanelAccess($panel);
+        } elseif (method_exists($user, 'canAccessPanel')) {
+            $blocked = !$user->canAccessPanel($panel);
+        }
+
+        if ($blocked) {
             Auth::guard($guard)->logout();
             $request->session()->invalidate();
+            $request->session()->regenerateToken(); // [FIX] tambah regenerateToken
 
             return redirect($panel->getLoginUrl())
-                ->withErrors(['email' => 'Anda tidak memiliki akses ke panel ini.']);
+                ->withErrors(['email' => 'You do not have access to this panel.']);
         }
 
         return $next($request);

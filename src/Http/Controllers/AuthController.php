@@ -5,6 +5,8 @@ namespace ChristYoga123\Vuelament\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AuthController
@@ -45,16 +47,7 @@ class AuthController
         if (Auth::guard($guard)->attempt($credentials, $remember)) {
             $user = Auth::guard($guard)->user();
 
-            // Cek akses panel
-            $hasAccess = App::environment('local');
-            
-            if (method_exists($user, 'hasPanelAccess')) {
-                $hasAccess = $user->hasPanelAccess($panel);
-            } elseif (method_exists($user, 'canAccessPanel')) {
-                $hasAccess = $user->canAccessPanel($panel);
-            }
-
-            if (!$hasAccess) {
+            if (!$this->resolveUserAccess($user, $panel)) {
                 Auth::guard($guard)->logout();
                 return back()->withErrors([
                     'email' => 'You cannot access this panel.',
@@ -88,6 +81,7 @@ class AuthController
     public function register(Request $request)
     {
         $panel = $this->panel();
+        $guard = $panel->getAuthGuard();
 
         $data = $request->validate([
             'name'     => 'required|string|max:255',
@@ -101,10 +95,19 @@ class AuthController
         $user = $userModel::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
-            'password' => bcrypt($data['password']),
+            'password' => Hash::make($data['password']),  // ← Hash::make, bukan bcrypt()
         ]);
 
-        Auth::guard($panel->getAuthGuard())->login($user);
+        // ── [FIX] Access control — sama seperti login ─────
+        if (!$this->resolveUserAccess($user, $panel)) {
+            // Akun terbuat tapi tidak boleh akses panel — logout & redirect ke login
+            Auth::guard($guard)->logout();
+            return redirect('/' . $panel->getPath() . '/login')
+                ->withErrors(['email' => 'Your account was created but you do not have access to this panel. Please contact an administrator.']);
+        }
+
+        Auth::guard($guard)->login($user);
+        $request->session()->regenerate();  // ← [FIX] Cegah session fixation
 
         return redirect('/' . $panel->getPath());
     }
@@ -120,5 +123,37 @@ class AuthController
         $request->session()->regenerateToken();
 
         return redirect('/' . $panel->getPath() . '/login');
+    }
+
+    // ── Helpers ──────────────────────────────────────────
+
+    /**
+     * Resolve apakah user boleh akses panel.
+     *
+     * Priority:
+     * 1. hasPanelAccess()   — custom method di User model
+     * 2. canAccessPanel()   — dari HasPanelAccess trait
+     * 3. Fallback: izinkan hanya di env local (dengan warning log)
+     *
+     * [FIX] Digunakan di login() DAN register() agar konsisten.
+     */
+    protected function resolveUserAccess($user, $panel): bool
+    {
+        if (method_exists($user, 'hasPanelAccess')) {
+            return $user->hasPanelAccess($panel);
+        }
+
+        if (method_exists($user, 'canAccessPanel')) {
+            return $user->canAccessPanel($panel);
+        }
+
+        // Tidak ada method access control — hanya izinkan di local
+        Log::warning(
+            'Vuelament: User model does not implement hasPanelAccess() or canAccessPanel(). ' .
+            'Add the HasPanelAccess trait for proper access control. ' .
+            'Access is currently allowed only in the [local] environment.'
+        );
+
+        return App::environment('local');
     }
 }

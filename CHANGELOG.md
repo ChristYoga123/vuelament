@@ -5,6 +5,44 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-03-11
+
+### Security
+
+- **[CRITICAL] Register Bypass Fixed**: `AuthController::register()` now calls `resolveUserAccess()` — the same access control check used by `login()`. Previously, any newly registered user was immediately logged into the panel without `hasPanelAccess()` / `canAccessPanel()` being checked, bypassing all panel authorization.
+- **[HIGH] Rate Limiting on Auth Routes**: Added `throttle:6,1` middleware on `POST /login` and `throttle:5,1` on `POST /register` in `PanelServiceProvider` to prevent brute-force attacks.
+- **[HIGH] Sort Column Allowlist in PageController**: `$sortField` in `PageController` is now validated against a whitelist of `sortable` columns from the table schema, consistent with `ResourceController`. Prevents column name probing / info disclosure. Direction also restricted to `asc`/`desc`.
+- **[HIGH] `per_page` Cap in PageController**: `per_page` parameter capped at `min 1 / max 100` in `PageController`, closing a DoS vector via unbounded query size (previously only `ResourceController` had this cap).
+- **[HIGH] Bulk Action ID Validation**: `bulkDestroy()`, `bulkRestore()`, and `bulkForceDelete()` now validate `ids` as `required|array|max:500` and `ids.*` as `integer|min:1`, preventing DoS via huge ID arrays and type confusion.
+- **[HIGH] Resource-Level Authorization Hooks**: All CRUD methods in `ResourceController` now call `$resource::canViewAny()`, `canCreate()`, `canView()`, `canEdit()`, `canDelete()`, `canForceDelete()`, and `canRestore()` before executing. Unauthenticated or unauthorized calls abort with `403`. Override these static methods in your Resource class for fine-grained control.
+- **[MEDIUM] Authenticate Middleware Consistency**: `Authenticate` middleware now checks `hasPanelAccess()` first, then `canAccessPanel()` — matching the priority order in `AuthController::resolveUserAccess()`. Previously only `canAccessPanel()` was checked, so a User model implementing only `hasPanelAccess()` would bypass the middleware.
+- **[MEDIUM] Session Fixation Fixed in `register()`**: Added `$request->session()->regenerate()` after login in `register()`. Added `regenerateToken()` to the block path in `Authenticate` middleware.
+- **[MEDIUM] HasPanelAccess Default Deny in Production**: When `spatie/laravel-permission` is not installed, `HasPanelAccess::canAccessPanel()` now returns `false` in all non-local environments (previously defaulted to `true` via `App::environment('local')` which was exploitable if `APP_ENV=local` was misconfigured on production).
+- **[MEDIUM] User Model Data Exposure Fixed**: All controllers (`DashboardController`, `ResourceController`, `PageController`) no longer send the full Eloquent User model to Inertia. A new `safeAuthUser()` helper exposes only `id`, `name`, `email`, `avatar`, `profile_photo_url`. Implement `toInertiaArray()` on your User model for full control.
+- **[MEDIUM] SVG Upload Removed from `FileInput::image()`**: `image/svg+xml` removed from default accepted MIME types — SVG files can contain embedded `<script>` tags causing Stored XSS if served inline. Use the new explicit `->allowSvg()` method (with warning) if SVG is genuinely required.
+- **[MEDIUM] Server-Side MIME Type Validation for FileInput**: `BaseForm::getValidationRules()` now generates a `mimetypes:` Laravel rule from `acceptedFileTypes`, enforcing MIME validation server-side. Previously only the frontend `accept` attribute restricted file types.
+- **[MEDIUM] Octane Race Condition Fixed in ResourceRouteController**: Replaced static property `$resource` with an instance property `$resourceInstance` in `ResourceRouteController`. Override `getResourceClass()` returns the instance property, making the controller safe for concurrent requests under Laravel Octane (Swoole / RoadRunner).
+- **[LOW] `v-html` Removed from TablePagination**: Replaced `v-html="link.label"` with a safe `decodeLabel()` function that explicitly maps known HTML entities (`&laquo;`, `&raquo;`, `&amp;`, etc.) to their Unicode equivalents.
+- **[LOW] `bcrypt()` Replaced with `Hash::make()`**: `AuthController::register()` now uses `Hash::make()` which respects the configured `config('hashing.driver')` (bcrypt, argon2i, argon2id).
+- **[LOW] CLI Password Warning**: `vuelament:user --password` now emits a visible warning and a `Log::warning()` entry reminding that CLI arguments are stored in shell history.
+- **[LOW] Security Meta Tags in Blade Template**: Added `csrf-token`, `referrer` policy, `X-Content-Type-Options`, and `Cache-Control` meta tags to `app.blade.php`. Added inline documentation for required HTTP-level security headers (`X-Frame-Options`, `Permissions-Policy`, etc.).
+
+### Added
+
+- **`BaseResource::can*()` Authorization Hooks**: Six new overridable static methods on `BaseResource`: `canViewAny()`, `canCreate()`, `canView($record)`, `canEdit($record)`, `canDelete($record)`, `canForceDelete($record)`, `canRestore($record)`. All default to `true` (backward-compatible). Override in your Resource class to implement role/policy-based access control.
+- **`FileInput::allowSvg()`**: New explicit opt-in method to re-enable SVG uploads with a PHPDoc warning about XSS risk.
+- **`safeAuthUser()` helper**: Shared protected method in `DashboardController`, `ResourceController` (trait), and `PageController` that returns only safe user fields to Inertia. Supports a `toInertiaArray()` hook on the User model for full developer control.
+- **`resolveUserAccess()` helper**: Extracted into `AuthController` as a protected method, shared between `login()` and `register()` for consistent panel access resolution.
+- **`getResourceClass()` method in ResourceController trait**: All internal method calls now use `$this->getResourceClass()` instead of `static::$resource` directly, enabling `ResourceRouteController` to safely override it with an instance property.
+
+### Changed
+
+- `AuthController::login()` and `register()` now share the same `resolveUserAccess()` logic.
+- `Authenticate` middleware now checks both `hasPanelAccess()` and `canAccessPanel()`.
+- `HasPanelAccess` trait now logs a `Log::warning()` in local env and `Log::error()` in production when `spatie/laravel-permission` is absent.
+
+---
+
 ## [1.2.9] - 2026-03-07
 
 ### Added

@@ -2,6 +2,22 @@
 import { inject } from 'vue'
 import { Button } from '@/components/ui/button'
 
+/**
+ * [FIX] Decode HTML entities secara eksplisit tanpa v-html.
+ * Laravel paginator menghasilkan label seperti "&laquo; Previous" dan "Next &raquo;".
+ * Menggunakan v-html untuk ini adalah bad practice meski datanya trusted.
+ */
+const decodeLabel = (label) => {
+  return String(label)
+    .replace(/&laquo;/g, '«')
+    .replace(/&raquo;/g, '»')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+}
+
 const {
   resolvedFilters, resolvedData, isPaginated,
   tableConfig, goToPage, changePerPage,
@@ -50,8 +66,7 @@ const {
         :disabled="!link.url"
         :class="{ 'bg-primary text-primary-foreground hover:bg-primary/90': link.active }"
         @click="goToPage(link.url)"
-        v-html="link.label"
-      />
+      >{{ decodeLabel(link.label) }}</Button>
     </div>
   </div>
 </template>

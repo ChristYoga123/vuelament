@@ -147,6 +147,22 @@ abstract class BaseForm extends BaseComponent
         // File
         if ($this->type === 'FileInput') {
             $rules[] = 'file';
+
+            // [FIX] Server-side MIME type validation dari acceptedFileTypes
+            // Mencegah upload file berbahaya yang lolos validasi frontend.
+            // Menggunakan 'mimetypes:' (validasi MIME aktual) bukan 'mimes:' (ekstensi saja).
+            if (!empty($schema['acceptedFileTypes'])) {
+                // [FIX] Pastikan SVG tidak lolos ke server meski disertakan manual
+                $safeMimeTypes = array_filter(
+                    $schema['acceptedFileTypes'],
+                    fn($mime) => $mime !== 'image/svg+xml'
+                );
+
+                if (!empty($safeMimeTypes)) {
+                    $rules[] = 'mimetypes:' . implode(',', array_values($safeMimeTypes));
+                }
+            }
+
             if (!empty($schema['maxSize'])) {
                 $rules[] = 'max:' . $schema['maxSize'];
             }

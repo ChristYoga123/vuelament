@@ -368,7 +368,7 @@ trait ResourceController
             ? $request->validate($rules)
             : $request->only($this->extractFieldNames($formSchemaObj));
 
-        $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'edit');
+        $data = $this->mutateFormDataBeforeSave($data, $formSchemaObj, 'edit', $record);
         $data = $resource::mutateFormDataBeforeSave($data);
 
         $this->executeWithTransaction(function () use ($record, $data) {
@@ -804,7 +804,7 @@ trait ResourceController
         }
     }
 
-    protected function mutateFormDataBeforeSave(array $data, mixed $schema, string $operation): array
+    protected function mutateFormDataBeforeSave(array $data, mixed $schema, string $operation, mixed $record = null): array
     {
         $flatComponents = [];
         $this->flattenComponents($schema->getComponents(), $flatComponents);
@@ -828,6 +828,9 @@ trait ResourceController
                     $directory = $component->getDirectory() ?? 'uploads';
                     $disk      = 'public';
 
+                    // Get old file path(s) from the existing record
+                    $oldValue = $record ? $record->{$name} : null;
+
                     if ($component->getIsMultiple() && is_array($state)) {
                         // Multiple file upload
                         $paths = [];
@@ -839,10 +842,29 @@ trait ResourceController
                                 $paths[] = $file;
                             }
                         }
+
+                        // Delete old files that were removed
+                        if ($oldValue && is_array($oldValue)) {
+                            foreach ($oldValue as $oldPath) {
+                                if (is_string($oldPath) && !in_array($oldPath, $paths, true)) {
+                                    \Illuminate\Support\Facades\Storage::disk($disk)->delete($oldPath);
+                                }
+                            }
+                        }
+
                         $data[$name] = $paths;
                     } elseif ($state instanceof \Illuminate\Http\UploadedFile) {
-                        // Single file upload
+                        // New single file upload — delete old file if exists
+                        if ($oldValue && is_string($oldValue)) {
+                            \Illuminate\Support\Facades\Storage::disk($disk)->delete($oldValue);
+                        }
                         $data[$name] = $state->store($directory, $disk);
+                    } elseif ($state === null || $state === '') {
+                        // File was removed — delete old file from storage
+                        if ($oldValue && is_string($oldValue)) {
+                            \Illuminate\Support\Facades\Storage::disk($disk)->delete($oldValue);
+                        }
+                        $data[$name] = null;
                     }
                     // If $state is a string, it's an existing path — leave as-is
                     continue;

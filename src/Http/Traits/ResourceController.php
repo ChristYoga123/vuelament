@@ -651,13 +651,13 @@ trait ResourceController
         $base     = ['/' . $panel->getPath() => 'Dashboard'];
 
         if ($operation === 'index') {
-            $base[null] = $resource::getLabel();
+            $base[''] = $resource::getLabel();
         } else {
             $base[$resource::getUrl('index')] = $resource::getLabel();
             if ($operation === 'create') {
-                $base[null] = 'Create';
+                $base[''] = 'Create';
             } elseif ($operation === 'edit') {
-                $base[null] = 'Edit';
+                $base[''] = 'Edit';
             }
         }
 

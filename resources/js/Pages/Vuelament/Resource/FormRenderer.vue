@@ -191,10 +191,11 @@ const getFileList = (comp) => {
 }
 
 const formatFileSize = (bytes) => {
-  if (bytes == null || isNaN(bytes)) return ''
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  if (bytes === null || bytes === undefined || bytes === '' || isNaN(Number(bytes))) return ''
+  const s = Number(bytes)
+  if (s < 1024) return s + ' B'
+  if (s < 1024 * 1024) return (s / 1024).toFixed(1) + ' KB'
+  return (s / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
 // ── Helpers for existing file paths (edit mode) ──
@@ -209,8 +210,10 @@ const getFileName = (file) => {
 }
 
 const getFileSizeLabel = (file) => {
-  if (file instanceof File) return formatFileSize(file.size)
-  return '' // existing file from DB — size unknown
+  if (file instanceof File && typeof file.size === 'number') {
+    return formatFileSize(file.size)
+  }
+  return '' // existing file string or invalid object - size unknown locally
 }
 
 const isImageFile = (file) => {

@@ -9,8 +9,11 @@ const props = defineProps({
 const imageUrl = computed(() => {
   const path = props.row[props.col.name]
   if (!path) return null
-  if (path.startsWith('http') || path.startsWith('/')) return path
-  return `/storage/${path}`
+  if (path.startsWith('http') || path.startsWith('data:')) return path
+  // Ensure we have a leading slash for root-relative resolving
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  if (cleanPath.startsWith('/storage/') || cleanPath.startsWith('/public/')) return cleanPath
+  return `/storage${cleanPath}`
 })
 </script>
 

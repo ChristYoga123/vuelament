@@ -823,6 +823,31 @@ trait ResourceController
 
                 $state = $data[$name];
 
+                // ── Handle FileInput: store UploadedFile to disk ──
+                if ($component instanceof \ChristYoga123\Vuelament\Components\Form\FileInput) {
+                    $directory = $component->getDirectory() ?? 'uploads';
+                    $disk      = 'public';
+
+                    if ($component->getIsMultiple() && is_array($state)) {
+                        // Multiple file upload
+                        $paths = [];
+                        foreach ($state as $file) {
+                            if ($file instanceof \Illuminate\Http\UploadedFile) {
+                                $paths[] = $file->store($directory, $disk);
+                            } elseif (is_string($file)) {
+                                // Already stored path (e.g. during edit, unchanged files)
+                                $paths[] = $file;
+                            }
+                        }
+                        $data[$name] = $paths;
+                    } elseif ($state instanceof \Illuminate\Http\UploadedFile) {
+                        // Single file upload
+                        $data[$name] = $state->store($directory, $disk);
+                    }
+                    // If $state is a string, it's an existing path — leave as-is
+                    continue;
+                }
+
                 $isDehydrated = $component->getIsDehydrated();
                 if ($isDehydrated instanceof \Closure) {
                     $isDehydrated = app()->call($isDehydrated, ['state' => $state, 'operation' => $operation]);

@@ -15,7 +15,7 @@ use {{ modelFqn }};
 
 class {{ name }}Resource extends BaseResource
 {
-    protected static ?string $model = {{ model }}::class;
+    protected static string $model = {{ model }}::class;
     protected static string $slug = '{{ slug }}';
     protected static string $label = '{{ label }}';
     protected static string $icon = 'circle';

@@ -5,6 +5,20 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-03-14
+
+### Fixed
+
+- **Resource Generator Type Mismatch**: Fixed PHP type mismatch error in generated Resource classes where `$model` and `$slug` were generated as `?string` instead of `string` (matching `BaseResource`).
+- **Missing "Create" Button**: Added `getHeaderActions()` with `CreateAction` to the multi-page `ListRecords` stub. Previously, users had to manually add the button in multi-page mode.
+- **FileInput Persistence**: Fixed a bug where `FileInput` successfully validated files but failed to store them to disk or save the path to the database. `ResourceController` now correctly handles `UploadedFile` instances.
+
+### Changed
+
+- **Toast Stacking Behavior**: Modified `AppWrapper.vue` to use the premium "piling/stacked" toast look. Toasts now overlap and expand on hover (`expand: false`).
+
+---
+
 ## [1.6.0] - 2026-03-11
 
 ### Security
@@ -40,6 +54,139 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AuthController::login()` and `register()` now share the same `resolveUserAccess()` logic.
 - `Authenticate` middleware now checks both `hasPanelAccess()` and `canAccessPanel()`.
 - `HasPanelAccess` trait now logs a `Log::warning()` in local env and `Log::error()` in production when `spatie/laravel-permission` is absent.
+
+---
+
+## [1.5.1] - 2026-03-08
+
+### Changed
+
+- **DB Transactions enabled by default**: `databaseTransactions` now defaults to `true` on Panel, ensuring data integrity across all CRUD operations.
+
+### Improved
+
+- **DRY Backend**: Extracted `resolveTable()` and `resolveFormSchema()` helper methods, eliminating 7 duplicated table/form resolution patterns in ResourceController.
+- **Icon Memoization**: `resolveIcon()` in DashboardLayout now caches resolved icon components, avoiding repeated regex + lookup on every render.
+- **Error Handling**: All destructive table operations (delete, restore, force-delete, bulk actions, custom actions) now have `onError` callbacks that show a toast notification instead of failing silently.
+- **Manage Modal Errors**: Replaced direct computed `errors` mutation with local `formErrors` ref + proper `onError`/`onSuccess` callbacks. Added double-submit guard.
+- **File Size Validation**: FormRenderer now validates file size client-side before processing. Configurable via `maxSize` prop (defaults to 10MB).
+- **Interval Cleanup**: `setInterval` timers for non-image file progress simulation are now tracked and cleared on component unmount.
+
+---
+
+## [1.5.0] - 2026-03-08
+
+### Security
+
+- **SQL Injection Prevention**: Sort parameter now validated against allowed sortable columns; `direction` restricted to `asc`/`desc` only.
+- **Arbitrary Column Update**: `updateColumn()` now validates column name against registered toggle columns only, preventing unauthorized column writes.
+- **Mass Assignment Protection**: Replaced unsafe `$request->all()` fallback with `$request->only($fieldNames)`, extracting only form-defined fields.
+
+### Fixed
+
+- **Form State Preservation**: Added `preserveState: true` to Create.vue, Edit.vue, and custom action submissions so user input is preserved on validation errors.
+- **FormRenderer Key Performance**: Replaced `Math.random()` in `:key` binding with deterministic index-based keys, preventing full DOM recreation on every render.
+- **Memory Leaks**: `router.on('finish')` listener cleaned up on unmount in AppWrapper; search debounce timeout cleared in useTableState.
+- **Action Error Handling**: `executeAction()` now wraps callback in try/catch, returning flash error instead of 500 page.
+- **Table State Preservation**: Added `preserveState: true` to custom actions, bulk actions, and delete/restore operations.
+- **DoS Prevention**: `per_page` parameter capped to maximum 100 records.
+
+---
+
+## [1.4.1] - 2026-03-08
+
+### Changed
+
+- **Cursor Pointer**: All interactive elements (buttons, action triggers) now display `cursor: pointer` via a global CSS rule injected during installation.
+- **Localization**: Translated all remaining Indonesian text in PHP classes, Vue components, stubs, and docblocks to English for wider accessibility. Affected files include `ActionGroup`, `BaseAction`, `BaseTableAction`, `RestoreAction`, `RestoreBulkAction`, `ResourceController`, `MakeResourceCommand`, `MakePageCommand`, `PageController`, `BasePage`, `Panel`, `NavigationGroup`, `HasPanelAccess`, `BaseForm`, table composables, and all stubs.
+
+---
+
+## [1.4.0] - 2026-03-08
+
+### Added
+
+- **Notification Component**: New `Notification::make()` fluent PHP API for sending toast notifications from backend services and business logic. Supports `->success()`, `->info()`, `->danger()`, `->warning()` types with `->title()` and `->body()` methods. Call `->send()` to flash to session.
+- **Toast Stacking**: Toasts now stack when multiple arrive quickly. Maximum 2 visible at a time; older toasts fade out automatically. Duration set to 4 seconds.
+- **Structured Notifications via Inertia**: `VuelamentServiceProvider` now shares a `notifications` array prop alongside `flash`, enabling multiple notifications per request.
+
+### Fixed
+
+- **SoftDeletes Guard**: `executeAction()` no longer unconditionally calls `withTrashed()`. Now checks if the model uses `SoftDeletes` trait first, preventing `BadMethodCallException` on models without soft deletes.
+- **SoftDelete Route Guards**: `restore()`, `forceDelete()`, `bulkRestore()`, and `bulkForceDelete()` now return a friendly error instead of crashing when the model does not use `SoftDeletes`.
+- **Custom Notification Priority**: When an action uses `Notification::make()->send()`, the default success flash message is suppressed to avoid duplicate toasts.
+
+---
+
+## [1.3.7] - 2026-03-08
+
+### Fixed
+
+- **Manage Modal Validation Error**: Fixed a bug where the create/edit modal in `Manage.vue` would briefly flash a white border and close when encountering a 4xx validation error. Added `preserveState: true` to Inertia router calls so Vue component state (modal open/close) is preserved during redirect-back on validation errors.
+
+---
+
+## [1.3.6] - 2026-03-08
+
+### Fixed
+
+- **Toast Notifications**: Replaced unreliable `watch(flash)` with `router.on('finish')` in `AppWrapper.vue` to reliably trigger Sonner toast notifications after any Inertia request completes.
+- **Manage Records Stub**: Added missing `CreateAction` header action to `manage-records.stub`.
+
+### Added
+
+- **Sonner CSS Auto-Injection**: The `vuelament:install` command now automatically injects required Sonner/Toast CSS styles into `app.css`, fixing Tailwind CSS v4 Preflight compatibility issues where toasts rendered as unstyled inline text.
+
+---
+
+## [1.3.5] - 2026-03-07
+
+### Changed
+
+- **Resource Generator**: Updated `vuelament:resource` command and stub to define the resource `$model` property using a class reference (e.g., `protected static ?string $model = User::class;`) instead of a fully-qualified string namespace.
+
+---
+
+## [1.3.4] - 2026-03-07
+
+### Fixed
+
+- **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
+
+---
+
+## [1.3.3] - 2026-03-07
+
+### Fixed
+
+- **Manage Mode Rendering**: Fixed an issue where `ManageRecords` simple mode did not pass the `formSchema` to the frontend, causing empty modal forms.
+- **Inertia Redirects**: Fixed `MethodNotAllowedHttpException` by ensuring all mutation methods (store, update, destroy, bulk actions) safely return a `303 See Other` HTTP status code instead of a `302 Found`, properly instructing Inertia to issue a `GET` request on redirection.
+
+---
+
+## [1.3.2] - 2026-03-07
+
+### Fixed
+
+- **Fixed remaining `tableSchema()` calls** inside `ResourceController.php` related to `executeAction`, `executeBulkAction`, and `applySearch`.
+
+---
+
+## [1.3.1] - 2026-03-07
+
+### Fixed
+
+- **Fixed `index` method** in `ResourceController` incorrectly calling `tableSchema()` when using the new builder structure.
+
+---
+
+## [1.3.0] - 2026-03-07
+
+### Changed
+
+- Refactored `BaseResource` to use `Table` and `Form` builders instead of `PageSchema`.
+- Updated `MakeResourceCommand` logic to generate components based on the new builder configuration.
+- Changed default string to 'Bulk Actions'.
 
 ---
 
@@ -189,112 +336,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Integrated Laravel native Authentication and Authorization endpoints into panel scopes.
-
-## [1.3.0] - 2026-03-07
-
-### Changed
-
-- Refactored `BaseResource` to use `Table` and `Form` builders instead of `PageSchema`.
-- Updated `MakeResourceCommand` logic to generate components based on the new builder configuration.
-- Changed default string to 'Bulk Actions'.
-
-## [1.3.1] - 2026-03-07
-
-### Fixed
-
-- Fixed `index` method in `ResourceController` incorrectly calling `tableSchema()` when using the new builder structure.
-
-## [1.3.2] - 2026-03-07
-
-### Fixed
-
-- Fixed remaining `tableSchema()` calls inside `ResourceController.php` related to `executeAction`, `executeBulkAction`, and `applySearch`.
-
-## [1.3.3] - 2026-03-07
-
-### Fixed
-
-- **Manage Mode Rendering**: Fixed an issue where `ManageRecords` simple mode did not pass the `formSchema` to the frontend, causing empty modal forms.
-- **Inertia Redirects**: Fixed `MethodNotAllowedHttpException` by ensuring all mutation methods (store, update, destroy, bulk actions) safely return a `303 See Other` HTTP status code instead of a `302 Found`, properly instructing Inertia to issue a `GET` request on redirection.
-
-## [1.3.4] - 2026-03-07
-
-### Fixed
-
-- **Toast Notifications**: Added `flash` sharing (`success`, `error`, `warning`, `info`) parameters to `VuelamentServiceProvider`, fixing an issue where action notifications were not displaying due to missing props injections on the client-side.
-
-## [1.5.1] - 2026-03-08
-
-### Changed
-
-- **DB Transactions enabled by default**: `databaseTransactions` now defaults to `true` on Panel, ensuring data integrity across all CRUD operations.
-
-### Improved
-
-- **DRY Backend**: Extracted `resolveTable()` and `resolveFormSchema()` helper methods, eliminating 7 duplicated table/form resolution patterns in ResourceController.
-- **Icon Memoization**: `resolveIcon()` in DashboardLayout now caches resolved icon components, avoiding repeated regex + lookup on every render.
-- **Error Handling**: All destructive table operations (delete, restore, force-delete, bulk actions, custom actions) now have `onError` callbacks that show a toast notification instead of failing silently.
-- **Manage Modal Errors**: Replaced direct computed `errors` mutation with local `formErrors` ref + proper `onError`/`onSuccess` callbacks. Added double-submit guard.
-- **File Size Validation**: FormRenderer now validates file size client-side before processing. Configurable via `maxSize` prop (defaults to 10MB).
-- **Interval Cleanup**: `setInterval` timers for non-image file progress simulation are now tracked and cleared on component unmount.
-
-## [1.5.0] - 2026-03-08
-
-### Security
-
-- **SQL Injection Prevention**: Sort parameter now validated against allowed sortable columns; `direction` restricted to `asc`/`desc` only.
-- **Arbitrary Column Update**: `updateColumn()` now validates column name against registered toggle columns only, preventing unauthorized column writes.
-- **Mass Assignment Protection**: Replaced unsafe `$request->all()` fallback with `$request->only($fieldNames)`, extracting only form-defined fields.
-
-### Fixed
-
-- **Form State Preservation**: Added `preserveState: true` to Create.vue, Edit.vue, and custom action submissions so user input is preserved on validation errors.
-- **FormRenderer Key Performance**: Replaced `Math.random()` in `:key` binding with deterministic index-based keys, preventing full DOM recreation on every render.
-- **Memory Leaks**: `router.on('finish')` listener cleaned up on unmount in AppWrapper; search debounce timeout cleared in useTableState.
-- **Action Error Handling**: `executeAction()` now wraps callback in try/catch, returning flash error instead of 500 page.
-- **Table State Preservation**: Added `preserveState: true` to custom actions, bulk actions, and delete/restore operations.
-- **DoS Prevention**: `per_page` parameter capped to maximum 100 records.
-
-## [1.4.1] - 2026-03-08
-
-### Changed
-
-- **Cursor Pointer**: All interactive elements (buttons, action triggers) now display `cursor: pointer` via a global CSS rule injected during installation.
-- **Localization**: Translated all remaining Indonesian text in PHP classes, Vue components, stubs, and docblocks to English for wider accessibility. Affected files include `ActionGroup`, `BaseAction`, `BaseTableAction`, `RestoreAction`, `RestoreBulkAction`, `ResourceController`, `MakeResourceCommand`, `MakePageCommand`, `PageController`, `BasePage`, `Panel`, `NavigationGroup`, `HasPanelAccess`, `BaseForm`, table composables, and all stubs.
-
-## [1.4.0] - 2026-03-08
-
-### Added
-
-- **Notification Component**: New `Notification::make()` fluent PHP API for sending toast notifications from backend services and business logic. Supports `->success()`, `->info()`, `->danger()`, `->warning()` types with `->title()` and `->body()` methods. Call `->send()` to flash to session.
-- **Toast Stacking**: Toasts now stack when multiple arrive quickly. Maximum 2 visible at a time; older toasts fade out automatically. Duration set to 4 seconds.
-- **Structured Notifications via Inertia**: `VuelamentServiceProvider` now shares a `notifications` array prop alongside `flash`, enabling multiple notifications per request.
-
-### Fixed
-
-- **SoftDeletes Guard**: `executeAction()` no longer unconditionally calls `withTrashed()`. Now checks if the model uses `SoftDeletes` trait first, preventing `BadMethodCallException` on models without soft deletes.
-- **SoftDelete Route Guards**: `restore()`, `forceDelete()`, `bulkRestore()`, and `bulkForceDelete()` now return a friendly error instead of crashing when the model does not use `SoftDeletes`.
-- **Custom Notification Priority**: When an action uses `Notification::make()->send()`, the default success flash message is suppressed to avoid duplicate toasts.
-
-## [1.3.7] - 2026-03-08
-
-### Fixed
-
-- **Manage Modal Validation Error**: Fixed a bug where the create/edit modal in `Manage.vue` would briefly flash a white border and close when encountering a 4xx validation error. Added `preserveState: true` to Inertia router calls so Vue component state (modal open/close) is preserved during redirect-back on validation errors.
-
-## [1.3.6] - 2026-03-08
-
-### Fixed
-
-- **Toast Notifications**: Replaced unreliable `watch(flash)` with `router.on('finish')` in `AppWrapper.vue` to reliably trigger Sonner toast notifications after any Inertia request completes.
-- **Manage Records Stub**: Added missing `CreateAction` header action to `manage-records.stub`.
-
-### Added
-
-- **Sonner CSS Auto-Injection**: The `vuelament:install` command now automatically injects required Sonner/Toast CSS styles into `app.css`, fixing Tailwind CSS v4 Preflight compatibility issues where toasts rendered as unstyled inline text.
-
-## [1.3.5] - 2026-03-07
-
-### Changed
-
-- **Resource Generator**: Updated `vuelament:resource` command and stub to define the resource `$model` property using a class reference (e.g., `protected static ?string $model = User::class;`) instead of a fully-qualified string namespace.

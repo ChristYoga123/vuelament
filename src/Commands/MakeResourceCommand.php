@@ -364,8 +364,8 @@ namespace {$namespace};
 
 class {$name}Resource extends BaseResource
 {
-    protected static ?string \$model = {$model}::class;
-    protected static ?string \$slug = '{$slug}';
+    protected static string \$model = {$model}::class;
+    protected static string \$slug = '{$slug}';
     protected static string \$label = '{$label}';
     protected static string \$icon = 'circle';{$softDeleteProp}
 
@@ -526,7 +526,30 @@ PHP;
                 $path = "{$dir}/{$className}.php";
 
                 if (!file_exists($path) || $this->option('force')) {
-                    $content = <<<PHP
+                    // ListRecords gets CreateAction header
+                    if ($baseClass === 'ListRecords') {
+                        $content = <<<PHP
+<?php
+
+namespace {$baseNamespace};
+
+use ChristYoga123\\Vuelament\\Core\\Pages\\{$baseClass};
+use ChristYoga123\\Vuelament\\Components\\Actions\\CreateAction;
+
+class {$className} extends {$baseClass}
+{
+    protected static ?string \$resource = \\{$resourceClass}::class;
+
+    public static function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
+        ];
+    }
+}
+PHP;
+                    } else {
+                        $content = <<<PHP
 <?php
 
 namespace {$baseNamespace};
@@ -538,6 +561,7 @@ class {$className} extends {$baseClass}
     protected static ?string \$resource = \\{$resourceClass}::class;
 }
 PHP;
+                    }
                     file_put_contents($path, $content);
                     $this->info("  Created: app/Vuelament/{$pathPrefix}{$name}/Resources/{$className}.php");
                 }

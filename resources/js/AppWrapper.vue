@@ -60,5 +60,5 @@ onUnmounted(() => {
 
 <template>
   <slot />
-  <Toaster position="top-right" richColors :visibleToasts="2" :duration="4000" />
+  <Toaster position="top-right" richColors :expand="false" :visibleToasts="5" :duration="4000" />
 </template>

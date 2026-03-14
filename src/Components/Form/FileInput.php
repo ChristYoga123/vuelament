@@ -20,6 +20,9 @@ class FileInput extends BaseForm
     public function directory(string $v): static { $this->directory = $v; return $this; }
     public function reorderable(bool|\Closure $v = true): static { $this->reorderable = $v; return $this; }
 
+    public function getDirectory(): ?string { return $this->directory; }
+    public function getIsMultiple(): bool { return $this->evaluate($this->multiple); }
+
     public function acceptedFileTypes(array $v): static
     {
         // [FIX] Filter out SVG — can contain embedded JavaScript (stored XSS)

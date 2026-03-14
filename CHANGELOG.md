@@ -5,6 +5,13 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-03-14
+
+### Changed
+
+- **Hybrid Page Resolution**: Vue pages are now loaded from `vendor/` by default with automatic fallback. `composer update` now delivers updated Vue files without requiring `vendor:publish --tag=vuelament-views --force`. Users can still override specific pages by placing them in `resources/js/Pages/Vuelament/`. Local files always take priority over vendor files.
+- **Updated `vuelament:install` scaffolding**: `app.js` and `vite.config.js` templates now include the hybrid vendor/local page resolution pattern and `@vuelament` alias.
+
 ## [1.6.3] - 2026-03-14
 
 ### Fixed

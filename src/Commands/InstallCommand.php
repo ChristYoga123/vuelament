@@ -176,10 +176,28 @@ import { createInertiaApp } from '@inertiajs/vue3'
 import AppWrapper from './AppWrapper.vue'
 import '../css/app.css'
 
+// Local pages (user customizations / app pages)
+const localPages = import.meta.glob('./Pages/**/*.vue', { eager: true })
+
+// Vendor pages (from vuelament package — auto-updated via composer)
+const vendorPages = import.meta.glob(
+    '../../vendor/christyoga123/vuelament/resources/js/Pages/**/*.vue',
+    { eager: true }
+)
+
+// Build a vendor lookup keyed by the same "./Pages/..." format
+const vendorLookup = {}
+for (const [vendorPath, mod] of Object.entries(vendorPages)) {
+    const match = vendorPath.match(/\/Pages\/(.+\.vue)$/)
+    if (match) vendorLookup[`./Pages/${match[1]}`] = mod
+}
+
 createInertiaApp({
     resolve: name => {
-        const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
-        return pages[`./Pages/${name}.vue`]
+        const key = `./Pages/${name}.vue`
+        // Local file takes priority (user overrides)
+        // Falls back to vendor package (auto-updated via composer)
+        return localPages[key] || vendorLookup[key]
     },
     setup({ el, App, props, plugin }) {
         createApp({
@@ -212,9 +230,14 @@ JS;
         $content = <<<'JS'
 import { defineConfig } from 'vite';
 import { fileURLToPath, URL } from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
 import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import vuePlugin from '@vitejs/plugin-vue';
+
+// Resolve @vuelament alias: vendor package JS resources
+const vuelamentVendorJs = path.resolve(__dirname, 'vendor/christyoga123/vuelament/resources/js');
 
 export default defineConfig({
     plugins: [
@@ -228,6 +251,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
+            '@vuelament': vuelamentVendorJs,
         },
     },
     server: {

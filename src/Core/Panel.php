@@ -43,7 +43,10 @@ class Panel
     protected array $navigation = [];
     protected array $plugins = [];
     protected bool $databaseTransactions = true;
-    protected array $middleware = ['web'];
+    protected array $middleware = [
+        'web',
+        \ChristYoga123\Vuelament\Http\Middleware\HandleInertiaRequests::class,
+    ];
     protected array $authMiddleware = [\ChristYoga123\Vuelament\Http\Middleware\Authenticate::class];
     protected array $guestMiddleware = [\ChristYoga123\Vuelament\Http\Middleware\RedirectIfAuthenticated::class];
     protected string $authGuard = 'web';

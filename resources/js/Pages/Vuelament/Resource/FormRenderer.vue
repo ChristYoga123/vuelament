@@ -191,9 +191,42 @@ const getFileList = (comp) => {
 }
 
 const formatFileSize = (bytes) => {
+  if (bytes == null || isNaN(bytes)) return ''
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+// ── Helpers for existing file paths (edit mode) ──
+const isExistingFile = (file) => typeof file === 'string'
+
+const getFileName = (file) => {
+  if (file instanceof File) return file.name
+  if (typeof file === 'string') {
+    return file.split('/').pop() || file
+  }
+  return 'Unknown file'
+}
+
+const getFileSizeLabel = (file) => {
+  if (file instanceof File) return formatFileSize(file.size)
+  return '' // existing file from DB — size unknown
+}
+
+const isImageFile = (file) => {
+  if (file instanceof File) return file.type?.startsWith('image/')
+  if (typeof file === 'string') {
+    return /\.(jpe?g|png|gif|webp|svg|bmp|ico)$/i.test(file)
+  }
+  return false
+}
+
+const getExistingFileUrl = (path) => {
+  if (!path || typeof path !== 'string') return ''
+  // If it's already a full URL, use as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  // Otherwise, build a /storage/ URL
+  return `/storage/${path}`
 }
 
 // ── Reorder handlers ────────────────────────────────
@@ -810,26 +843,35 @@ const resetRepeaterDragState = () => {
               <GripVertical class="h-5 w-5" />
             </div>
 
-            <!-- Image preview -->
-            <div v-if="file.type?.startsWith('image/') && (comp.multiple ? filePreviews[comp.name]?.[file.name] : filePreviews[comp.name])" class="relative shrink-0">
+            <!-- Image preview (new File upload with data URL) -->
+            <div v-if="!isExistingFile(file) && file.type?.startsWith('image/') && (comp.multiple ? filePreviews[comp.name]?.[file.name] : filePreviews[comp.name])" class="relative shrink-0">
               <img
                 :src="comp.multiple ? filePreviews[comp.name][file.name] : filePreviews[comp.name]"
-                :alt="file.name"
+                :alt="getFileName(file)"
+                class="h-14 w-14 rounded-md object-cover border"
+              />
+            </div>
+            <!-- Image preview (existing file path from DB) -->
+            <div v-else-if="isExistingFile(file) && isImageFile(file)" class="relative shrink-0">
+              <img
+                :src="getExistingFileUrl(file)"
+                :alt="getFileName(file)"
                 class="h-14 w-14 rounded-md object-cover border"
               />
             </div>
             <!-- File icon for non-images -->
             <div v-else class="shrink-0">
               <div class="flex h-14 w-14 items-center justify-center rounded-md bg-muted border">
-                <ImageIcon v-if="file.type?.startsWith('image/')" class="h-6 w-6 text-muted-foreground" />
+                <ImageIcon v-if="isImageFile(file)" class="h-6 w-6 text-muted-foreground" />
                 <FileIcon v-else class="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
 
             <!-- File info -->
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium truncate">{{ file.name }}</p>
-              <p class="text-xs text-muted-foreground">{{ formatFileSize(file.size) }}</p>
+              <p class="text-sm font-medium truncate">{{ getFileName(file) }}</p>
+              <p v-if="getFileSizeLabel(file)" class="text-xs text-muted-foreground">{{ getFileSizeLabel(file) }}</p>
+              <p v-else-if="isExistingFile(file)" class="text-xs text-muted-foreground">Existing file</p>
             </div>
 
             <!-- Remove button -->

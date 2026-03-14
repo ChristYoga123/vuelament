@@ -5,6 +5,12 @@ All notable changes to `christyoga123/vuelament` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-03-14
+
+### Fixed
+
+- **FileInput Preview (NaN MB)**: Fixed an issue where `FileInput` would display "NaN MB" in edit mode because the initial value was a string path instead of a `File` object. Added robust handling for string paths, including proper filename extraction and image preview from storage.
+
 ## [1.6.1] - 2026-03-14
 
 ### Fixed

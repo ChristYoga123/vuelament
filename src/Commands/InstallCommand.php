@@ -236,11 +236,47 @@ import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import vuePlugin from '@vitejs/plugin-vue';
 
-// Resolve @vuelament alias: vendor package JS resources
-const vuelamentVendorJs = path.resolve(__dirname, 'vendor/christyoga123/vuelament/resources/js');
+// Local and vendor JS resource paths
+const localJs = path.resolve(__dirname, 'resources/js');
+const vendorJs = path.resolve(__dirname, 'vendor/christyoga123/vuelament/resources/js');
+
+/**
+ * Vuelament Fallback Plugin
+ *
+ * When a @/ import for Vuelament files (Pages/Vuelament, Layouts, components/vuelament)
+ * doesn't exist locally, transparently redirect to the vendor package copy.
+ * This makes `composer update` deliver Vue fixes automatically.
+ */
+function vuelamentFallback() {
+    return {
+        name: 'vuelament-fallback',
+        enforce: 'pre',
+        resolveId(source) {
+            if (!source.startsWith('@/')) return null;
+
+            const relPath = source.slice(2);
+
+            const vuelamentPaths = [
+                'Pages/Vuelament/',
+                'Layouts/',
+                'components/vuelament/',
+            ];
+            if (!vuelamentPaths.some(p => relPath.startsWith(p))) return null;
+
+            const localFile = path.resolve(localJs, relPath);
+            if (fs.existsSync(localFile)) return null;
+
+            const vendorFile = path.resolve(vendorJs, relPath);
+            if (fs.existsSync(vendorFile)) return vendorFile;
+
+            return null;
+        },
+    };
+}
 
 export default defineConfig({
     plugins: [
+        vuelamentFallback(),
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
@@ -251,7 +287,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
-            '@vuelament': vuelamentVendorJs,
+            '@vuelament': vendorJs,
         },
     },
     server: {

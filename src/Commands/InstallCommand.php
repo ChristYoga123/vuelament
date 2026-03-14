@@ -252,28 +252,35 @@ function vuelamentFallback() {
         name: 'vuelament-fallback',
         enforce: 'pre',
         resolveId(source) {
+            const resolveWithExtension = (baseDir, relPath) => {
+                const extensions = ['', '.js', '.vue', '/index.js', '/index.vue'];
+                for (const ext of extensions) {
+                    const file = path.resolve(baseDir, relPath + ext);
+                    if (fs.existsSync(file)) return file;
+                }
+                return null;
+            };
+
+            const vuelamentPaths = [
+                'Pages/Vuelament/',
+                'Layouts/',
+                'components/vuelament/',
+            ];
+
             if (source.startsWith('@/')) {
                 const relPath = source.slice(2);
-
-                const vuelamentPaths = [
-                    'Pages/Vuelament/',
-                    'Layouts/',
-                    'components/vuelament/',
-                ];
-                if (!vuelamentPaths.some(p => relPath.startsWith(p))) return null;
-
-                const localFile = path.resolve(localJs, relPath);
-                if (fs.existsSync(localFile)) return null;
-
-                const vendorFile = path.resolve(vendorJs, relPath);
-                if (fs.existsSync(vendorFile)) return vendorFile;
-
+                if (vuelamentPaths.some(p => relPath.startsWith(p))) {
+                    const localFile = resolveWithExtension(localJs, relPath);
+                    if (!localFile) {
+                        const vendorFile = resolveWithExtension(vendorJs, relPath);
+                        if (vendorFile) return vendorFile;
+                    }
+                }
                 return null;
             }
 
             if (source.startsWith('/resources/js/')) {
                 let relPath = source.slice('/resources/js/'.length);
-                
                 let queryString = '';
                 const queryIndex = relPath.indexOf('?');
                 if (queryIndex !== -1) {
@@ -281,23 +288,17 @@ function vuelamentFallback() {
                     relPath = relPath.slice(0, queryIndex);
                 }
 
-                const vuelamentPaths = [
-                    'Pages/Vuelament/',
-                    'Layouts/',
-                    'components/vuelament/',
-                ];
                 if (vuelamentPaths.some(p => relPath.startsWith(p))) {
-                    const localFile = path.resolve(localJs, relPath);
-                    if (!fs.existsSync(localFile)) {
-                        const vendorFile = path.resolve(vendorJs, relPath);
-                        if (fs.existsSync(vendorFile)) return vendorFile + queryString;
+                    const localFile = resolveWithExtension(localJs, relPath);
+                    if (!localFile) {
+                        const vendorFile = resolveWithExtension(vendorJs, relPath);
+                        if (vendorFile) return vendorFile + queryString;
                     }
                 }
             }
 
-            if (source.startsWith(localJs) && !fs.existsSync(source.split('?')[0])) {
+            if (source.startsWith(localJs)) {
                 let relPath = source.slice(localJs.length + 1);
-                
                 let queryString = '';
                 const queryIndex = relPath.indexOf('?');
                 if (queryIndex !== -1) {
@@ -305,15 +306,10 @@ function vuelamentFallback() {
                     relPath = relPath.slice(0, queryIndex);
                 }
 
-                const vuelamentPaths = [
-                    'Pages/Vuelament/',
-                    'Layouts/',
-                    'components/vuelament/',
-                ];
-                if (vuelamentPaths.some(p => relPath.startsWith(p))) {
-                    const vendorFile = path.resolve(vendorJs, relPath);
-                    if (fs.existsSync(vendorFile)) {
-                        return vendorFile + queryString;
+                if (!resolveWithExtension(localJs, relPath)) {
+                    if (vuelamentPaths.some(p => relPath.startsWith(p))) {
+                        const vendorFile = resolveWithExtension(vendorJs, relPath);
+                        if (vendorFile) return vendorFile + queryString;
                     }
                 }
             }

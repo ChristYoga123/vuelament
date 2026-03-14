@@ -252,22 +252,47 @@ function vuelamentFallback() {
         name: 'vuelament-fallback',
         enforce: 'pre',
         resolveId(source) {
-            if (!source.startsWith('@/')) return null;
+            if (source.startsWith('@/')) {
+                const relPath = source.slice(2);
 
-            const relPath = source.slice(2);
+                const vuelamentPaths = [
+                    'Pages/Vuelament/',
+                    'Layouts/',
+                    'components/vuelament/',
+                ];
+                if (!vuelamentPaths.some(p => relPath.startsWith(p))) return null;
 
-            const vuelamentPaths = [
-                'Pages/Vuelament/',
-                'Layouts/',
-                'components/vuelament/',
-            ];
-            if (!vuelamentPaths.some(p => relPath.startsWith(p))) return null;
+                const localFile = path.resolve(localJs, relPath);
+                if (fs.existsSync(localFile)) return null;
 
-            const localFile = path.resolve(localJs, relPath);
-            if (fs.existsSync(localFile)) return null;
+                const vendorFile = path.resolve(vendorJs, relPath);
+                if (fs.existsSync(vendorFile)) return vendorFile;
 
-            const vendorFile = path.resolve(vendorJs, relPath);
-            if (fs.existsSync(vendorFile)) return vendorFile;
+                return null;
+            }
+
+            if (source.startsWith(localJs) && !fs.existsSync(source.split('?')[0])) {
+                let relPath = source.slice(localJs.length + 1);
+                
+                let queryString = '';
+                const queryIndex = relPath.indexOf('?');
+                if (queryIndex !== -1) {
+                    queryString = relPath.slice(queryIndex);
+                    relPath = relPath.slice(0, queryIndex);
+                }
+
+                const vuelamentPaths = [
+                    'Pages/Vuelament/',
+                    'Layouts/',
+                    'components/vuelament/',
+                ];
+                if (vuelamentPaths.some(p => relPath.startsWith(p))) {
+                    const vendorFile = path.resolve(vendorJs, relPath);
+                    if (fs.existsSync(vendorFile)) {
+                        return vendorFile + queryString;
+                    }
+                }
+            }
 
             return null;
         },

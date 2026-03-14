@@ -20,7 +20,7 @@ class {{ name }}PanelProvider extends PanelServiceProvider
             // ->passwordReset()
             // ->authGuard('web')
             // ->userModel(\App\Models\User::class)
-            ->middleware(['web'])
+            ->middleware(['web', \ChristYoga123\Vuelament\Http\Middleware\HandleInertiaRequests::class])
             ->authMiddleware([\ChristYoga123\Vuelament\Http\Middleware\Authenticate::class])
             // ->guestMiddleware([\ChristYoga123\Vuelament\Http\Middleware\RedirectIfAuthenticated::class])
             ->colors([

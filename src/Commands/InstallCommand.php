@@ -271,6 +271,30 @@ function vuelamentFallback() {
                 return null;
             }
 
+            if (source.startsWith('/resources/js/')) {
+                let relPath = source.slice('/resources/js/'.length);
+                
+                let queryString = '';
+                const queryIndex = relPath.indexOf('?');
+                if (queryIndex !== -1) {
+                    queryString = relPath.slice(queryIndex);
+                    relPath = relPath.slice(0, queryIndex);
+                }
+
+                const vuelamentPaths = [
+                    'Pages/Vuelament/',
+                    'Layouts/',
+                    'components/vuelament/',
+                ];
+                if (vuelamentPaths.some(p => relPath.startsWith(p))) {
+                    const localFile = path.resolve(localJs, relPath);
+                    if (!fs.existsSync(localFile)) {
+                        const vendorFile = path.resolve(vendorJs, relPath);
+                        if (fs.existsSync(vendorFile)) return vendorFile + queryString;
+                    }
+                }
+            }
+
             if (source.startsWith(localJs) && !fs.existsSync(source.split('?')[0])) {
                 let relPath = source.slice(localJs.length + 1);
                 
